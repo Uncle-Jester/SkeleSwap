@@ -1,0 +1,816 @@
+{
+    "epic_to_MB": [
+        {
+            "transform_type": "chain_pose_bone_position",
+            "target_armature_indicator": "T",
+            "target_bone_name": "spine_01",
+            "source_bone_name": "pelvis"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "neck_01",
+            "source_bone_name": "neck"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "clavicle_l",
+            "source_bone_name": "clavicle_L"
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "clavicle_l",
+            "axis": "X",
+            "transform_value": -8.0,
+            "global_axis": false,
+            "mirror": false
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "clavicle_l",
+            "axis": "Z",
+            "transform_value": -5.0,
+            "global_axis": false,
+            "mirror": false
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "clavicle_r",
+            "source_bone_name": "clavicle_R"
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "clavicle_r",
+            "axis": "X",
+            "transform_value": -8.0,
+            "global_axis": false,
+            "mirror": false
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "clavicle_r",
+            "axis": "Z",
+            "transform_value": -5.0,
+            "global_axis": false,
+            "mirror": false
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "upperarm_l",
+            "axis": "Z",
+            "transform_value": 2.5,
+            "global_axis": false,
+            "mirror": true
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "upperarm_l",
+            "axis": "X",
+            "transform_value": 8.5,
+            "global_axis": false,
+            "mirror": true
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "lowerarm_l",
+            "source_bone_name": "lowerarm_L"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "lowerarm_r",
+            "source_bone_name": "lowerarm_R"
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "lowerarm_l",
+            "axis": "Z",
+            "transform_value": -6.5,
+            "global_axis": false,
+            "mirror": true
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "lowerarm_l",
+            "axis": "X",
+            "transform_value": -1.5,
+            "global_axis": false,
+            "mirror": true
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "hand_l",
+            "source_bone_name": "hand_L"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "hand_r",
+            "source_bone_name": "hand_R"
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "hand_l",
+            "axis": "Z",
+            "transform_value": 10.6,
+            "global_axis": false,
+            "mirror": false
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "hand_r",
+            "axis": "Z",
+            "transform_value": 10.6,
+            "global_axis": false,
+            "mirror": false
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "thumb_01_l",
+            "source_bone_name": "thumb01_L"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "thumb_01_r",
+            "source_bone_name": "thumb01_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "thumb_01_l",
+            "source_bone_name": "thumb01_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "thumb_01_r",
+            "source_bone_name": "thumb01_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "thumb_02_l",
+            "source_bone_name": "thumb02_L"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "thumb_02_r",
+            "source_bone_name": "thumb02_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "thumb_02_l",
+            "source_bone_name": "thumb02_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "thumb_02_r",
+            "source_bone_name": "thumb02_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "thumb_03_l",
+            "source_bone_name": "thumb03_L"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "thumb_03_r",
+            "source_bone_name": "thumb03_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "thumb_03_l",
+            "source_bone_name": "thumb03_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "thumb_03_r",
+            "source_bone_name": "thumb03_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "index_metacarpal_l",
+            "source_bone_name": "index00_L"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "index_metacarpal_r",
+            "source_bone_name": "index00_R"
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "index_metacarpal_l",
+            "axis": "X",
+            "transform_value": -0.5,
+            "global_axis": false,
+            "mirror": true
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "index_metacarpal_l",
+            "axis": "Z",
+            "transform_value": -7.0,
+            "global_axis": false,
+            "mirror": true
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "index_01_l",
+            "source_bone_name": "index01_L"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "index_01_l",
+            "source_bone_name": "index01_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "index_01_r",
+            "source_bone_name": "index01_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "index_01_r",
+            "source_bone_name": "index01_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "index_02_l",
+            "source_bone_name": "index02_L"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "index_02_l",
+            "source_bone_name": "index02_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "index_03_l",
+            "source_bone_name": "index03_L"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "index_03_l",
+            "source_bone_name": "index03_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "index_02_r",
+            "source_bone_name": "index02_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "index_02_r",
+            "source_bone_name": "index02_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "index_03_r",
+            "source_bone_name": "index03_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "index_03_r",
+            "source_bone_name": "index03_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "middle_metacarpal_l",
+            "source_bone_name": "middle00_L"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "middle_metacarpal_r",
+            "source_bone_name": "middle00_R"
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "middle_metacarpal_l",
+            "axis": "X",
+            "transform_value": 1.0,
+            "global_axis": false,
+            "mirror": true
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "middle_metacarpal_l",
+            "axis": "Z",
+            "transform_value": 0.5,
+            "global_axis": false,
+            "mirror": true
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "middle_01_l",
+            "source_bone_name": "middle01_L"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "middle_01_l",
+            "source_bone_name": "middle01_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "middle_01_r",
+            "source_bone_name": "middle01_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "middle_01_r",
+            "source_bone_name": "middle01_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "middle_02_l",
+            "source_bone_name": "middle02_L"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "middle_02_l",
+            "source_bone_name": "middle02_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "middle_03_l",
+            "source_bone_name": "middle03_L"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "middle_03_l",
+            "source_bone_name": "middle03_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "middle_02_r",
+            "source_bone_name": "middle02_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "middle_02_r",
+            "source_bone_name": "middle02_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "middle_03_r",
+            "source_bone_name": "middle03_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "middle_03_r",
+            "source_bone_name": "middle03_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ring_metacarpal_l",
+            "source_bone_name": "ring00_L"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ring_metacarpal_r",
+            "source_bone_name": "ring00_R"
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "ring_metacarpal_l",
+            "axis": "X",
+            "transform_value": -6.0,
+            "global_axis": false,
+            "mirror": true
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "ring_metacarpal_l",
+            "axis": "Z",
+            "transform_value": 1.0,
+            "global_axis": false,
+            "mirror": true
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ring_01_l",
+            "source_bone_name": "ring01_L"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ring_01_l",
+            "source_bone_name": "ring01_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ring_01_r",
+            "source_bone_name": "ring01_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ring_01_r",
+            "source_bone_name": "ring01_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ring_02_l",
+            "source_bone_name": "ring02_L"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ring_02_l",
+            "source_bone_name": "ring02_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ring_03_l",
+            "source_bone_name": "ring03_L"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ring_03_l",
+            "source_bone_name": "ring03_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ring_02_r",
+            "source_bone_name": "ring02_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ring_02_r",
+            "source_bone_name": "ring02_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ring_03_r",
+            "source_bone_name": "ring03_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ring_03_r",
+            "source_bone_name": "ring03_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "pinky_metacarpal_l",
+            "source_bone_name": "pinky00_L"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "pinky_metacarpal_r",
+            "source_bone_name": "pinky00_R"
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "pinky_metacarpal_l",
+            "axis": "X",
+            "transform_value": -20.0,
+            "global_axis": false,
+            "mirror": true
+        },
+        {
+            "transform_type": "rotate_bone",
+            "target_armature_indicator": "T",
+            "target_bone_name": "pinky_metacarpal_l",
+            "axis": "Z",
+            "transform_value": 6.0,
+            "global_axis": false,
+            "mirror": true
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "pinky_01_l",
+            "source_bone_name": "pinky01_L"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "pinky_01_l",
+            "source_bone_name": "pinky01_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "pinky_01_r",
+            "source_bone_name": "pinky01_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "pinky_01_r",
+            "source_bone_name": "pinky01_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "pinky_02_l",
+            "source_bone_name": "pinky02_L"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "pinky_02_l",
+            "source_bone_name": "pinky02_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "pinky_03_l",
+            "source_bone_name": "pinky03_L"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "pinky_03_l",
+            "source_bone_name": "pinky03_L",
+            "effect_roll": null,
+            "unreal_right": null
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "pinky_02_r",
+            "source_bone_name": "pinky02_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "pinky_02_r",
+            "source_bone_name": "pinky02_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "pinky_03_r",
+            "source_bone_name": "pinky03_R"
+        },
+        {
+            "transform_type": "match_pose_bone_orientation",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "pinky_03_r",
+            "source_bone_name": "pinky03_R",
+            "effect_roll": "False",
+            "unreal_right": "True"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "thigh_l",
+            "source_bone_name": "thigh_L"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "thigh_r",
+            "source_bone_name": "thigh_R"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "calf_l",
+            "source_bone_name": "calf_L"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "calf_r",
+            "source_bone_name": "calf_R"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "foot_l",
+            "source_bone_name": "foot_L",
+            "foot_z_location": "foot_z_location"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "foot_r",
+            "source_bone_name": "foot_R",
+            "foot_z_location": "foot_z_location"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ball_l",
+            "source_bone_name": "toes_L"
+        },
+        {
+            "transform_type": "match_pose_bone_head_pos",
+            "target_armature_indicator": "T",
+            "source_armature_indicator": "S",
+            "target_bone_name": "ball_r",
+            "source_bone_name": "toes_R"
+        }
+    ],
+    "epic_to_Mixamo": []
+}
