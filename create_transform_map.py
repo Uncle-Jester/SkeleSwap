@@ -1,7 +1,7 @@
-import bpy
-from bpy.props import PointerProperty, StringProperty, EnumProperty, FloatProperty, BoolProperty, CollectionProperty
-from bpy.types import Operator, Panel, PropertyGroup, UIList
-from mathutils import Matrix, Vector
+import bpy # type: ignore
+from bpy.props import PointerProperty, StringProperty, EnumProperty, FloatProperty, BoolProperty, CollectionProperty # type: ignore
+from bpy.types import Operator, Panel, PropertyGroup, UIList # type: ignore
+from mathutils import Matrix, Vector # type: ignore
 import json
 import os
 
@@ -58,11 +58,11 @@ class BoneTransformPanel(bpy.types.Panel):
 
 
 class Transform_item(PropertyGroup):
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    transform_type: StringProperty(name="Transform Type", default='rotate_bone')
-    revert_data: bpy.props.StringProperty(name="Revert Data", default="{}")
-    transform_details: bpy.props.StringProperty(name="Transform Details", default="{}")
+    name: StringProperty(name="Name") # type: ignore
+    description: StringProperty(name="Description") # type: ignore
+    transform_type: StringProperty(name="Transform Type", default='rotate_bone') # type: ignore
+    revert_data: bpy.props.StringProperty(name="Revert Data", default="{}") # type: ignore
+    transform_details: bpy.props.StringProperty(name="Transform Details", default="{}") # type: ignore
 
 
     def set_data(self, data, data_type="revert_data"):
@@ -200,7 +200,7 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
     bl_idname = "object.remove_transform"
     bl_label = "Remove Transform"
 
-    index: bpy.props.IntProperty()
+    index: bpy.props.IntProperty() # type: ignore
 
     def execute(self, context):
         scene = context.scene
@@ -362,7 +362,7 @@ class OBJECT_OT_select_bone_mapping(bpy.types.Operator):
     selected_bone_mapping: bpy.props.EnumProperty(
         name="Bone Mapping",
         items=lambda self, context: [(option, option, "") for option in get_bone_mapping_options()],
-        )
+        ) # type: ignore
 
     def execute(self, context):
         debug_print('CreateTransformMap-SelectBoneMapping-Execute: Executing select_bone_mapping')
@@ -418,7 +418,7 @@ class OBJECT_OT_export_bone_transform(bpy.types.Operator):
     bl_idname = "object.export_bone_transform"
     bl_label = "Export Bone Mapping"
 
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH", default="bone_transforms.json")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH", default="bone_transforms.json") # type: ignore
 
     def execute(self, context):
         scene = context.scene
@@ -483,7 +483,7 @@ class OBJECT_OT_load_bone_transform(bpy.types.Operator):
     bl_idname = "object.load_bone_transform"
     bl_label = "Load Bone Transforms"
 
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH") # type: ignore
 
     def execute(self, context):
         scene = context.scene

@@ -1,4 +1,4 @@
-import bpy
+import bpy # type: ignore
 import os
 import json
 
@@ -47,7 +47,7 @@ class OBJECT_OT_select_T_bone_mapping(bpy.types.Operator):
     selected_bone_mapping: bpy.props.EnumProperty(
         name="Bone Mapping",
         items=lambda self, context: [(option, option, "") for option in get_bone_mapping_options()],
-    )
+    ) # type: ignore
 
     def execute(self, context):
         create_template_properties = context.scene.create_template_properties
@@ -63,7 +63,7 @@ class OBJECT_OT_select_T_transform_map(bpy.types.Operator):
     selected_transform_map: bpy.props.EnumProperty(
         name="Transform Map",
         items=lambda self, context: [(option, option, "") for option in get_transform_map_options()],
-    )
+    ) # type: ignore
 
     def execute(self, context):
         create_template_properties = context.scene.create_template_properties
@@ -106,21 +106,21 @@ class OBJECT_OT_save_template(bpy.types.Operator):
 
 
 class CreateTemplateProperties(bpy.types.PropertyGroup):
-    template_name: bpy.props.StringProperty(name="Template Name", default="My Template")
-    target_is_epic_skeleton: bpy.props.BoolProperty(name="Target is Epic Skeleton", default=False)
-    has_facial_animations: bpy.props.BoolProperty(name="Has Facial Animations", default=False)
-    has_separate_face_rig: bpy.props.BoolProperty(name="Is Face Rig a Seperate Armature", default=False)
+    template_name: bpy.props.StringProperty(name="Template Name", default="My Template") # type: ignore
+    target_is_epic_skeleton: bpy.props.BoolProperty(name="Target is Epic Skeleton", default=False) # type: ignore
+    has_facial_animations: bpy.props.BoolProperty(name="Has Facial Animations", default=False) # type: ignore
+    has_separate_face_rig: bpy.props.BoolProperty(name="Is Face Rig a Seperate Armature", default=False) # type: ignore
 
     selected_bone_mapping: bpy.props.EnumProperty(
         name="Bone Mapping",
         items=lambda self, context: [(option, option, "") for option in get_bone_mapping_options()],
         update=bone_mapping_t_update_callback
-    ) 
+    ) # type: ignore
     selected_transform_map: bpy.props.EnumProperty(
         name="Transform Map",
         items=lambda self, context: [(option, option, "") for option in get_transform_map_options()],
         update=transform_map_t_update_callback
-    )
+    ) # type: ignore
     def get_enum_value(self, prop_name):
         print("in get enum value")
         prop = getattr(self, prop_name)

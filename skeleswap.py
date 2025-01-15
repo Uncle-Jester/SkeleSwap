@@ -1,4 +1,4 @@
-import bpy
+import bpy # type: ignore
 import os
 import json
 
@@ -23,21 +23,21 @@ bpy.types.Scene.enable_debug_print = bpy.props.BoolProperty(
 )
 
 class SkeleSwapProperties(bpy.types.PropertyGroup):
-    show_facial_operators: bpy.props.BoolProperty(name="Show Facial Operators", default=False)
-    shapekey_animation_blend_path: bpy.props.StringProperty(name="Path to ARKIT Blend", default="")
-    shapekey_action_name: bpy.props.StringProperty(name="Shape Key Action Name", default="52_Shapekeys")
-    target_is_epic_skeleton: bpy.props.BoolProperty(name="Target is Epic Skeleton", default=False)
-    has_facial_animations: bpy.props.BoolProperty(name="Has Facial Animations", default=False)
-    has_separate_face_rig: bpy.props.BoolProperty(name="Has Separate Face Rig", default=False)
-    is_mb_to_epic: bpy.props.BoolProperty(name="Has Facial Animations", default=True)
-    scale_amount: bpy.props.IntProperty(name="Scale Amount",default=100)
+    show_facial_operators: bpy.props.BoolProperty(name="Show Facial Operators", default=False) # type: ignore
+    shapekey_animation_blend_path: bpy.props.StringProperty(name="Path to ARKIT Blend", default="") # type: ignore
+    shapekey_action_name: bpy.props.StringProperty(name="Shape Key Action Name", default="52_Shapekeys") # type: ignore
+    target_is_epic_skeleton: bpy.props.BoolProperty(name="Target is Epic Skeleton", default=False) # type: ignore
+    has_facial_animations: bpy.props.BoolProperty(name="Has Facial Animations", default=False) # type: ignore
+    has_separate_face_rig: bpy.props.BoolProperty(name="Has Separate Face Rig", default=False) # type: ignore
+    is_mb_to_epic: bpy.props.BoolProperty(name="Has Facial Animations", default=True) # type: ignore
+    scale_amount: bpy.props.IntProperty(name="Scale Amount",default=100) # type: ignore
     lod_count: bpy.props.IntProperty(
     name="LOD Count",
     description="Number of LODs to create",
     default=3,
     min=1,
     max=5
-    )
+    ) # type: ignore
 
 class OBJECT_PT_skeleswap_main_panel(bpy.types.Panel):
     bl_label = "Align Skeleton"
@@ -203,7 +203,7 @@ class OBJECT_OT_select_template_config(bpy.types.Operator):
     selected_template_config: bpy.props.EnumProperty(
         name="Template",
         items=lambda self, context: [(option, option, "") for option in get_template_config_options()],
-    )
+    ) # type: ignore
 
     def execute(self, context):
         selected_template_name = context.scene.selected_template_config
@@ -392,7 +392,7 @@ class OBJECT_OT_open_blend_file_browser(bpy.types.Operator):
     bl_description = "Select a .blend file for shapekey animation"
     bl_options = {'REGISTER', 'UNDO'}
 
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH") # type: ignore
 
     def invoke(self, context, event):
         self.filepath = ''
@@ -672,7 +672,7 @@ class OBJECT_OT_export_character_as_FBX(bpy.types.Operator):
     bl_label = "Export Character as FBX"
     bl_options = {'REGISTER', 'UNDO'}
 
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH") # type: ignore
 
     def execute(self, context):
         armature = context.scene.target_armature

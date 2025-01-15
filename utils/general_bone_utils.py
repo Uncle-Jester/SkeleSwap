@@ -1,4 +1,4 @@
-import bpy
+import bpy # type: ignore
 from .bone_mapping_utils import find_side_indicator_in_bone_name, side_indicator_list
 from .dev_utils import debug_print
 

@@ -1,9 +1,9 @@
-import bpy
+import bpy # type: ignore
 import json
 import os
-from bpy.props import PointerProperty, StringProperty, EnumProperty, FloatProperty, BoolProperty, CollectionProperty
-from bpy.types import Operator, Panel, PropertyGroup, UIList
-from mathutils import Matrix, Vector
+from bpy.props import PointerProperty, StringProperty, EnumProperty, FloatProperty, BoolProperty, CollectionProperty # type: ignore
+from bpy.types import Operator, Panel, PropertyGroup, UIList # type: ignore
+from mathutils import Matrix, Vector # type: ignore
 from .utils.bone_mapping_utils import map_bone_lists
 
 def update_source_armature(self, context):
@@ -56,10 +56,10 @@ class OBJECT_PT_bone_mapping_panel(bpy.types.Panel):
 
 
 class bone_pair_item(PropertyGroup):
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    target_bone_name: StringProperty(name="Target Bone")
-    source_bone_name: StringProperty(name="Source Bone")
+    name: StringProperty(name="Name") # type: ignore
+    description: StringProperty(name="Description") # type: ignore
+    target_bone_name: StringProperty(name="Target Bone") # type: ignore
+    source_bone_name: StringProperty(name="Source Bone") # type: ignore
 
 
 class OBJECT_OT_add_bone_pair(bpy.types.Operator):
@@ -95,7 +95,7 @@ class OBJECT_UL_bone_pair_list(UIList):
 class OBJECT_OT_remove_bone_pair_from_list(bpy.types.Operator):
     bl_idname = "object.remove_bone_pair_from_list"
     bl_label = "Remove bone pair"
-    index: bpy.props.IntProperty()
+    index: bpy.props.IntProperty() # type: ignore
 
     def execute(self, context):
         scene = context.scene
@@ -107,7 +107,7 @@ class OBJECT_OT_set_target_bone(bpy.types.Operator):
     bl_idname = "object.set_target_bone"
     bl_label = "Set Target Bone"
     
-    index: bpy.props.IntProperty()
+    index: bpy.props.IntProperty() # type: ignore
     
     def execute(self, context):
         scene = context.scene
@@ -125,7 +125,7 @@ class OBJECT_OT_set_source_bone(bpy.types.Operator):
     bl_idname = "object.set_source_bone"
     bl_label = "Set Source Bone"
     
-    index: bpy.props.IntProperty()
+    index: bpy.props.IntProperty() # type: ignore
     
     def execute(self, context):
         scene = context.scene
@@ -220,7 +220,7 @@ class OBJECT_OT_export_bone_mapping(bpy.types.Operator):
     bl_idname = "object.export_bone_mapping"
     bl_label = "Export Bone Mapping"
 
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH", default="bone_mappings.json")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH", default="bone_mappings.json") # type: ignore
 
     def execute(self, context):
         scene = context.scene
@@ -285,7 +285,7 @@ class OBJECT_OT_load_bone_mapping(bpy.types.Operator):
     bl_idname = "object.load_bone_mapping"
     bl_label = "Load Bone Mapping"
 
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH") # type: ignore
 
     def execute(self, context):
         scene = context.scene

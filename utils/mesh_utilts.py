@@ -1,4 +1,4 @@
-import bpy
+import bpy # type: ignore
 
 def duplicate_mesh(mesh_to_duplicate):
     if not mesh_to_duplicate or mesh_to_duplicate.type != 'MESH':

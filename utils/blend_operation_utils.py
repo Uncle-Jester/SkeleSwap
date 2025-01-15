@@ -1,4 +1,4 @@
-import bpy
+import bpy # type: ignore
 
 def find_collection_by_object(obj):
     for collection in bpy.data.collections:

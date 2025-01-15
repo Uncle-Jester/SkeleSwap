@@ -1,4 +1,4 @@
-import bpy
+import bpy # type: ignore
 import json
 
 def get_debug_print_status():

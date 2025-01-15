@@ -1,7 +1,7 @@
 import math
-import bpy
+import bpy # type: ignore
 import os
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Vector # type: ignore
 from .general_bone_utils import find_mirror_bone_name, remove_connected_relation
 from .dev_utils import debug_print
 from .ue_specific_utils import is_flipped_unreal_bone
