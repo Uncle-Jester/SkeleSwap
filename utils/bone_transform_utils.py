@@ -4,6 +4,8 @@ import os
 from mathutils import Matrix, Vector
 from .general_bone_utils import find_mirror_bone_name, remove_connected_relation
 from .dev_utils import debug_print
+from .ue_specific_utils import is_flipped_unreal_bone
+
 
 def normalize_matrix(matrix):
     rotation = matrix.to_3x3().normalized()
@@ -38,18 +40,30 @@ def rotate_bone(armature, bone_name, axis, degrees, globalAxis=False, mirror=Fal
         bone.rotation_euler.rotate_axis(axis, radians)
     debug_print(f"BoneTransformUtils-RotateBone: Rotation of {bone_name} after rotating is {bone.rotation_euler}")
     
-    if mirror: #TBD Fix the mirror!!!!! Currently it only works if the the target of the rotation is the unreal skeleton, and its bones are flipped on the opposite axis. normal skeleton's bone would just rotate the opposite directon when mirrored
+    if mirror: #TBD: test if mirror works for both normal and epic skeletons
+        is_epic_skeleton = bpy.context.scene.target_is_epic_skeleton
+        target_is_epic_skeleton = is_flipped_unreal_bone(bone_name, is_epic_skeleton)
         mirror_bone_name = find_mirror_bone_name(armature, bone_name)
+        
         debug_print(f"BoneTransformUtils-RotateBone->Mirror: Mirrored Bone Name: {mirror_bone_name}")
         if mirror_bone_name:
             mirror_bone = pose_bones[mirror_bone_name]
-            if not globalAxis:
-                mirror_bone.rotation_mode = 'XYZ'
-                mirror_bone.rotation_euler.rotate_axis(axis, radians)
+            if target_is_epic_skeleton:
+                if not globalAxis:
+                    mirror_bone.rotation_mode = 'XYZ'
+                    mirror_bone.rotation_euler.rotate_axis(axis, radians)
+                else:
+                    mirror_rotation = rotation.copy()
+                    mirror_bone.rotation_mode = 'XYZ'
+                    mirror_bone.rotation_euler = [sum(x) for x in zip(mirror_bone.rotation_euler, mirror_rotation)]
             else:
-                mirror_rotation = rotation.copy()
-                mirror_bone.rotation_mode = 'XYZ'
-                mirror_bone.rotation_euler = [sum(x) for x in zip(mirror_bone.rotation_euler, mirror_rotation)]
+                if not globalAxis:
+                    mirror_bone.rotation_mode = 'XYZ'
+                    mirror_bone.rotation_euler.rotate_axis(axis, -radians)
+                else:
+                    mirror_rotation["XYZ".index(axis)] = -radians
+                    mirror_bone.rotation_mode = 'XYZ'
+                    mirror_bone.rotation_euler = [sum(x) for x in zip(mirror_bone.rotation_euler, mirror_rotation)]
         else:
             mirror = False
     return {"axis": axis, "degrees": degrees*-1, "bone_name": bone_name, "armature": armature, "mirror": mirror, "global_axis": globalAxis}
