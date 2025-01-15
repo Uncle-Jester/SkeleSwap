@@ -7,6 +7,7 @@ import os
 
 from .utils import rotate_bone, match_pose_bone_head_pos, match_edit_bone_pos, chain_pose_bone_position, scale_pose_bone, match_pose_bone_orientation, get_foot_z_location, move_pose_bone, orient_bone, move_edit_bone, assign_bone_color_to_armature
 from .utils import is_flipped_unreal_bone
+from .utils import debug_print
 
 class BoneTransformPanel(bpy.types.Panel):
     bl_label = "Armature and Bone Selector"
@@ -159,8 +160,7 @@ def add_transform(context, target_bone_name, source_bone_name, global_axis, axis
         new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "source_bone_name":source_bone_name}, 'transform_details')
         new_transform.name = f"Match Edit Bone Head Position {target_armature.name}-{target_bone_name} {global_axis} {axis}-{transform_value} - mirrored = {mirror}"
     else:
-        print("Unknown transform type")
-    print("new_transform: ", new_transform)
+        raise ValueError(f"In CreateTransformMap-AddTransform: Invalid transform type: {transform_type}")
     return new_transform if new_transform else None
 
 
@@ -217,7 +217,7 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
                 revert_data['global_axis'], 
                 revert_data['mirror']
             )
-            print(f"Reverted rotation for bone: {revert_data['bone_name']}")
+            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted rotation for bone: {revert_data['bone_name']}")
         elif scene.transform_list[self.index].transform_type == "scale_bone":
             scale_pose_bone(
                 revert_data['armature'], 
@@ -226,7 +226,7 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
                 revert_data['axis'], 
                 revert_data['global_axis']
             )
-            print(f"Reverted scale for bone: {revert_data['bone_name']}")
+            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted scale for bone: {revert_data['bone_name']}")
         elif scene.transform_list[self.index].transform_type == "match_pose_bone_head_pos":
             print("reverting the match pose bone based on the revert data:", revert_data)
             move_pose_bone(
@@ -235,7 +235,7 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
                 revert_data['previous_head_position'], 
                 revert_data['foot_z_location']
             )
-            print(f"Reverted head position for bone: {revert_data['bone_name']}")
+            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted head position for bone: {revert_data['bone_name']}")
         elif scene.transform_list[self.index].transform_type == "match_pose_bone_orientation":
             print("reverting the match pose bone orientation on the revert data:", revert_data)
             orient_bone(
@@ -244,7 +244,7 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
                 revert_data['orientation'], 
                 revert_data['effect_roll']
             )
-            print(f"Reverted orientation for bone: {revert_data['bone_name']}")
+            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted orientation for bone: {revert_data['bone_name']}")
         elif scene.transform_list[self.index].transform_type == "chain_pose_bone_position":
             print("reverting the match pose bone chaining on the revert data:", revert_data)
             move_pose_bone(
@@ -252,7 +252,7 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
                 revert_data['bone_name'], 
                 revert_data['previous_head_position']
             )
-            print(f"Reverted orientation for bone: {revert_data['bone_name']}")
+            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted orientation for bone: {revert_data['bone_name']}")
         elif scene.transform_list[self.index].transform_type == "match_edit_bone_pos":
             print("reverting the match edit bone head position on the revert data:", revert_data)
             move_edit_bone(
@@ -260,7 +260,7 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
                 revert_data['target_bone_name'], 
                 revert_data['offset']
             )
-            print(f"Reverted edit bone position for bone: {revert_data['target_bone_name']}")
+            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted edit bone position for bone: {revert_data['target_bone_name']}")
 
         else:
             print('TBD')
@@ -325,19 +325,11 @@ def update_source_armature(self, context):
     if armature and armature.type != 'ARMATURE':
         bpy.context.scene.source_armature = None
 
-
 def update_target_armature(self, context):
     print('updated target armature')
     armature = bpy.context.scene.target_armature
     if armature and armature.type != 'ARMATURE':
         bpy.context.scene.target_armature = None
-
-
-
-
-
-
-
 
 def get_bone_mapping_options():
     addon_dir = os.path.dirname(os.path.realpath(__file__))
@@ -564,7 +556,10 @@ def register():
     )
     bpy.types.Scene.bone_mapping_contents = bpy.props.StringProperty(name="Bone Mapping Contents")
 
-
+    def force_select_bone_mapping():
+        bpy.ops.object.select_bone_mapping()
+        return None 
+    bpy.app.timers.register( force_select_bone_mapping, first_interval=0.1 ) # force the inital selected bone mapping to run the execute function to load necessary data
 
     bpy.types.Scene.axis = EnumProperty(
         name="Axis",
