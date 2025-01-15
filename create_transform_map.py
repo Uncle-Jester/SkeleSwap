@@ -228,7 +228,6 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
             )
             debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted scale for bone: {revert_data['bone_name']}")
         elif scene.transform_list[self.index].transform_type == "match_pose_bone_head_pos":
-            print("reverting the match pose bone based on the revert data:", revert_data)
             move_pose_bone(
                 revert_data['armature'], 
                 revert_data['bone_name'], 
@@ -237,7 +236,6 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
             )
             debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted head position for bone: {revert_data['bone_name']}")
         elif scene.transform_list[self.index].transform_type == "match_pose_bone_orientation":
-            print("reverting the match pose bone orientation on the revert data:", revert_data)
             orient_bone(
                 revert_data['armature'], 
                 revert_data['bone_name'], 
@@ -246,7 +244,6 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
             )
             debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted orientation for bone: {revert_data['bone_name']}")
         elif scene.transform_list[self.index].transform_type == "chain_pose_bone_position":
-            print("reverting the match pose bone chaining on the revert data:", revert_data)
             move_pose_bone(
                 revert_data['armature'], 
                 revert_data['bone_name'], 
@@ -254,7 +251,6 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
             )
             debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted orientation for bone: {revert_data['bone_name']}")
         elif scene.transform_list[self.index].transform_type == "match_edit_bone_pos":
-            print("reverting the match edit bone head position on the revert data:", revert_data)
             move_edit_bone(
                 revert_data['target_armature'], 
                 revert_data['target_bone_name'], 
@@ -282,7 +278,7 @@ class OBJECT_OT_select_source_bone(bpy.types.Operator):
                     context.scene.selected_source_bone = selected_source_bone[0].name
                     context.scene.source_armature_indicator = 'S' if selected_object.name == context.scene.source_armature.name else 'T'
                     mapping_content = get_bone_mapping_contents(context.scene)
-                    print("CreateTransformMap-SelectingSourceBone: mapping_content: ", mapping_content)
+                    debug_print(f"CreateTransformMap-SelectingSourceBone: mapping_content: {mapping_content}")
                     if mapping_content:
                         paired_target_bone = None
                         for target_bone, source_bone in mapping_content.items():
@@ -310,7 +306,7 @@ class OBJECT_OT_select_target_bone(bpy.types.Operator):
                     context.scene.selected_target_bone = selected_target_bone[0].name
                     context.scene.target_armature_indicator = 'T' if selected_object.name == context.scene.target_armature.name else 'S'
                     mapping_content = get_bone_mapping_contents(context.scene)
-                    print("CreateTransformMap-SelectingTargetBone: mapping_content: ", mapping_content)
+                    debug_print(f"CreateTransformMap-SelectingTargetBone: mapping_content: {mapping_content}")
                     if not selected_source_bone and mapping_content:
                         paired_source_bone = mapping_content.get(context.scene.selected_target_bone)
                         context.scene.selected_source_bone = paired_source_bone if paired_source_bone else ""
@@ -321,12 +317,12 @@ class OBJECT_OT_select_target_bone(bpy.types.Operator):
 
 def update_source_armature(self, context):
     armature = bpy.context.scene.source_armature
-    print('updated source armature')
+    debug_print('CreateTransformMap-UpdateSourceArmature: updated source armature')
     if armature and armature.type != 'ARMATURE':
         bpy.context.scene.source_armature = None
 
 def update_target_armature(self, context):
-    print('updated target armature')
+    debug_print("CreateTransformMap-UpdateSourceArmature:updated source armature")
     armature = bpy.context.scene.target_armature
     if armature and armature.type != 'ARMATURE':
         bpy.context.scene.target_armature = None
@@ -356,7 +352,7 @@ def set_bone_mapping_contents(scene, mapping):
     scene.bone_mapping_contents = json.dumps(mapping)
 
 def bone_mapping_update_callback(self, context):
-    print('CreateTransform: Updating selected bone map')
+    debug_print('CreateTransformMape-BoneMappingUpdateCallback: Updating selected bone map')
     bpy.ops.object.select_bone_mapping()
 
 class OBJECT_OT_select_bone_mapping(bpy.types.Operator):
@@ -369,9 +365,9 @@ class OBJECT_OT_select_bone_mapping(bpy.types.Operator):
         )
 
     def execute(self, context):
-        print('CreateTransform-Execute: Executing select_bone_mapping')
+        debug_print('CreateTransformMap-SelectBoneMapping-Execute: Executing select_bone_mapping')
         selected_mapping_name = context.scene.selected_bone_mapping
-        print(f"CreateTransform-Execute: Selected bone mapping name: {selected_mapping_name}")
+        debug_print(f"CreateTransformMap-SelectBoneMapping-Execute: Selected bone mapping name: {selected_mapping_name}")
 
         addon_dir = os.path.dirname(os.path.realpath(__file__))
         utils_dir = os.path.join(addon_dir, "utils")
@@ -381,10 +377,9 @@ class OBJECT_OT_select_bone_mapping(bpy.types.Operator):
             with open(json_file_path, 'r') as json_file:
                 try:
                     data = json.load(json_file)
-                    print("loaded data: ", data)
                     if data and data.get(selected_mapping_name):
                         mapping_contents = data[selected_mapping_name]
-                        print("OT_select bone mapping: ", mapping_contents)
+                        debug_print(f"CreateTransformMap-SelectBoneMapping-Execute: selected_bone_mapping_contents: {mapping_contents}")
                         set_bone_mapping_contents(context.scene, mapping_contents)
                 except json.JSONDecodeError:
                     print("Failed to load bone mapping data")
@@ -403,7 +398,7 @@ class OBJECT_OT_assign_color_to_armatures(bpy.types.Operator):
         armature1 = context.scene.source_armature
         armature2 = context.scene.target_armature
         if armature1 and armature2:
-            print('assigning colors')
+            debug_print('CreateTransformMap-AssignColorToArmatures: Assigning colors')
             assign_bone_color_to_armature(armature1, (1,95,100))
             assign_bone_color_to_armature(armature2, (115,30,0))
         return {'FINISHED'}
