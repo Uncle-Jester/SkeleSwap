@@ -172,15 +172,22 @@ def match_pose_bone_head_pos(target_armature, source_armature, target_bone_name,
 def chain_pose_bone_position(armature, bone_to_move, bone_to_move_to):
     if armature.type != 'ARMATURE':
         print("object must be armatures.")
-        return
+        raise ValueError(f"In ChainPoseBones: Armature is not valid, please make sure to select the target armature")
 
+    debug_print(f"BoneTransformUtils-ChainPoseBones: Bone to move: {bone_to_move}, Bone to move to: {bone_to_move_to}, Armature: {armature.name}")
+    
     if bpy.context.view_layer.objects.active != armature:
         bpy.ops.object.mode_set(mode='POSE')
 
     head_position, tail_position = get_bone_positions_from_armature(armature, bone_to_move_to)
     original_bone = armature.pose.bones.get(bone_to_move)
+    
+    
+    if not original_bone:
+        raise ValueError(f"In ChainPoseBones: Target Bone {bone_to_move}, not found in armature: {armature.name}")
     original_head = original_bone.head.copy()
     move_pose_bone(armature, bone_to_move, tail_position)
+    
     return { "previous_head_position" : original_head, "armature": armature, "bone_name": bone_to_move }
 
 def get_bone_positions_from_armature(armature, bone_name):

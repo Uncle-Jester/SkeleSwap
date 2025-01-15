@@ -59,7 +59,7 @@ def find_mirror_bone_name(armature, bone_name):
     if mirrored_bone_name:
         print(f"Mirrored bone for '{bone_name}' is '{mirrored_bone_name}'")
     else:
-        debug_print(f"No mirrored bone found for '{bone_name}' using blenders inbuilt mirror bone finder. Trying simple side_indicator_swap")
+        debug_print(f"GeneralBoneUtils-FindMirrorBoneName: No mirrored bone found for '{bone_name}' using blenders inbuilt mirror bone finder. Trying simple side_indicator_swap")
         side_indicator = find_side_indicator_in_bone_name(bone_name, side_indicator_list)
         if side_indicator is not None:
             opposite_side_indicator_index = side_indicator_list[side_indicator["list_key"]].index(side_indicator["substring"].lower())

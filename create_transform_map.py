@@ -136,7 +136,7 @@ def add_transform(context, target_bone_name, source_bone_name, global_axis, axis
         new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "source_bone_name":source_bone_name, "foot_z_location": foot_z_location}, 'transform_details')
         new_transform.name = f"Match Pose Bone Head Position {target_armature.name}-{target_bone_name} {global_axis} {axis}-{transform_value} - mirrored = {mirror}"
     elif transform_type == 'match_pose_bone_orientation':
-        unreal_right = False if target_armature_indicator == "S" else is_flipped_unreal_bone(target_bone_name, scene.target_is_unreal_skeleton)
+        unreal_right = False if target_armature_indicator == "S" else is_flipped_unreal_bone(target_bone_name, scene.target_is_epic_skeleton)
         effect_roll = False
         revert_data = match_pose_bone_orientation(target_armature, source_armature, target_bone_name, source_bone_name, effect_roll, unreal_right)
         new_transform = scene.transform_list.add()
