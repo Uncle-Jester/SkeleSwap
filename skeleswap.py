@@ -676,7 +676,8 @@ class OBJECT_OT_export_character_as_FBX(bpy.types.Operator):
 
     def execute(self, context):
         armature = context.scene.target_armature
-
+        armature.name = "Armature"
+        
         if not armature or armature.type != 'ARMATURE':
             self.report({'ERROR'}, "Invalid target armature")
             return {'CANCELLED'}
