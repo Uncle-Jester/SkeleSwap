@@ -2,6 +2,10 @@
 
 **SkeleSwap** is a Blender addon designed to streamline and automate the process of swapping skeletons in rigged armatures. Initially it was created to help me transfer the Epic skeleton to the MB Lab created meshes...But then I went on a "side quest", and this is the result.
 
+- **Flexibility**: Supports various skeleton types and allows custom configurations.
+- **Efficiency**: Once you create the configuration for a pair of skeletons. You can resuse the template, and change skeletons with just a few clicks.
+- **Extensibility**: Users can add new skeletons and create automated workflows for their specific needs.
+
 ## Key Features
 
 ### **In-Built Skeleton Swap Support**
@@ -28,10 +32,6 @@ Once you have created your template for your custom needs, you can export the bo
 ### **Facial ARKit52 Shapekey Creation**
 
 If your face rigs are the same accross multiple characters, and you want facial motion track using ARKIT52, but you dont want to create the animations over and over again. You can create it once, save it in a blend file, the addon can get the animation from the blend file, and create the shapekeys based on that animation. (works best if the face rig is a separate armature. If it is part of the main armature, that is still a work in progress)
-
-- **Flexibility**: Supports various skeleton types and allows custom configurations.
-- **Efficiency**: Once you create the configuration for a pair of skeletons. You can resuse the template, and change skeletons with just a few clicks.
-- **Extensibility**: Users can add new skeletons and create automated workflows for their specific needs.
 
 ## Contribute
 
