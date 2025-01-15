@@ -290,7 +290,6 @@ class OBJECT_OT_rename_vertex_groups(bpy.types.Operator):
             return {'CANCELLED'}
         
         if armature and armature.type == 'ARMATURE':
-            armature.name = "Armature"
             rename_vertex_groups(armature, BONE_MAPPING)
             self.report({'INFO'}, "Renamed vertex groups according to the set bone mapping")
         else:
@@ -573,7 +572,7 @@ class OBJECT_OT_replace_skeleton(bpy.types.Operator):
     def execute(self, context):
         source_armature = context.scene.source_armature
         target_armature = context.scene.target_armature
-
+        bpy.ops.object.mode_set(mode='OBJECT')
         if not target_armature:
             self.report({'WARNING'}, f"No Target Armature, please select a target armature")
             return {'CANCELLED'}
@@ -595,6 +594,7 @@ class OBJECT_OT_replace_skeleton(bpy.types.Operator):
                 copy_shapekeys(duplicated_mesh, source_mesh)
                 delete_mesh(duplicated_mesh)
                 delete_mesh(target_mesh)
+                target_armature.name = "Armature"
             except Exception as e:
                 self.report({'ERROR'}, f"Couldn't replace skeleton. Error: {e}")
                 debug_print(f"Couldn't replace skeleton. Error: {e}")
@@ -676,8 +676,6 @@ class OBJECT_OT_export_character_as_FBX(bpy.types.Operator):
 
     def execute(self, context):
         armature = context.scene.target_armature
-        armature.name = "Armature"
-        
         if not armature or armature.type != 'ARMATURE':
             self.report({'ERROR'}, "Invalid target armature")
             return {'CANCELLED'}
