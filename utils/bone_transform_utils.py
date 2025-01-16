@@ -41,22 +41,28 @@ def rotate_bone(armature, bone_name, axis, degrees, globalAxis=False, mirror=Fal
     debug_print(f"BoneTransformUtils-RotateBone: Rotation of {bone_name} after rotating is {bone.rotation_euler}")
     
     if mirror: #TBD: test if mirror works for both normal and epic skeletons
+        debug_print(f"BoneTransformUtils-RotateBone-Mirror: Mirror: True")
         is_epic_skeleton = bpy.context.scene.target_is_epic_skeleton
-        target_is_epic_skeleton = is_flipped_unreal_bone(bone_name, is_epic_skeleton)
-        mirror_bone_name = find_mirror_bone_name(armature, bone_name)
-        
+        debug_print(f"BoneTransformUtils-RotateBone-Mirror: is_epic_skeleton: {is_epic_skeleton}")
+        mirror_bone_name = find_mirror_bone_name(armature, bone_name)        
         debug_print(f"BoneTransformUtils-RotateBone->Mirror: Mirrored Bone Name: {mirror_bone_name}")
         if mirror_bone_name:
+            unreal_mirror = is_epic_skeleton and is_flipped_unreal_bone(mirror_bone_name, is_epic_skeleton)
             mirror_bone = pose_bones[mirror_bone_name]
-            if target_is_epic_skeleton:
+            mirror_rotation = [0, 0, 0]
+            if unreal_mirror:
+                debug_print(f"BoneTransformUtils-RotateBone-Mirror: Target is epic skeleton")
                 if not globalAxis:
+                    debug_print(f"BoneTransformUtils-RotateBone-Mirror: Mirroring epic skeleton bone on LOCAL axis")
                     mirror_bone.rotation_mode = 'XYZ'
                     mirror_bone.rotation_euler.rotate_axis(axis, radians)
                 else:
+                    debug_print(f"BoneTransformUtils-RotateBone-Mirror: Mirroring epic skeleton bone on GLOBAL axis")
                     mirror_rotation = rotation.copy()
                     mirror_bone.rotation_mode = 'XYZ'
                     mirror_bone.rotation_euler = [sum(x) for x in zip(mirror_bone.rotation_euler, mirror_rotation)]
             else:
+                debug_print(f"BoneTransformUtils-RotateBone-Mirror: Target is NOT epic skeleton")
                 if not globalAxis:
                     mirror_bone.rotation_mode = 'XYZ'
                     mirror_bone.rotation_euler.rotate_axis(axis, -radians)

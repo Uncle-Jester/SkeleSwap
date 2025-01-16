@@ -16,6 +16,12 @@ def update_target_armature(self, context):
     if armature and armature.type != 'ARMATURE':
         bpy.context.scene.target_armature = None
 
+def create_bone_mapping_json(scene):
+    bone_mapping = {}
+    for pair_item in scene.bone_pair_list:
+        bone_mapping[pair_item.target_bone_name] = pair_item.source_bone_name
+    return bone_mapping
+
 
 class OBJECT_PT_bone_mapping_panel(bpy.types.Panel):
     bl_label = "Bone Mapping Panel"
@@ -55,7 +61,7 @@ class OBJECT_PT_bone_mapping_panel(bpy.types.Panel):
         row.operator("object.load_bone_mapping", text="Load Bone Mapping")
 
 
-class bone_pair_item(PropertyGroup):
+class BonePairItem(PropertyGroup):
     name: StringProperty(name="Name") # type: ignore
     description: StringProperty(name="Description") # type: ignore
     target_bone_name: StringProperty(name="Target Bone") # type: ignore
@@ -208,14 +214,6 @@ class OBJECT_OT_auto_map_bones(bpy.types.Operator):
 
         return {'FINISHED'}
 
-
-def create_bone_mapping_json(scene):
-    bone_mapping = {}
-    for pair_item in scene.bone_pair_list:
-        bone_mapping[pair_item.target_bone_name] = pair_item.source_bone_name
-    return bone_mapping
-
-
 class OBJECT_OT_export_bone_mapping(bpy.types.Operator):
     bl_idname = "object.export_bone_mapping"
     bl_label = "Export Bone Mapping"
@@ -315,9 +313,9 @@ class OBJECT_OT_load_bone_mapping(bpy.types.Operator):
 
 
 def register():
+    bpy.utils.register_class(BonePairItem)
     bpy.utils.register_class(OBJECT_PT_bone_mapping_panel)
     bpy.utils.register_class(OBJECT_OT_load_bone_mapping)
-    bpy.utils.register_class(bone_pair_item)
     bpy.utils.register_class(OBJECT_OT_add_bone_pair)
     bpy.utils.register_class(OBJECT_OT_remove_bone_pair_from_list)
     bpy.utils.register_class(OBJECT_UL_bone_pair_list)
@@ -330,13 +328,13 @@ def register():
     bpy.types.Scene.input_text = bpy.props.StringProperty(name="Bone Map Name")
     bpy.types.Scene.source_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_source_armature)
     bpy.types.Scene.target_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_target_armature)
-    bpy.types.Scene.bone_pair_list = CollectionProperty(type=bone_pair_item)
+    bpy.types.Scene.bone_pair_list = CollectionProperty(type=BonePairItem)
     bpy.types.Scene.bone_pair_list_index = bpy.props.IntProperty()
 
 def unregister():
+    bpy.utils.unregister_class(BonePairItem)
     bpy.utils.unregister_class(OBJECT_PT_bone_mapping_panel)
     bpy.utils.unregister_class(OBJECT_OT_load_bone_mapping)
-    bpy.utils.unregister_class(bone_pair_item)
     bpy.utils.unregister_class(OBJECT_OT_add_bone_pair)
     bpy.utils.unregister_class(OBJECT_OT_remove_bone_pair_from_list)
     bpy.utils.unregister_class(OBJECT_UL_bone_pair_list)
