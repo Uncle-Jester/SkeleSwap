@@ -294,11 +294,8 @@ def orient_bone(armature, bone_name, orientation, effectRoll=False):
     bone = armature.pose.bones.get(bone_name)
     target_head_world = armature.matrix_world @ bone.head
     target_direction = (bone.tail - bone.head).normalized()
-    
     desired_direction = orientation
-
     rotation_to_align = target_direction.rotation_difference(desired_direction).to_matrix().to_4x4()
-
     target_matrix = armature.matrix_world @ bone.matrix
     aligned_matrix = rotation_to_align @ target_matrix
     aligned_matrix.translation = target_head_world

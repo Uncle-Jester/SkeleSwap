@@ -1,6 +1,7 @@
 import bpy # type: ignore
 import json
 import os
+#TBD: get rid of unnecessary imports and only keep bpy for consistency
 from bpy.props import PointerProperty, StringProperty, EnumProperty, FloatProperty, BoolProperty, CollectionProperty # type: ignore
 from bpy.types import Operator, Panel, PropertyGroup, UIList # type: ignore
 from mathutils import Matrix, Vector # type: ignore
