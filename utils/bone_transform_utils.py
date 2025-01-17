@@ -42,7 +42,7 @@ def rotate_bone(armature, bone_name, axis, degrees, globalAxis=False, mirror=Fal
     
     if mirror: #TBD: test if mirror works for both normal and epic skeletons
         debug_print(f"BoneTransformUtils-RotateBone-Mirror: Mirror: True")
-        is_epic_skeleton = bpy.context.scene.target_is_epic_skeleton
+        is_epic_skeleton = bpy.context.scene.target_is_epic_skeleton and bpy.context.scene.target_armature == armature
         debug_print(f"BoneTransformUtils-RotateBone-Mirror: is_epic_skeleton: {is_epic_skeleton}")
         mirror_bone_name = find_mirror_bone_name(armature, bone_name)        
         debug_print(f"BoneTransformUtils-RotateBone->Mirror: Mirrored Bone Name: {mirror_bone_name}")

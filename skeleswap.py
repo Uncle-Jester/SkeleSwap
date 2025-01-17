@@ -741,6 +741,7 @@ def register():
     bpy.types.Scene.target_is_epic_skeleton = bpy.props.BoolProperty(name="Is Target Epic Skeleton", default=True)
     
     def force_select_template_config():
+        debug_print(f"MainPanel-ForceSelectTemplateConfig: Force selected default Template")
         bpy.ops.object.select_template_config()
         return None 
     bpy.app.timers.register( force_select_template_config, first_interval=0.1 ) # force the inital selected template to run the execute function to load necessary data
