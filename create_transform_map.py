@@ -3,7 +3,7 @@ from mathutils import Matrix, Vector # type: ignore
 import json
 import os
 
-from .utils import rotate_bone, match_pose_bone_head_pos, match_edit_bone_pos, chain_pose_bone_position, scale_pose_bone, match_pose_bone_orientation, get_foot_z_location, move_pose_bone, orient_bone, move_edit_bone, assign_bone_color_to_armature, match_edit_bone_z_location
+from .utils import rotate_bone, match_pose_bone_head_pos, match_edit_bone_pos, chain_pose_bone_position, scale_pose_bone, match_pose_bone_orientation, get_foot_z_location, move_pose_bone, orient_bone, move_edit_bone, assign_bone_color_to_armature, match_edit_bone_z_location, match_edit_bone_chain_scale, scale_edit_bone_chain
 from .utils import is_flipped_unreal_bone
 from .utils import debug_print
 
@@ -58,13 +58,24 @@ class BoneTransformPanel(bpy.types.Panel):
         row.prop(scene, "selected_target_bone", text="Target Bone")
         row.operator("object.select_target_bone_from_viewport", text="Select Target Bone")
         
+        if scene.transform_type == "match_edit_bone_chain_scale":
+            row = layout.row()
+            row.prop(scene, "selected_source_bone_chain", text="Source Bone Chain")
+            row.operator("object.select_source_bone_chain", text="Select Source Bone Chain")        
+            row = layout.row()
+            row.prop(scene, "selected_target_bone_chain", text="Target Bone Chain")
+            row.operator("object.select_target_bone_chain", text="Select Target Bone Chain")
+        
         row = layout.row()
         row.operator("object.save_foot_z_location", text="Save Current Foot Z location")
 
-        layout.prop(scene, "axis", text="Axis")
-        layout.prop(scene, "value", text="Transform Value")
-        layout.prop(scene, "global_axis", text="Global Axis")
-        layout.prop(scene, "mirror", text="Mirror")
+        if scene.transform_type == "rotate_bone" or scene.transform_type == "scale_bone":
+            layout.prop(scene, "axis", text="Axis")
+            layout.prop(scene, "value", text="Transform Value")
+            layout.prop(scene, "global_axis", text="Global Axis")
+        
+        if scene.transform_type == "rotate_bone":
+            layout.prop(scene, "mirror", text="Mirror")
 
         layout.prop(scene, "transform_type", text='Transform Type')
 
@@ -76,7 +87,6 @@ class BoneTransformPanel(bpy.types.Panel):
         row.operator("object.export_bone_transform", text="Export JSON")
         row.operator("object.save_bone_transform", text="Save Bove Transforms")
         row.operator("object.load_bone_transform", text="Load Bone Transforms")
-
 
 class Transform_item(bpy.types.PropertyGroup):
     name: bpy.props.StringProperty(name="Name") # type: ignore
@@ -121,7 +131,7 @@ class Transform_item(bpy.types.PropertyGroup):
         return data
 
 
-def add_transform(context, target_bone_name, source_bone_name, global_axis, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator):
+def add_transform(context, target_bone_name, source_bone_name, global_axis, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain=[], source_chain=[]):
     scene = context.scene
 
     target_armature = (
@@ -186,6 +196,13 @@ def add_transform(context, target_bone_name, source_bone_name, global_axis, axis
         new_transform.set_data(revert_data, 'revert_data')
         new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "source_bone_name":source_bone_name}, 'transform_details')
         new_transform.name = f"Match Edit Bone Z Position {target_armature.name}-{target_bone_name}:{source_bone_name}"
+    elif transform_type == 'match_edit_bone_chain_scale':
+        revert_data = match_edit_bone_chain_scale(target_armature, source_armature, target_chain, source_chain)
+        new_transform = scene.transform_list.add()
+        new_transform.transform_type = transform_type
+        new_transform.set_data(revert_data, 'revert_data')
+        new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_chain": target_chain, "source_chain":source_chain}, 'transform_details')
+        new_transform.name = f"Match Edit Bone Chain Scale. target chain: {target_chain}"
     else:
         raise ValueError(f"In CreateTransformMap-AddTransform: Invalid transform type: {transform_type}")
     return new_transform if new_transform else None
@@ -216,6 +233,8 @@ class OBJECT_OT_add_transform(bpy.types.Operator):
 
         target_bone_name = scene.selected_target_bone
         source_bone_name = scene.selected_source_bone
+        target_chain = scene.selected_target_bone_chain
+        source_chain = scene.selected_source_bone_chain
         target_armature_indicator = scene.target_armature_indicator
         source_armature_indicator = scene.source_armature_indicator
         global_axis = scene.global_axis
@@ -224,7 +243,7 @@ class OBJECT_OT_add_transform(bpy.types.Operator):
         mirror = scene.mirror
 
         transform_type = scene.transform_type
-        new_transform = add_transform(context, target_bone_name, source_bone_name, global_axis, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator)
+        new_transform = add_transform(context, target_bone_name, source_bone_name, global_axis, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain)
         
         self.report({'INFO'}, f"{new_transform.name} added to the list")
         return {'FINISHED'}
@@ -306,7 +325,13 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
                 revert_data['offset']
             )
             debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted edit bone position for bone: {revert_data['target_bone_name']}")
-
+        elif scene.transform_list[self.index].transform_type == "match_edit_bone_chain_scale":
+            scale_edit_bone_chain(
+                revert_data['target_armature'], 
+                revert_data['target_chain'], 
+                revert_data['scale_factor']
+            )
+            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted edit bone chain scale for the bone chain: {revert_data['target_chain']}")
         else:
             print('TBD')
         scene.transform_list.remove(self.index)
@@ -363,6 +388,60 @@ class OBJECT_OT_select_target_bone(bpy.types.Operator):
                             context.scene.source_armature_indicator = 'S' if selected_object.name != context.scene.source_armature.name else 'T'
                     return {'CANCELLED'}
         return {'CANCELLED'}
+
+class OBJECT_OT_select_source_bone_chain(bpy.types.Operator):
+    bl_idname = "object.select_source_bone_chain"
+    bl_label = "Select Source Bone Chain"
+    bl_description = "Select a chain of bones in the viewport and set them as the Source Bone Chain"
+
+    def execute(self, context):
+        selected_object = context.view_layer.objects.active
+        if selected_object and selected_object.type == 'ARMATURE':
+            if context.active_object.mode == 'POSE':
+                selected_bones = context.selected_pose_bones
+
+                if selected_bones:
+                    bone_chain = [bone.name for bone in selected_bones]
+                    context.scene.source_bone_chain = bone_chain
+
+                    self.report({'INFO'}, f"Selected bone chain: {bone_chain}")
+                    return {'FINISHED'}
+                else:
+                    self.report({'WARNING'}, "No bones selected.")
+                    return {'CANCELLED'}
+            else:
+                self.report({'WARNING'}, "Must be in Pose mode to select bones.")
+                return {'CANCELLED'}
+        else:
+            self.report({'WARNING'}, "Active object must be an armature.")
+            return {'CANCELLED'}
+
+class OBJECT_OT_select_target_bone_chain(bpy.types.Operator):
+    bl_idname = "object.select_target_bone_chain"
+    bl_label = "Select Target Bone Chain"
+    bl_description = "Select a chain of bones in the viewport and set them as the Target Bone Chain"
+
+    def execute(self, context):
+        selected_object = context.view_layer.objects.active
+        if selected_object and selected_object.type == 'ARMATURE':
+            if context.active_object.mode == 'POSE':
+                selected_bones = context.selected_pose_bones
+
+                if selected_bones:
+                    bone_chain = [bone.name for bone in selected_bones]
+                    context.scene.target_bone_chain = bone_chain
+
+                    self.report({'INFO'}, f"Selected bone chain: {bone_chain}")
+                    return {'FINISHED'}
+                else:
+                    self.report({'WARNING'}, "No bones selected.")
+                    return {'CANCELLED'}
+            else:
+                self.report({'WARNING'}, "Must be in Pose mode to select bones.")
+                return {'CANCELLED'}
+        else:
+            self.report({'WARNING'}, "Active object must be an armature.")
+            return {'CANCELLED'}
 
 def update_source_armature(self, context):
     armature = bpy.context.scene.source_armature
@@ -572,6 +651,8 @@ def register():
     bpy.utils.register_class(OBJECT_OT_assign_color_to_armatures)
     bpy.utils.register_class(OBJECT_OT_select_source_bone)
     bpy.utils.register_class(OBJECT_OT_select_target_bone)
+    bpy.utils.register_class(OBJECT_OT_select_source_bone_chain)
+    bpy.utils.register_class(OBJECT_OT_select_target_bone_chain)
     bpy.utils.register_class(Transform_item)
     bpy.utils.register_class(OBJECT_OT_add_transform)
     bpy.utils.register_class(OBJECT_OT_remove_transform)
@@ -587,6 +668,8 @@ def register():
     bpy.types.Scene.target_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_target_armature)
     bpy.types.Scene.selected_source_bone = bpy.props.StringProperty(name="Selected Source Bone")
     bpy.types.Scene.selected_target_bone = bpy.props.StringProperty(name="Selected Target Bone")
+    bpy.types.Scene.source_bone_chain = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
+    bpy.types.Scene.target_bone_chain = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
     
     bpy.types.Scene.source_armature_indicator = bpy.props.StringProperty(name="Source Armature Indicator for Transform")
     bpy.types.Scene.target_armature_indicator = bpy.props.StringProperty(name="Target Armature Indicator for Transform")
@@ -630,7 +713,8 @@ def register():
             ('match_pose_bone_orientation', "Match Pose Bone Orientation", "Match Pose Bone Orientation"),
             ('chain_pose_bone_position', "Chain Bone", "Chain Bone"),
             ('match_edit_bone_pos', "Match Edit Bone Head Position", "Match Edit Bone Head Position"),
-            ('match_edit_bone_z_location', "Match Edit Bone Z Position", "Match Edit Bone Z Position")
+            ('match_edit_bone_z_location', "Match Edit Bone Z Position", "Match Edit Bone Z Position"),
+            ('match_edit_bone_chain_scale', "Match Edit Bone Chain Scale", "Match Edit Bone Chain Scale")
         ],
         default='rotate_bone'
     )
@@ -647,6 +731,8 @@ def unregister():
     bpy.utils.unregister_class(OBJECT_OT_assign_color_to_armatures)
     bpy.utils.unregister_class(OBJECT_OT_select_source_bone)
     bpy.utils.unregister_class(OBJECT_OT_select_target_bone)
+    bpy.utils.unregister_class(OBJECT_OT_select_source_bone_chain)
+    bpy.utils.unregister_class(OBJECT_OT_select_target_bone_chain)
     bpy.utils.unregister_class(Transform_item)
     bpy.utils.unregister_class(OBJECT_OT_add_transform)
     bpy.utils.unregister_class(OBJECT_OT_remove_transform)
@@ -662,6 +748,8 @@ def unregister():
     del bpy.types.Scene.target_armature
     del bpy.types.Scene.selected_source_bone
     del bpy.types.Scene.selected_target_bone
+    del bpy.types.Scene.target_bone_chain
+    del bpy.types.Scene.source_bone_chain
     del bpy.types.Scene.source_armature_indicator
     del bpy.types.Scene.target_armature_indicator
     del bpy.types.Scene.mirror

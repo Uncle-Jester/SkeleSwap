@@ -418,3 +418,55 @@ def copy_bone_between_skeletons(source_armature, target_armature, bone_name, bon
     bpy.ops.object.mode_set(mode='OBJECT')
 
     print(f"Reparented bone '{bone_name}' to '{bone_to_parent_to}' in the target armature.")
+
+
+def match_edit_bone_chain_scale(target_armature, source_armature, target_chain, source_chain, onZAxis=False):
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    bpy.context.view_layer.objects.active = source_armature
+    bpy.ops.object.mode_set(mode='EDIT')
+    source_edit_bones = source_armature.data.edit_bones
+
+    if not all(bone_name in source_edit_bones for bone_name in source_chain):
+        raise ValueError("One or more bones in source_chain are not found in the source_armature.")
+
+    source_length = (source_edit_bones[source_chain[-1]].tail - source_edit_bones[source_chain[0]].head).z if onZAxis else (source_edit_bones[source_chain[-1]].tail - source_edit_bones[source_chain[0]].head).length
+
+    bpy.context.view_layer.objects.active = target_armature
+    bpy.ops.object.mode_set(mode='EDIT')
+    target_edit_bones = target_armature.data.edit_bones
+
+    if not all(bone_name in target_edit_bones for bone_name in target_chain):
+        raise ValueError("One or more bones in target_chain are not found in the target_armature.")
+
+    target_length = (target_edit_bones[target_chain[-1]].tail - target_edit_bones[target_chain[0]].head).z if onZAxis else (target_edit_bones[target_chain[-1]].tail - target_edit_bones[target_chain[0]].head).length
+
+    if target_length == 0:
+        raise ValueError("Target chain length is zero, cannot scale.")
+
+    scale_factor = source_length / target_length
+
+    bpy.ops.armature.select_all(action='DESELECT')
+    for bone_name in target_chain:
+        target_edit_bones[bone_name].select = True
+
+    bpy.context.view_layer.objects.active = target_armature
+    bpy.context.object.data.edit_bones.active = target_edit_bones[target_chain[0]]
+
+    bpy.ops.transform.resize(value=(1, 1, scale_factor) if onZAxis else (scale_factor, scale_factor, scale_factor))
+
+    bpy.ops.object.mode_set(mode='OBJECT')
+    return {"target_chain": target_chain, "scale_factor": scale_factor, "target_armature": target_armature}
+
+def scale_edit_bone_chain(target_armature, target_chain, scale_factor, onZAxis=False):
+    target_edit_bones = target_armature.data.edit_bones
+    
+    bpy.ops.armature.select_all(action='DESELECT')
+    
+    for bone_name in target_chain:
+        target_edit_bones[bone_name].select = True
+
+    bpy.context.view_layer.objects.active = target_armature
+    bpy.context.object.data.edit_bones.active = target_edit_bones[target_chain[0]]
+
+    bpy.ops.transform.resize(value=(1, 1, scale_factor) if onZAxis else (scale_factor, scale_factor, scale_factor))
