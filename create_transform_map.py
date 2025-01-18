@@ -7,6 +7,26 @@ from .utils import rotate_bone, match_pose_bone_head_pos, match_edit_bone_pos, c
 from .utils import is_flipped_unreal_bone
 from .utils import debug_print
 
+class CreateTransformProperties(bpy.types.PropertyGroup):
+    create_transform_foot_z_location: bpy.props.StringProperty(name="Foot Z Location", default="")  # type: ignore
+
+    def set_data(self, value):
+        if isinstance(value, Matrix):
+            value = [list(row) for row in value]
+        elif isinstance(value, Vector):
+            value = list(value)
+
+        self["create_transform_foot_z_location"] = json.dumps(value)
+
+    def get_data(self):
+        data = json.loads(self["create_transform_foot_z_location"])
+        if isinstance(data, list):
+            if len(data) == 4 and all(isinstance(row, list) and len(row) == 4 for row in data):
+                return Matrix(data)
+            elif len(data) == 3 and all(isinstance(x, (int, float)) for x in data):
+                return Vector(data)
+        return data
+    
 class BoneTransformPanel(bpy.types.Panel):
     bl_label = "Armature and Bone Selector"
     bl_idname = "OBJECT_PT_armature_bone_selector"
@@ -37,6 +57,9 @@ class BoneTransformPanel(bpy.types.Panel):
         row = layout.row()
         row.prop(scene, "selected_target_bone", text="Target Bone")
         row.operator("object.select_target_bone_from_viewport", text="Select Target Bone")
+        
+        row = layout.row()
+        row.operator("object.save_foot_z_location", text="Save Current Foot Z location")
 
         layout.prop(scene, "axis", text="Axis")
         layout.prop(scene, "value", text="Transform Value")
@@ -127,7 +150,7 @@ def add_transform(context, target_bone_name, source_bone_name, global_axis, axis
         new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "transform_value":transform_value, "axis": axis, "global_axis": global_axis}, 'transform_details')            
         new_transform.name = f"Scale Bone {target_armature.name}-{target_bone_name} {global_axis} {axis}-{transform_value} - mirrored = {mirror}"
     elif transform_type == 'match_pose_bone_head_pos':
-        foot_z_location = None if "foot" not in target_bone_name else get_foot_z_location(target_armature, target_bone_name)
+        foot_z_location = None if "foot" not in target_bone_name.lower() else scene.create_transform_props.get_data()
         revert_data = match_pose_bone_head_pos(target_armature, source_armature, target_bone_name, source_bone_name, foot_z_location)
         new_transform = scene.transform_list.add()
         new_transform.transform_type = transform_type
@@ -168,6 +191,22 @@ def add_transform(context, target_bone_name, source_bone_name, global_axis, axis
         raise ValueError(f"In CreateTransformMap-AddTransform: Invalid transform type: {transform_type}")
     return new_transform if new_transform else None
 
+class OBJECT_OT_save_foot_z_location(bpy.types.Operator):
+    bl_idname = "object.save_foot_z_location"
+    bl_label = "Save Current Foot Z Location"
+
+    def execute(self, context):
+        scene = context.scene
+        create_transform_props = scene.create_transform_props
+        target_armature = scene.target_armature
+        foot_bone_name = scene.selected_target_bone
+
+        if foot_bone_name and target_armature:
+            create_transform_props.set_data() = get_foot_z_location(target_armature, foot_bone_name)
+        else:
+            self.report({'WARNING'}, "No selected target armature, or foot bone found. Make sure to select them before trying to save the foot z location")
+            return {'CANCELLED'}
+        return {'FINISHED'}
 
 class OBJECT_OT_add_transform(bpy.types.Operator):
     bl_idname = "object.add_transform"
@@ -528,6 +567,9 @@ class OBJECT_OT_load_bone_transform(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 def register():
+    bpy.utils.register_class(CreateTransformProperties)
+    bpy.types.Scene.create_transform_props = bpy.props.PointerProperty(type=CreateTransformProperties)
+
     bpy.utils.register_class(BoneTransformPanel)
     bpy.utils.register_class(OBJECT_OT_assign_color_to_armatures)
     bpy.utils.register_class(OBJECT_OT_select_source_bone)
@@ -540,6 +582,7 @@ def register():
     bpy.utils.register_class(OBJECT_OT_export_bone_transform)
     bpy.utils.register_class(OBJECT_OT_save_bone_transform)
     bpy.utils.register_class(OBJECT_OT_load_bone_transform)
+    bpy.utils.register_class(OBJECT_OT_save_foot_z_location)
 
 
     bpy.types.Scene.source_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_source_armature)
@@ -601,6 +644,7 @@ def register():
     bpy.types.Scene.transform_list_index = bpy.props.IntProperty()
 
 def unregister():
+    bpy.utils.unregister_class(CreateTransformProperties)
     bpy.utils.unregister_class(BoneTransformPanel)
     bpy.utils.unregister_class(OBJECT_OT_assign_color_to_armatures)
     bpy.utils.unregister_class(OBJECT_OT_select_source_bone)
@@ -613,7 +657,9 @@ def unregister():
     bpy.utils.unregister_class(OBJECT_OT_export_bone_transform)
     bpy.utils.unregister_class(OBJECT_OT_save_bone_transform)
     bpy.utils.unregister_class(OBJECT_OT_load_bone_transform)
-
+    bpy.utils.unregister_class(OBJECT_OT_save_foot_z_location)
+    
+    del bpy.types.Scene.create_transform_props
     del bpy.types.Scene.source_armature
     del bpy.types.Scene.target_armature
     del bpy.types.Scene.selected_source_bone
