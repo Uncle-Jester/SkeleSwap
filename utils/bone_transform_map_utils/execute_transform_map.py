@@ -13,7 +13,6 @@ def apply_transform_map(transform_map, foot_z_loc, global_target_armature, globa
         unreal_right = transform.get("unreal_right") if transform.get("unreal_right") else False
         global_axis =  transform.get("global_axis") if transform.get("global_axis") else False
         mirror =  transform.get("mirror") if transform.get("mirror") else False
-        effect_roll = transform.get("effect_roll") if transform.get("effect_roll") else False
 
         target_armature = (
             global_target_armature if target_armature_indicator == "T"
@@ -33,7 +32,7 @@ def apply_transform_map(transform_map, foot_z_loc, global_target_armature, globa
         elif transform_type == 'match_pose_bone_head_pos':
             match_pose_bone_head_pos(target_armature, source_armature, target_bone_name, source_bone_name, foot_z_location)
         elif transform_type == 'match_pose_bone_orientation':
-            match_pose_bone_orientation(target_armature, source_armature, target_bone_name, source_bone_name, effect_roll, unreal_right)
+            match_pose_bone_orientation(target_armature, source_armature, target_bone_name, source_bone_name, unreal_right)
         elif transform_type == 'chain_pose_bone_position':
             chain_pose_bone_position(target_armature, target_bone_name, source_bone_name)
         elif transform_type == 'match_edit_bone_pos':

@@ -285,7 +285,7 @@ def move_pose_bone(armature, bone_name, new_head, foot_head_Z=None):
 
     bpy.context.view_layer.update()
 
-def match_pose_bone_orientation(target_armature, source_armature, target_bone_name, source_bone_name, effectRoll=False, UE_right=False):
+def match_pose_bone_orientation(target_armature, source_armature, target_bone_name, source_bone_name, UE_right=False):
     if bpy.context.view_layer.objects.active != target_armature:
         bpy.context.view_layer.objects.active = target_armature
     bpy.ops.object.mode_set(mode='POSE')
@@ -312,12 +312,12 @@ def match_pose_bone_orientation(target_armature, source_armature, target_bone_na
         source_direction = -source_direction 
     target_direction = (target_bone.tail - target_bone.head).normalized().copy()
     
-    orient_bone(target_armature, target_bone_name, source_direction, effectRoll)
+    orient_bone(target_armature, target_bone_name, source_direction)
 
     print(f"Aligned {target_bone_name} to {source_bone_name} successfully.")
-    return {"orientation": target_direction, "armature": target_armature, "bone_name": target_bone_name, "effect_roll": effectRoll} # This is the original direction of the bone, it can be used later to revert the orientation back to the original
+    return {"orientation": target_direction, "armature": target_armature, "bone_name": target_bone_name} # This is the original direction of the bone, it can be used later to revert the orientation back to the original
 
-def orient_bone(armature, bone_name, orientation, effectRoll=False):
+def orient_bone(armature, bone_name, orientation):
     bone = armature.pose.bones.get(bone_name)
     target_head_world = armature.matrix_world @ bone.head
     target_direction = (bone.tail - bone.head).normalized()
@@ -327,12 +327,12 @@ def orient_bone(armature, bone_name, orientation, effectRoll=False):
     aligned_matrix = rotation_to_align @ target_matrix
     aligned_matrix.translation = target_head_world
 
-    if not effectRoll:
+    """ if not effectRoll:
         roll_preserved_matrix = aligned_matrix.to_3x3()
         roll_preserved_matrix.col[2] = bone.matrix.to_3x3().col[2]
         aligned_matrix = roll_preserved_matrix.to_4x4()
         aligned_matrix.translation = target_head_world
-
+ """
     bone.matrix = armature.matrix_world.inverted() @ aligned_matrix
 
     bpy.ops.object.mode_set(mode='OBJECT')

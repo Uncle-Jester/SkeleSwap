@@ -594,7 +594,6 @@ class OBJECT_OT_replace_skeleton(bpy.types.Operator):
                 copy_shapekeys(duplicated_mesh, source_mesh)
                 delete_mesh(duplicated_mesh)
                 delete_mesh(target_mesh)
-                target_armature.name = "Armature"
             except Exception as e:
                 self.report({'ERROR'}, f"Couldn't replace skeleton. Error: {e}")
                 debug_print(f"Couldn't replace skeleton. Error: {e}")

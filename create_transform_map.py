@@ -159,8 +159,7 @@ def add_transform(context, target_bone_name, source_bone_name, global_axis, axis
         new_transform.name = f"Match Pose Bone Head Position {target_armature.name}-{target_bone_name}:{source_bone_name}"
     elif transform_type == 'match_pose_bone_orientation':
         unreal_right = False if target_armature_indicator == "S" else is_flipped_unreal_bone(target_bone_name, scene.target_is_epic_skeleton)
-        effect_roll = False
-        revert_data = match_pose_bone_orientation(target_armature, source_armature, target_bone_name, source_bone_name, effect_roll, unreal_right)
+        revert_data = match_pose_bone_orientation(target_armature, source_armature, target_bone_name, source_bone_name, unreal_right)
         new_transform = scene.transform_list.add()
         new_transform.transform_type = transform_type
         new_transform.set_data(revert_data, 'revert_data')
@@ -202,7 +201,7 @@ class OBJECT_OT_save_foot_z_location(bpy.types.Operator):
         foot_bone_name = scene.selected_target_bone
 
         if foot_bone_name and target_armature:
-            create_transform_props.set_data() = get_foot_z_location(target_armature, foot_bone_name)
+            create_transform_props.set_data(get_foot_z_location(target_armature, foot_bone_name))
         else:
             self.report({'WARNING'}, "No selected target armature, or foot bone found. Make sure to select them before trying to save the foot z location")
             return {'CANCELLED'}
@@ -284,7 +283,6 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
                 revert_data['armature'], 
                 revert_data['bone_name'], 
                 revert_data['orientation'], 
-                revert_data['effect_roll']
             )
             debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted orientation for bone: {revert_data['bone_name']}")
         elif scene.transform_list[self.index].transform_type == "chain_pose_bone_position":
