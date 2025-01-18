@@ -1,6 +1,4 @@
 import bpy # type: ignore
-from bpy.props import PointerProperty, StringProperty, EnumProperty, FloatProperty, BoolProperty, CollectionProperty # type: ignore
-from bpy.types import Operator, Panel, PropertyGroup, UIList # type: ignore
 from mathutils import Matrix, Vector # type: ignore
 import json
 import os
@@ -57,10 +55,10 @@ class BoneTransformPanel(bpy.types.Panel):
         row.operator("object.load_bone_transform", text="Load Bone Transforms")
 
 
-class Transform_item(PropertyGroup):
-    name: StringProperty(name="Name") # type: ignore
-    description: StringProperty(name="Description") # type: ignore
-    transform_type: StringProperty(name="Transform Type", default='rotate_bone') # type: ignore
+class Transform_item(bpy.types.PropertyGroup):
+    name: bpy.props.StringProperty(name="Name") # type: ignore
+    description: bpy.props.StringProperty(name="Description") # type: ignore
+    transform_type: bpy.props.StringProperty(name="Transform Type", default='rotate_bone') # type: ignore
     revert_data: bpy.props.StringProperty(name="Revert Data", default="{}") # type: ignore
     transform_details: bpy.props.StringProperty(name="Transform Details", default="{}") # type: ignore
 
@@ -193,7 +191,7 @@ class OBJECT_OT_add_transform(bpy.types.Operator):
         self.report({'INFO'}, f"{new_transform.name} added to the list")
         return {'FINISHED'}
 
-class OBJECT_UL_transform_list(UIList):
+class OBJECT_UL_transform_list(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         transform = item
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
@@ -552,9 +550,9 @@ def register():
     bpy.types.Scene.source_armature_indicator = bpy.props.StringProperty(name="Source Armature Indicator for Transform")
     bpy.types.Scene.target_armature_indicator = bpy.props.StringProperty(name="Target Armature Indicator for Transform")
 
-    bpy.types.Scene.mirror = BoolProperty(name="Mirror", default=False)
-    bpy.types.Scene.value = FloatProperty(name="Transform Value", default=0.0)
-    bpy.types.Scene.global_axis = BoolProperty(name="Global Axis", default=False)
+    bpy.types.Scene.mirror = bpy.props.BoolProperty(name="Mirror", default=False)
+    bpy.types.Scene.value = bpy.props.FloatProperty(name="Transform Value", default=0.0)
+    bpy.types.Scene.global_axis = bpy.props.BoolProperty(name="Global Axis", default=False)
     
 
 
@@ -570,7 +568,7 @@ def register():
         return None 
     bpy.app.timers.register( force_select_bone_mapping, first_interval=0.1 ) # force the inital selected bone mapping to run the execute function to load necessary data
 
-    bpy.types.Scene.axis = EnumProperty(
+    bpy.types.Scene.axis = bpy.props.EnumProperty(
         name="Axis",
         items=[
             ('X', "X", ""),
@@ -582,7 +580,7 @@ def register():
     )
 
 
-    bpy.types.Scene.transform_type = EnumProperty(
+    bpy.types.Scene.transform_type = bpy.props.EnumProperty(
         name='Transform Type',
         items=[
             ('rotate_bone', "Rotate Bone", "Rotate Bone"),
@@ -599,7 +597,7 @@ def register():
 
     
 
-    bpy.types.Scene.transform_list = CollectionProperty(type=Transform_item)
+    bpy.types.Scene.transform_list = bpy.props.CollectionProperty(type=Transform_item)
     bpy.types.Scene.transform_list_index = bpy.props.IntProperty()
 
 def unregister():

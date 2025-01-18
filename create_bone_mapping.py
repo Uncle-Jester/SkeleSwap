@@ -1,10 +1,7 @@
 import bpy # type: ignore
 import json
 import os
-#TBD: get rid of unnecessary imports and only keep bpy for consistency
-from bpy.props import PointerProperty, StringProperty, EnumProperty, FloatProperty, BoolProperty, CollectionProperty # type: ignore
-from bpy.types import Operator, Panel, PropertyGroup, UIList # type: ignore
-from mathutils import Matrix, Vector # type: ignore
+
 from .utils.bone_mapping_utils import map_bone_lists
 
 def update_source_armature(self, context):
@@ -62,11 +59,11 @@ class OBJECT_PT_bone_mapping_panel(bpy.types.Panel):
         row.operator("object.load_bone_mapping", text="Load Bone Mapping")
 
 
-class BonePairItem(PropertyGroup):
-    name: StringProperty(name="Name") # type: ignore
-    description: StringProperty(name="Description") # type: ignore
-    target_bone_name: StringProperty(name="Target Bone") # type: ignore
-    source_bone_name: StringProperty(name="Source Bone") # type: ignore
+class BonePairItem(bpy.types.PropertyGroup):
+    name: bpy.props.StringProperty(name="Name") # type: ignore
+    description: bpy.props.StringProperty(name="Description") # type: ignore
+    target_bone_name: bpy.props.StringProperty(name="Target Bone") # type: ignore
+    source_bone_name: bpy.props.StringProperty(name="Source Bone") # type: ignore
 
 
 class OBJECT_OT_add_bone_pair(bpy.types.Operator):
@@ -81,7 +78,7 @@ class OBJECT_OT_add_bone_pair(bpy.types.Operator):
         new_item.source_bone_name = ""
         return {'FINISHED'}
 
-class OBJECT_UL_bone_pair_list(UIList):
+class OBJECT_UL_bone_pair_list(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         scene = context.scene
         armature_target = scene.target_armature
@@ -329,7 +326,7 @@ def register():
     bpy.types.Scene.input_text = bpy.props.StringProperty(name="Bone Map Name")
     bpy.types.Scene.source_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_source_armature)
     bpy.types.Scene.target_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_target_armature)
-    bpy.types.Scene.bone_pair_list = CollectionProperty(type=BonePairItem)
+    bpy.types.Scene.bone_pair_list = bpy.props.CollectionProperty(type=BonePairItem)
     bpy.types.Scene.bone_pair_list_index = bpy.props.IntProperty()
 
 def unregister():
