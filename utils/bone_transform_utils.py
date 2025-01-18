@@ -188,6 +188,34 @@ def match_pose_bone_head_pos(target_armature, source_armature, target_bone_name,
 
     return { "previous_head_position" : original_head, "armature": target_armature, "bone_name": target_bone_name, "foot_z_location": foot_z_location }
 
+def match_edit_bone_z_location(target_armature, source_armature, target_bone_name, source_bone_name):
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.context.view_layer.objects.active = source_armature
+    bpy.ops.object.mode_set(mode='EDIT')
+    source_edit_bones = source_armature.data.edit_bones
+    source_bone = source_edit_bones[source_bone_name]
+    source_head_global = source_armature.matrix_world @ source_bone.head
+
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.context.view_layer.objects.active = target_armature
+    bpy.ops.object.mode_set(mode='EDIT')
+    target_edit_bones = target_armature.data.edit_bones
+
+    if target_bone_name not in target_edit_bones:
+        raise ValueError(f"In MatchEditBoneZLocation: Error: Bone '{target_bone_name}' not found in the armature '{target_armature.name}'.")
+
+    target_bone = target_edit_bones[target_bone_name]
+    source_head_local = target_armature.matrix_world.inverted() @ source_head_global
+
+    offset_z = source_head_local.z - target_bone.head.z
+
+    offset = Vector((0.0, 0.0, offset_z))  # Create an offset vector with only the Z component
+    debug_print(f"BoneTransformUtils-MatchEditBoneZLocation: Offset to move bone by on Z-axis: {offset_z}")
+
+    move_edit_bone(target_armature, target_bone_name, offset)
+    debug_print(f"BoneTransformUtils-MatchEditBoneZLocation: target_bone new position: {target_bone.head}, {target_bone.tail}")
+    return {"target_armature": target_armature, "target_bone_name": target_bone_name, "offset": offset*-1}
+
 
 def chain_pose_bone_position(armature, bone_to_move, bone_to_move_to):
     if armature.type != 'ARMATURE':
@@ -256,7 +284,6 @@ def move_pose_bone(armature, bone_name, new_head, foot_head_Z=None):
         pose_bone.matrix = translation_matrix @ pose_bone.matrix
 
     bpy.context.view_layer.update()
-
 
 def match_pose_bone_orientation(target_armature, source_armature, target_bone_name, source_bone_name, effectRoll=False, UE_right=False):
     if bpy.context.view_layer.objects.active != target_armature:

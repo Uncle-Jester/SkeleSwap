@@ -5,7 +5,7 @@ from mathutils import Matrix, Vector # type: ignore
 import json
 import os
 
-from .utils import rotate_bone, match_pose_bone_head_pos, match_edit_bone_pos, chain_pose_bone_position, scale_pose_bone, match_pose_bone_orientation, get_foot_z_location, move_pose_bone, orient_bone, move_edit_bone, assign_bone_color_to_armature
+from .utils import rotate_bone, match_pose_bone_head_pos, match_edit_bone_pos, chain_pose_bone_position, scale_pose_bone, match_pose_bone_orientation, get_foot_z_location, move_pose_bone, orient_bone, move_edit_bone, assign_bone_color_to_armature, match_edit_bone_z_location
 from .utils import is_flipped_unreal_bone
 from .utils import debug_print
 
@@ -135,7 +135,7 @@ def add_transform(context, target_bone_name, source_bone_name, global_axis, axis
         new_transform.transform_type = transform_type
         new_transform.set_data(revert_data, 'revert_data')
         new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "source_bone_name":source_bone_name, "foot_z_location": foot_z_location}, 'transform_details')
-        new_transform.name = f"Match Pose Bone Head Position {target_armature.name}-{target_bone_name} {global_axis} {axis}-{transform_value} - mirrored = {mirror}"
+        new_transform.name = f"Match Pose Bone Head Position {target_armature.name}-{target_bone_name}:{source_bone_name}"
     elif transform_type == 'match_pose_bone_orientation':
         unreal_right = False if target_armature_indicator == "S" else is_flipped_unreal_bone(target_bone_name, scene.target_is_epic_skeleton)
         effect_roll = False
@@ -144,21 +144,28 @@ def add_transform(context, target_bone_name, source_bone_name, global_axis, axis
         new_transform.transform_type = transform_type
         new_transform.set_data(revert_data, 'revert_data')
         new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "source_bone_name":source_bone_name, "unreal_right": unreal_right}, 'transform_details')
-        new_transform.name = f"Match Pose Bone Orientation {target_armature.name}-{target_bone_name} {global_axis} {axis}-{transform_value} - mirrored = {mirror}"
+        new_transform.name = f"Match Pose Bone Orientation {target_armature.name}-{target_bone_name}:{source_bone_name}"
     elif transform_type == 'chain_pose_bone_position':
         revert_data = chain_pose_bone_position(target_armature, target_bone_name, source_bone_name)
         new_transform = scene.transform_list.add()
         new_transform.transform_type = transform_type
         new_transform.set_data(revert_data, 'revert_data')
         new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "source_bone_name":source_bone_name}, 'transform_details')
-        new_transform.name = f"Chain Bone {target_armature.name}-{target_bone_name} {global_axis} {axis}-{transform_value} - mirrored = {mirror}"
+        new_transform.name = f"Chain Bone {target_armature.name}-{target_bone_name} chained to: {source_bone_name}"
     elif transform_type == 'match_edit_bone_pos':
         revert_data = match_edit_bone_pos(target_armature, source_armature, target_bone_name, source_bone_name)
         new_transform = scene.transform_list.add()
         new_transform.transform_type = transform_type
         new_transform.set_data(revert_data, 'revert_data')
         new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "source_bone_name":source_bone_name}, 'transform_details')
-        new_transform.name = f"Match Edit Bone Head Position {target_armature.name}-{target_bone_name} {global_axis} {axis}-{transform_value} - mirrored = {mirror}"
+        new_transform.name = f"Match Edit Bone Head Position {target_armature.name}-{target_bone_name}:{source_bone_name}"
+    elif transform_type == 'match_edit_bone_z_location':
+        revert_data = match_edit_bone_z_location(target_armature, source_armature, target_bone_name, source_bone_name)
+        new_transform = scene.transform_list.add()
+        new_transform.transform_type = transform_type
+        new_transform.set_data(revert_data, 'revert_data')
+        new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "source_bone_name":source_bone_name}, 'transform_details')
+        new_transform.name = f"Match Edit Bone Z Position {target_armature.name}-{target_bone_name}:{source_bone_name}"
     else:
         raise ValueError(f"In CreateTransformMap-AddTransform: Invalid transform type: {transform_type}")
     return new_transform if new_transform else None
@@ -251,6 +258,13 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
             )
             debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted orientation for bone: {revert_data['bone_name']}")
         elif scene.transform_list[self.index].transform_type == "match_edit_bone_pos":
+            move_edit_bone(
+                revert_data['target_armature'], 
+                revert_data['target_bone_name'], 
+                revert_data['offset']
+            )
+            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted edit bone position for bone: {revert_data['target_bone_name']}")
+        elif scene.transform_list[self.index].transform_type == "match_edit_bone_z_location":
             move_edit_bone(
                 revert_data['target_armature'], 
                 revert_data['target_bone_name'], 
@@ -576,7 +590,8 @@ def register():
             ('match_pose_bone_head_pos', "Match Pose Bone Head Position", "Match Pose Bone Head Position"),
             ('match_pose_bone_orientation', "Match Pose Bone Orientation", "Match Pose Bone Orientation"),
             ('chain_pose_bone_position', "Chain Bone", "Chain Bone"),
-            ('match_edit_bone_pos', "Match Edit Bone Head Position", "Match Edit Bone Head Position")
+            ('match_edit_bone_pos', "Match Edit Bone Head Position", "Match Edit Bone Head Position"),
+            ('match_edit_bone_z_location', "Match Edit Bone Z Position", "Match Edit Bone Z Position")
         ],
         default='rotate_bone'
     )
