@@ -1,4 +1,4 @@
-from .. import match_pose_bone_head_pos, match_pose_bone_orientation, chain_pose_bone_position, match_edit_bone_pos, rotate_bone, scale_pose_bone, match_edit_bone_z_location
+from .. import match_pose_bone_head_pos, match_pose_bone_orientation, chain_pose_bone_position, match_edit_bone_pos, rotate_bone, scale_pose_bone, match_edit_bone_z_location, match_edit_bone_chain_scale
 
 def apply_transform_map(transform_map, foot_z_loc, global_target_armature, global_source_armature):
     for transform in transform_map:
@@ -7,6 +7,8 @@ def apply_transform_map(transform_map, foot_z_loc, global_target_armature, globa
         source_armature_indicator = transform.get("source_armature_indicator")
         source_bone_name = transform.get("source_bone_name")
         target_bone_name = transform.get("target_bone_name")
+        source_chain = transform.get("source_chain")
+        target_chain = transform.get("target_chain")
         axis = transform.get("axis")
         transform_value = transform.get("transform_value")
         foot_z_location = foot_z_loc if transform.get("foot_z_location") else None
@@ -39,5 +41,7 @@ def apply_transform_map(transform_map, foot_z_loc, global_target_armature, globa
             match_edit_bone_pos(target_armature, source_armature, target_bone_name, source_bone_name)
         elif transform_type == 'match_edit_bone_z_location':
             match_edit_bone_z_location(target_armature, source_armature, target_bone_name, source_bone_name)
+        elif transform_type == 'match_edit_bone_chain_scale':
+            match_edit_bone_chain_scale(target_armature, source_armature, target_chain, source_chain)
         else:
             print("ExecuteTransfromMap: Unknown transform type")
