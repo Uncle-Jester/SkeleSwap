@@ -431,7 +431,8 @@ def match_edit_bone_chain_scale(target_armature, source_armature, target_chain, 
         raise ValueError("One or more bones in source_chain are not found in the source_armature.")
 
     source_length = (source_edit_bones[source_chain[-1]].tail - source_edit_bones[source_chain[0]].head).z if onZAxis else (source_edit_bones[source_chain[-1]].tail - source_edit_bones[source_chain[0]].head).length
-
+    debug_print(f"BoneTransformUtils-MatchEditBoneChainScale: Source Length: {source_length}")
+    
     bpy.context.view_layer.objects.active = target_armature
     bpy.ops.object.mode_set(mode='EDIT')
     target_edit_bones = target_armature.data.edit_bones
@@ -440,20 +441,33 @@ def match_edit_bone_chain_scale(target_armature, source_armature, target_chain, 
         raise ValueError("One or more bones in target_chain are not found in the target_armature.")
 
     target_length = (target_edit_bones[target_chain[-1]].tail - target_edit_bones[target_chain[0]].head).z if onZAxis else (target_edit_bones[target_chain[-1]].tail - target_edit_bones[target_chain[0]].head).length
+    debug_print(f"BoneTransformUtils-MatchEditBoneChainScale: Target Original Length: {target_length}")
+
 
     if target_length == 0:
         raise ValueError("Target chain length is zero, cannot scale.")
 
     scale_factor = source_length / target_length
+    debug_print(f"BoneTransformUtils-MatchEditBoneChainScale: Calculated Scale Factor: {scale_factor}")
 
     bpy.ops.armature.select_all(action='DESELECT')
     for bone_name in target_chain:
+        debug_print(f"BoneTransformUtils-MatchEditBoneChainScale: Selecting edit bone: {target_edit_bones[bone_name]}")
         target_edit_bones[bone_name].select = True
 
     bpy.context.view_layer.objects.active = target_armature
     bpy.context.object.data.edit_bones.active = target_edit_bones[target_chain[0]]
+    debug_print(f"BoneTransformUtils-MatchEditBoneChainScale: Made First Bone in the chain Active: {target_edit_bones[target_chain[0]]}")
 
-    bpy.ops.transform.resize(value=(1, 1, scale_factor) if onZAxis else (scale_factor, scale_factor, scale_factor))
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.mode_set(mode='EDIT') # Yet again, selection works weird when trying it via script. To achieve the same result as if selecting and making something active in the view port by hand. we have to switch to obj mode after the selection is done, then switch back to edit mode. no clue why
+
+    if onZAxis:
+        debug_print(f"BoneTransformUtils-MatchEditBoneChainScale: Scaling on Z axis")
+        bpy.ops.transform.resize(value = (1, 1, scale_factor))
+    else: 
+        debug_print(f"BoneTransformUtils-MatchEditBoneChainScale: Scaling uniformly")
+        bpy.ops.transform.resize(value = (scale_factor, scale_factor, scale_factor))
 
     bpy.ops.object.mode_set(mode='OBJECT')
     return {"target_chain": target_chain, "scale_factor": scale_factor, "target_armature": target_armature}

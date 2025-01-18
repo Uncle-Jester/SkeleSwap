@@ -60,10 +60,10 @@ class BoneTransformPanel(bpy.types.Panel):
         
         if scene.transform_type == "match_edit_bone_chain_scale":
             row = layout.row()
-            row.prop(scene, "selected_source_bone_chain", text="Source Bone Chain")
+            row.prop(scene, "source_bone_chain", text="Source Bone Chain")
             row.operator("object.select_source_bone_chain", text="Select Source Bone Chain")        
             row = layout.row()
-            row.prop(scene, "selected_target_bone_chain", text="Target Bone Chain")
+            row.prop(scene, "target_bone_chain", text="Target Bone Chain")
             row.operator("object.select_target_bone_chain", text="Select Target Bone Chain")
         
         row = layout.row()
@@ -233,8 +233,8 @@ class OBJECT_OT_add_transform(bpy.types.Operator):
 
         target_bone_name = scene.selected_target_bone
         source_bone_name = scene.selected_source_bone
-        target_chain = scene.selected_target_bone_chain
-        source_chain = scene.selected_source_bone_chain
+        target_chain = [item.name for item in scene.target_bone_chain]
+        source_chain = [item.name for item in scene.source_bone_chain]
         target_armature_indicator = scene.target_armature_indicator
         source_armature_indicator = scene.source_armature_indicator
         global_axis = scene.global_axis
@@ -401,10 +401,13 @@ class OBJECT_OT_select_source_bone_chain(bpy.types.Operator):
                 selected_bones = context.selected_pose_bones
 
                 if selected_bones:
-                    bone_chain = [bone.name for bone in selected_bones]
-                    context.scene.source_bone_chain = bone_chain
+                    context.scene.source_bone_chain.clear()
+                    
+                    for bone in selected_bones:
+                        item = context.scene.source_bone_chain.add()
+                        item.name = bone.name
 
-                    self.report({'INFO'}, f"Selected bone chain: {bone_chain}")
+                    self.report({'INFO'}, f"Selected source bone chain: {[bone.name for bone in context.scene.source_bone_chain]}")
                     return {'FINISHED'}
                 else:
                     self.report({'WARNING'}, "No bones selected.")
@@ -428,10 +431,13 @@ class OBJECT_OT_select_target_bone_chain(bpy.types.Operator):
                 selected_bones = context.selected_pose_bones
 
                 if selected_bones:
-                    bone_chain = [bone.name for bone in selected_bones]
-                    context.scene.target_bone_chain = bone_chain
+                    context.scene.target_bone_chain.clear()
+                    
+                    for bone in selected_bones:
+                        item = context.scene.target_bone_chain.add()
+                        item.name = bone.name
 
-                    self.report({'INFO'}, f"Selected bone chain: {bone_chain}")
+                    self.report({'INFO'}, f"Selected target bone chain: {[bone.name for bone in context.scene.target_bone_chain]}")
                     return {'FINISHED'}
                 else:
                     self.report({'WARNING'}, "No bones selected.")
