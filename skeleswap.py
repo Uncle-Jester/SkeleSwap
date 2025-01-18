@@ -5,7 +5,7 @@ import json
 from .utils import match_pose_bone_head_pos, match_edit_bone_pos, get_foot_z_location, add_copy_location_constraint, add_copy_rotation_constraint, apply_bone_constraints, copy_bone_between_skeletons, rename_bone # bone transform utils imports
 from .utils import link_animation, set_frame_to, convert_animation_to_shapekeys # facial animation utils imports
 from .utils import get_json_property, debug_print
-from .utils import duplicate_mesh, delete_mesh, copy_shapekeys, delete_all_shapekeys, create_basis_shape_key, rename_mesh, add_decimate_modifier, transfer_weights # mesh utils imports
+from .utils import duplicate_mesh, delete_mesh, copy_shapekeys, delete_all_shapekeys, create_basis_shape_key, rename_mesh, add_decimate_modifier, transfer_weights, transfer_weights_for_specific_bones # mesh utils imports
 from .utils import delete_armature, parent_armature, scale_selected_armature_with_child_meshes, apply_armature, apply_pose_as_rest_pose
 from .utils import delete_collection
 
@@ -572,7 +572,11 @@ class OBJECT_OT_replace_skeleton(bpy.types.Operator):
     def execute(self, context):
         source_armature = context.scene.source_armature
         target_armature = context.scene.target_armature
+        skeleswap_props = context.scene.skeleswap_props
+        template_config = get_template_config_contents(context.scene)
+
         bpy.ops.object.mode_set(mode='OBJECT')
+        
         if not target_armature:
             self.report({'WARNING'}, f"No Target Armature, please select a target armature")
             return {'CANCELLED'}
@@ -580,20 +584,61 @@ class OBJECT_OT_replace_skeleton(bpy.types.Operator):
             self.report({'WARNING'}, f"No Source Armature, please select a source armature")
             return {'CANCELLED'}
 
+        
+        if not template_config:
+            self.report({'WARNING'}, "Template is invalid, please select a template")
+            return {'CANCELLED'}
+
+        BONE_MAPPING = template_config.get("bone_mapping")
+        if not BONE_MAPPING:
+            debug_print(f"MainPanel-ReplaceSkeleton-Execute: Template Config: {template_config}")
+            self.report({'WARNING'}, "Bone mapping in the template is invalid. Make sure the template is set up properly")
+            return {'CANCELLED'}
+
+
         source_mesh = [child for child in source_armature.children if child.type == 'MESH'][0] # TBD error handling
         target_mesh = [child for child in target_armature.children if child.type == 'MESH'][0]
 
+        if not target_mesh:
+            self.report({'WARNING'}, f"No Target Mesh")
+            return {'CANCELLED'}
+        if not source_mesh:
+            self.report({'WARNING'}, f"No Source Mesh")
+            return {'CANCELLED'}
+
+        unmapped_bones = []
+        for bone in target_armature.pose.bones:
+            target_bone = BONE_MAPPING.get(bone.name)
+            if not target_bone:
+                unmapped_bones.append(bone.name)
+
+        if context.scene.target_is_epic_skeleton:
+            unmapped_bones.extend(["spine_01", "spine_02", "spine_03", "spine_04", "spine_05"])
         if source_mesh and target_mesh:
             try:
-                duplicated_mesh = duplicate_mesh(source_mesh)
-                apply_pose_as_rest_pose(target_armature)
-                delete_all_shapekeys(source_mesh)
-                apply_armature(source_mesh, source_armature)
-                delete_armature(source_armature)
-                parent_armature(source_mesh, target_armature)
-                copy_shapekeys(duplicated_mesh, source_mesh)
-                delete_mesh(duplicated_mesh)
-                delete_mesh(target_mesh)
+                if skeleswap_props.has_facial_animations:
+                    duplicated_mesh = duplicate_mesh(source_mesh)
+                    apply_armature(target_mesh, target_armature)
+                    apply_pose_as_rest_pose(target_armature)
+                    delete_all_shapekeys(source_mesh)
+                    transfer_weights_for_specific_bones(unmapped_bones, source_mesh, target_mesh)
+                    delete_armature(source_armature)
+                    parent_armature(target_mesh, target_armature)
+                    parent_armature(source_mesh, target_armature)
+                    apply_armature(source_mesh, source_armature)
+                    copy_shapekeys(duplicated_mesh, source_mesh)
+                    delete_mesh(duplicated_mesh)
+                    delete_mesh(target_mesh)
+                else:
+                    apply_armature(target_mesh, target_armature)
+                    apply_pose_as_rest_pose(target_armature)
+                    delete_all_shapekeys(source_mesh)
+                    apply_armature(source_mesh, source_armature)
+                    delete_armature(source_armature)
+                    parent_armature(target_mesh, target_armature)
+                    parent_armature(source_mesh, target_armature)
+                    transfer_weights_for_specific_bones(unmapped_bones, source_mesh, target_mesh)
+                    delete_mesh(target_mesh)
             except Exception as e:
                 self.report({'ERROR'}, f"Couldn't replace skeleton. Error: {e}")
                 debug_print(f"Couldn't replace skeleton. Error: {e}")

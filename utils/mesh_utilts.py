@@ -50,7 +50,8 @@ def copy_shapekeys(source_mesh, target_mesh):
         raise ValueError("Target object is not a valid mesh.")
     
     if not source_mesh.data.shape_keys or not source_mesh.data.shape_keys.key_blocks:
-        raise ValueError("Source mesh has no shapekeys to copy.")
+        print("Source mesh has no shapekeys to copy.")
+        return
     
     if not target_mesh.data.shape_keys:
         bpy.context.view_layer.objects.active = target_mesh
@@ -96,3 +97,38 @@ def transfer_weights(base_mesh, target_mesh):
                 for group in vert.groups:
                     if group.group == vgroup.index:
                         target_vgroup.add([vert.index], group.weight, 'REPLACE')
+
+
+def transfer_weights_for_specific_bones(bone_names, source_mesh, target_mesh):
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.context.view_layer.objects.active = source_mesh
+    bpy.ops.object.select_all(action='DESELECT')
+    target_mesh.select_set(True)
+    source_mesh.select_set(True)
+
+    bpy.ops.object.mode_set(mode='WEIGHT_PAINT')
+
+    for bone_name in bone_names:
+        if bone_name not in source_mesh.vertex_groups and target_mesh.vertex_groups.get(bone_name):
+            print(f"creating vertex group: {bone_name}")
+            source_mesh.vertex_groups.new(name=bone_name)
+
+        bpy.context.view_layer.objects.active = target_mesh
+        if target_mesh.vertex_groups.get(bone_name):
+            bpy.context.object.vertex_groups.active = target_mesh.vertex_groups[bone_name]
+       
+        else:
+            continue
+        
+        bpy.ops.object.data_transfer(
+            use_create=True,
+            data_type='VGROUP_WEIGHTS',
+            vert_mapping='NEAREST',
+            layers_select_src='ALL',
+            layers_select_dst='NAME',
+            mix_mode='REPLACE'
+        )
+    
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    print("Weight transfer complete.")

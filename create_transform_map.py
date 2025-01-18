@@ -201,7 +201,7 @@ def add_transform(context, target_bone_name, source_bone_name, global_axis, axis
         new_transform = scene.transform_list.add()
         new_transform.transform_type = transform_type
         new_transform.set_data(revert_data, 'revert_data')
-        new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_chain": target_chain, "source_chain":source_chain}, 'transform_details')
+        new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_chain": target_chain, "source_chain": source_chain}, 'transform_details')
         new_transform.name = f"Match Edit Bone Chain Scale. target chain: {target_chain}"
     else:
         raise ValueError(f"In CreateTransformMap-AddTransform: Invalid transform type: {transform_type}")
@@ -406,7 +406,7 @@ class OBJECT_OT_select_source_bone_chain(bpy.types.Operator):
                     for bone in selected_bones:
                         item = context.scene.source_bone_chain.add()
                         item.name = bone.name
-
+                    context.scene.source_armature_indicator = 'S' if selected_object.name == context.scene.source_armature.name else 'T'
                     self.report({'INFO'}, f"Selected source bone chain: {[bone.name for bone in context.scene.source_bone_chain]}")
                     return {'FINISHED'}
                 else:
@@ -436,7 +436,7 @@ class OBJECT_OT_select_target_bone_chain(bpy.types.Operator):
                     for bone in selected_bones:
                         item = context.scene.target_bone_chain.add()
                         item.name = bone.name
-
+                    context.scene.target_armature_indicator = 'T' if selected_object.name == context.scene.target_armature.name else 'S'
                     self.report({'INFO'}, f"Selected target bone chain: {[bone.name for bone in context.scene.target_bone_chain]}")
                     return {'FINISHED'}
                 else:
@@ -550,7 +550,7 @@ def create_bone_transform_json(scene):
 
 class OBJECT_OT_export_bone_transform(bpy.types.Operator):
     bl_idname = "object.export_bone_transform"
-    bl_label = "Export Bone Mapping"
+    bl_label = "Export Bone Transforms"
 
     filepath: bpy.props.StringProperty(subtype="FILE_PATH", default="bone_transforms.json") # type: ignore
 

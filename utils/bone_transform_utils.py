@@ -426,7 +426,7 @@ def match_edit_bone_chain_scale(target_armature, source_armature, target_chain, 
     bpy.context.view_layer.objects.active = source_armature
     bpy.ops.object.mode_set(mode='EDIT')
     source_edit_bones = source_armature.data.edit_bones
-
+    debug_print(f"BoneTransformUtils-MatchEditBoneChainScale: Target Armature: {target_armature.name} \n Source Armature: {source_armature.name} \n Target Bone Chain: {target_chain} \n Source Bone Chain: {source_chain}")
     if not all(bone_name in source_edit_bones for bone_name in source_chain):
         raise ValueError("One or more bones in source_chain are not found in the source_armature.")
 
