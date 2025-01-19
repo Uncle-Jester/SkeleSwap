@@ -373,8 +373,9 @@ class OBJECT_OT_select_source_bone(bpy.types.Operator):
                         context.scene.selected_target_bone = paired_target_bone if paired_target_bone else selected_target_bone
                         if context.scene.selected_target_bone:
                             context.scene.target_armature_indicator = 'T' if selected_object.name != context.scene.target_armature.name else 'S' # this is a terrible way to do it i hate it but i am tired...alas
-                    
                     return {'FINISHED'}
+                return {'FINISHED'}
+        self.report({'WARNING'}, f"Something went wrong when trying to select source bone. Make sure you are in pose mode and selecting a bone")
         return {'CANCELLED'}
 
 class OBJECT_OT_select_target_bone(bpy.types.Operator):
@@ -397,7 +398,9 @@ class OBJECT_OT_select_target_bone(bpy.types.Operator):
                         context.scene.selected_source_bone = paired_source_bone if paired_source_bone else ""
                         if context.scene.selected_source_bone:
                             context.scene.source_armature_indicator = 'S' if selected_object.name != context.scene.source_armature.name else 'T'
-                    return {'CANCELLED'}
+                    return {'FINISHED'}
+                return {'FINISHED'}
+        self.report({'WARNING'}, f"Something went wrong when trying to select target bone. Make sure you are in pose mode and selecting a bone")
         return {'CANCELLED'}
 
 class OBJECT_OT_select_source_bone_chain(bpy.types.Operator):
@@ -543,9 +546,14 @@ class OBJECT_OT_assign_color_to_armatures(bpy.types.Operator):
         armature1 = context.scene.source_armature
         armature2 = context.scene.target_armature
         if armature1 and armature2:
-            debug_print('CreateTransformMap-AssignColorToArmatures: Assigning colors')
-            assign_bone_color_to_armature(armature1, (1,95,100))
-            assign_bone_color_to_armature(armature2, (115,30,0))
+            try:
+                debug_print('CreateTransformMap-AssignColorToArmatures: Assigning colors')
+                assign_bone_color_to_armature(armature1, (1,95,100))
+                assign_bone_color_to_armature(armature2, (115,30,0))
+            except Exception as e:
+                self.report({'WARNING'}, f"Couldn't assign color to armatures. Error: {e}")
+        else:
+            self.report({'WARNING'}, f"Make sure you have both target and source armature selected before assigning color to armatures.")
         return {'FINISHED'}
 
 
@@ -580,7 +588,7 @@ class OBJECT_OT_export_bone_transform(bpy.types.Operator):
             self.report({'INFO'}, f"Bone transform list exported to {file_path}")
         except Exception as e:
             self.report({'ERROR'}, f"Failed to export bone transform list {e}")
-
+            return {"CANCELLED"}
         return {'FINISHED'}
 
     def invoke(self, context, event):
