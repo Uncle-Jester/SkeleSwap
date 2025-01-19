@@ -33,4 +33,4 @@ def delete_collection(collection_or_child):
 
         bpy.data.collections.remove(collection)
     except Exception as e:
-        raise Exception(f"In BlendOperationUtils-DeleteCollection: Couldn't delete collection. Error: {e}")
+       raise RuntimeError(f"In BlendOperationUtils-DeleteCollection: Couldn't delete collection. Error: {e}")
