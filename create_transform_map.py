@@ -736,8 +736,8 @@ def register():
             ('match_pose_bone_head_pos', "Match POSE Bone Head Position", "Match Pose Bone Head Position"),
             ('match_pose_bone_orientation', "Match POSE Bone Orientation", "Match Pose Bone Orientation"),
             ('chain_pose_bone_position', "Chain POSE Bone", "Chain Bone"),
-            ('scale_bone', "Scale Bone", "Scale Bone"),
-            ('rotate_bone', "Rotate Bone", "Rotate Bone"),
+            ('scale_bone', "Scale POSE Bone", "Scale Bone"),
+            ('rotate_bone', "Rotate POSE Bone", "Rotate Bone"),
             ('match_edit_bone_pos', "Match EDIT Bone Head Position", "Match Edit Bone Head Position"),
             ('match_edit_bone_z_location', "Match EDIT Bone Z Position", "Match Edit Bone Z Position"),
             ('match_edit_bone_chain_scale', "Match EDIT Bone Chain Scale", "Match Edit Bone Chain Scale")
