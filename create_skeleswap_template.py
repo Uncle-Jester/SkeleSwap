@@ -41,6 +41,38 @@ def transform_map_t_update_callback(self, context):
 def create_template_json(props):
     return props.get_data()
 
+class OBJECT_PT_create_template_panel(bpy.types.Panel):
+    bl_label = "Create SkeleSwap Template"
+    bl_idname = "OBJECT_PT_create_template_panel"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Create SkeleSwap Template"
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        create_template_properties = scene.create_template_properties
+        
+        row = layout.row()
+        row.label(text="Template Name")
+        row.prop(create_template_properties, "template_name")
+
+
+        row = layout.row(align=True)
+        row.prop(create_template_properties, "selected_bone_mapping")  
+        row = layout.row(align=True)
+        row.prop(create_template_properties, "selected_transform_map")
+
+        row = layout.row(align=True)
+        sub_row = row.row(align=True)
+        sub_row.prop(create_template_properties, "target_is_epic_skeleton")
+        sub_row.prop(create_template_properties, "has_facial_animations")
+        if create_template_properties.has_facial_animations:
+            sub_row.prop(create_template_properties, "has_separate_face_rig")
+
+        row = layout.row()
+        row.label(text="Save Template")
+        row.operator("object.save_template", text="Save Template")
 
 class OBJECT_OT_select_T_bone_mapping(bpy.types.Operator):
     bl_idname = "object.select_t_bone_mapping"
@@ -122,6 +154,7 @@ class CreateTemplateProperties(bpy.types.PropertyGroup):
         items=lambda self, context: [(option, option, "") for option in get_transform_map_options()],
         update=transform_map_t_update_callback
     ) # type: ignore
+    
     def get_enum_value(self, prop_name):
         prop = getattr(self, prop_name)
         for item in self.bl_rna.properties[prop_name].enum_items:
@@ -138,42 +171,6 @@ class CreateTemplateProperties(bpy.types.PropertyGroup):
             "has_facial_animations": bool(self.has_facial_animations),
             "has_separate_face_rig": bool(self.has_separate_face_rig)
         }
-
-
-
-class OBJECT_PT_create_template_panel(bpy.types.Panel):
-    bl_label = "Create SkeleSwap Template"
-    bl_idname = "OBJECT_PT_create_template_panel"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "Create SkeleSwap Template"
-
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-        create_template_properties = scene.create_template_properties
-        
-        row = layout.row()
-        row.label(text="Template Name")
-        row.prop(create_template_properties, "template_name")
-
-
-        row = layout.row(align=True)
-        row.prop(create_template_properties, "selected_bone_mapping")  
-        row = layout.row(align=True)
-        row.prop(create_template_properties, "selected_transform_map")
-
-        row = layout.row(align=True)
-        sub_row = row.row(align=True)
-        sub_row.prop(create_template_properties, "target_is_epic_skeleton")
-        sub_row.prop(create_template_properties, "has_facial_animations")
-        if create_template_properties.has_facial_animations:
-            sub_row.prop(create_template_properties, "has_separate_face_rig")
-
-        row = layout.row()
-        row.label(text="Save Template")
-        row.operator("object.save_template", text="Save Template")
-
 
 def register():
     bpy.utils.register_class(CreateTemplateProperties)
