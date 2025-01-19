@@ -26,9 +26,6 @@ def link_animation(armature, file_path_for_action, action_name):
             
             if action.library:
                 action.make_local()
-                print({'INFO'}, f"Action '{action_name}' is now local.")
-            else:
-                print({'INFO'}, f"Action '{action_name}' is already local.")
             
             action.library = None
             print({'INFO'}, f"Library unlinked from action: {action_name}")
@@ -36,7 +33,7 @@ def link_animation(armature, file_path_for_action, action_name):
             raise NameError(f"Action '{action_name}' not found in the .blend file.")
     
     except Exception as e:
-        print(e)
+        print(f"An Error occured when trying to link animation. Error: {e}")
         return {'CANCELLED'}
     
 def set_frame_to(frame):
@@ -45,7 +42,6 @@ def set_frame_to(frame):
 def convert_frame_to_shapekey(mesh, frame, name_of_shapekey):
     set_frame_to(frame)
     bpy.ops.object.join_shapes()
-    # bpy.ops.object.shape_key_add(from_mix=False)
 
     new_shapekey = mesh.data.shape_keys.key_blocks[-1]
     new_shapekey.name = name_of_shapekey

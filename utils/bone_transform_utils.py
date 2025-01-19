@@ -74,46 +74,6 @@ def rotate_bone(armature, bone_name, axis, degrees, globalAxis=False, mirror=Fal
             mirror = False
     return {"axis": axis, "degrees": degrees*-1, "bone_name": bone_name, "armature": armature, "mirror": mirror, "global_axis": globalAxis}
 
-def spread_bones(target_armature, source_armature, source_bone_range, target_bone_range): # DONT USE, DOESNT WORK. TBD: Fix it 
-    try:
-
-        if not source_armature or not target_armature:
-            raise ValueError(f"Armature not found.")
-
-        source_bones = [source_armature.pose.bones.get(b) for b in source_bone_range]
-        if None in source_bones:
-            raise ValueError(f"One or more bones in source_bone_range '{source_bone_range}' do not exist in armature '{source_armature}'.")
-
-
-        target_bones = [target_armature.pose.bones.get(b) for b in target_bone_range]
-        if None in target_bones:
-            raise ValueError(f"One or more bones in target_bone_range '{target_bone_range}' do not exist in armature '{target_armature}'.")
-
-        source_head = source_bones[0].head
-        source_tail = source_bones[-1].tail
-        source_distance = (source_tail - source_head).length
-
-        target_positions = [bone.head.copy() for bone in target_bones]
-        target_total_distance = (target_positions[-1] - target_positions[0]).length
-        relative_offsets = [(pos - target_positions[0]).length / target_total_distance for pos in target_positions]
-
-        new_positions = []
-        for ratio in relative_offsets:
-            new_position = target_positions[0] + (source_distance * ratio) * (target_positions[-1] - target_positions[0]).normalized()
-            new_positions.append(new_position)
-
-        for bone, new_position in zip(target_bones, new_positions):
-            bone.location = new_position - bone.head
-
-
-        for bone, pos in zip(target_bones, new_positions):
-            print(f"Bone '{bone.name}' -> New Position: {pos}")
-
-    except Exception as e:
-        print(f"Error in spread_bones: {e}")
-        raise
-
-
 def match_edit_bone_pos(target_armature, source_armature, target_bone_name, source_bone_name):
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.context.view_layer.objects.active = source_armature
@@ -219,7 +179,7 @@ def match_edit_bone_z_location(target_armature, source_armature, target_bone_nam
 
 def chain_pose_bone_position(armature, bone_to_move, bone_to_move_to):
     if armature.type != 'ARMATURE':
-        print("object must be armatures.")
+        debug_print("object must be armatures.")
         raise ValueError(f"In ChainPoseBones: Armature is not valid, please make sure to select the target armature")
 
     debug_print(f"BoneTransformUtils-ChainPoseBones: Bone to move: {bone_to_move}, Bone to move to: {bone_to_move_to}, Armature: {armature.name}")
@@ -240,28 +200,28 @@ def chain_pose_bone_position(armature, bone_to_move, bone_to_move_to):
 
 def get_bone_positions_from_armature(armature, bone_name):
     if not armature or armature.type != 'ARMATURE':
-        print(f"Armature '{armature.name}' not found or not valid.")
+        debug_print(f"Armature '{armature.name}' not found or not valid.")
         return None, None
 
     bone = armature.data.bones.get(bone_name)
     if not bone:
-        print(f"Bone '{bone_name}' not found in armature '{armature.name}'.")
+        debug_print(f"Bone '{bone_name}' not found in armature '{armature.name}'.")
         return None, None
 
     bone_head_world = armature.matrix_world @ bone.head_local
     bone_tail_world = armature.matrix_world @ bone.tail_local
     
-    print(f"location of the {bone_name}: {bone_head_world}")
+    debug_print(f"location of the {bone_name}: {bone_head_world}")
     return bone_head_world, bone_tail_world
 
 def move_pose_bone(armature, bone_name, new_head, foot_head_Z=None):
     if not armature or armature.type != 'ARMATURE':
-        print(f"Armature '{armature.name}' not found or not valid.")
+        debug_print(f"Armature '{armature.name}' not found or not valid.")
         return
 
     pose_bone = armature.pose.bones.get(bone_name)
     if not pose_bone:
-        print(f"Pose bone '{bone_name}' not found in armature '{armature.name}'.")
+        debug_print(f"Pose bone '{bone_name}' not found in armature '{armature.name}'.")
         return
 
     if bpy.context.object.mode != 'POSE':
@@ -270,16 +230,16 @@ def move_pose_bone(armature, bone_name, new_head, foot_head_Z=None):
     remove_connected_relation(armature, bone_name)
     
     if "foot" in bone_name and foot_head_Z is not None:
-        print(f'moving foot from {pose_bone.head}, to {new_head}')
+        debug_print(f'moving foot from {pose_bone.head}, to {new_head}')
         translation_vector = new_head - pose_bone.head
         translation_vector.z = foot_head_Z - pose_bone.head.z
         translation_matrix = Matrix.Translation(translation_vector)
         pose_bone.matrix = translation_matrix @ pose_bone.matrix
-        print(f"{bone_name} is now at {pose_bone.matrix}")
+        debug_print(f"{bone_name} is now at {pose_bone.matrix}")
 
 
     else:
-        print(f'Moving bone, {bone_name}, from {pose_bone.head}, to {new_head}')
+        debug_print(f'Moving bone, {bone_name}, from {pose_bone.head}, to {new_head}')
         translation_matrix = Matrix.Translation(new_head - pose_bone.head)
         pose_bone.matrix = translation_matrix @ pose_bone.matrix
 
@@ -294,12 +254,12 @@ def match_pose_bone_orientation(target_armature, source_armature, target_bone_na
     source_bone = source_armature.pose.bones.get(source_bone_name)
 
     if not target_bone or not source_bone:
-        print(f"Bone {target_bone_name} or {source_bone_name} not found in the respective armatures.")
+        debug_print(f"Bone {target_bone_name} or {source_bone_name} not found in the respective armatures.")
         return
 
 
     if target_bone.constraints:
-        print(f"Warning: {target_bone_name} has constraints, which may prevent proper alignment.")
+        debug_print(f"Warning: {target_bone_name} has constraints, which may prevent proper alignment.")
 
     source_head_world = source_armature.matrix_world @ source_bone.head
     source_tail_world = source_armature.matrix_world @ source_bone.tail
@@ -314,7 +274,7 @@ def match_pose_bone_orientation(target_armature, source_armature, target_bone_na
     
     orient_bone(target_armature, target_bone_name, source_direction)
 
-    print(f"Aligned {target_bone_name} to {source_bone_name} successfully.")
+    debug_print(f"Aligned {target_bone_name} to {source_bone_name} successfully.")
     return {"orientation": target_direction, "armature": target_armature, "bone_name": target_bone_name} # This is the original direction of the bone, it can be used later to revert the orientation back to the original
 
 def orient_bone(armature, bone_name, orientation):
@@ -342,12 +302,12 @@ def orient_bone(armature, bone_name, orientation):
 
 def scale_pose_bone(armature, bone_name, scale_value, axis=None, global_axis=False): #TBD Implement Mirror
     if not armature or armature.type != 'ARMATURE':
-        print(f"Armature '{armature.name}' not found or not valid.")
+        debug_print(f"Armature '{armature.name}' not found or not valid.")
         return
 
     pose_bone = armature.pose.bones.get(bone_name)
     if not pose_bone:
-        print(f"Pose bone '{bone_name}' not found in armature '{armature.name}'.")
+        debug_print(f"Pose bone '{bone_name}' not found in armature '{armature.name}'.")
         return
 
     bpy.context.view_layer.objects.active = armature
@@ -362,7 +322,7 @@ def scale_pose_bone(armature, bone_name, scale_value, axis=None, global_axis=Fal
         bpy.ops.transform.resize(value=(scale_value, scale_value, scale_value), constraint_axis=(False, False, False))
     else:
         if axis not in ["X", "Y", "Z"]:
-            print(f"Invalid scale axis '{axis}' for {bone_name}.")
+            debug_print(f"Invalid scale axis '{axis}' for {bone_name}.")
             return
 
         constraint_axis = (axis == "X", axis == "Y", axis == "Z")
@@ -417,7 +377,7 @@ def copy_bone_between_skeletons(source_armature, target_armature, bone_name, bon
 
     bpy.ops.object.mode_set(mode='OBJECT')
 
-    print(f"Reparented bone '{bone_name}' to '{bone_to_parent_to}' in the target armature.")
+    debug_print(f"Reparented bone '{bone_name}' to '{bone_to_parent_to}' in the target armature.")
 
 
 def match_edit_bone_chain_scale(target_armature, source_armature, target_chain, source_chain, onZAxis=False):

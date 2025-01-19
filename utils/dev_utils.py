@@ -27,15 +27,12 @@ def open_json(file_path):
 def get_json_property(file_path, property):
     try:
         json_data = open_json(file_path)
-        print(f"json_data_get({property}): json_data.get(property)")
         return json_data.get(property)
     except Exception as e:
         print(f"An error occurred while reading the json file. Error: {e}")
         return {'CANCELLED'}
     
 def assign_bone_color_to_armature(armature_object, rgb_color):
-    print('assigning color to the armature')
-    
     if armature_object.type != 'ARMATURE':
         print("The provided object is not an armature!")
         return

@@ -1,4 +1,5 @@
 import bpy # type: ignore
+from .dev_utils import debug_print
 
 def duplicate_mesh(mesh_to_duplicate):
     if not mesh_to_duplicate or mesh_to_duplicate.type != 'MESH':
@@ -28,19 +29,19 @@ def delete_all_shapekeys(mesh):
         keys = mesh.data.shape_keys.key_blocks
         for key in list(keys):
             mesh.shape_key_remove(key)
-        print("Deleted all shapekeys.")
+        debug_print("Deleted all shapekeys.")
     else:
-        print("No shapekeys found.")
+        debug_print("No shapekeys found.")
 
 def create_basis_shape_key(mesh):
     if not mesh.data.shape_keys:
         mesh.shape_key_add(name="Basis")
-        print("Created 'Basis' shape key.")
+        debug_print("Created 'Basis' shape key.")
     elif "Basis" not in mesh.data.shape_keys.key_blocks or "basis" not in mesh.data.shape_keys.key_blocks:
         mesh.shape_key_add(name="Basis")
-        print("Added 'Basis' shape key.")
+        debug_print("Added 'Basis' shape key.")
     else:
-        print("'Basis' shape key already exists.")
+        debug_print("'Basis' shape key already exists.")
 
 
 def copy_shapekeys(source_mesh, target_mesh):
@@ -50,7 +51,7 @@ def copy_shapekeys(source_mesh, target_mesh):
         raise ValueError("Target object is not a valid mesh.")
     
     if not source_mesh.data.shape_keys or not source_mesh.data.shape_keys.key_blocks:
-        print("Source mesh has no shapekeys to copy.")
+        debug_print("Source mesh has no shapekeys to copy.")
         return
     
     if not target_mesh.data.shape_keys:
@@ -68,7 +69,7 @@ def copy_shapekeys(source_mesh, target_mesh):
             "co", [co for vertex in shape_key.data for co in vertex.co]
         )
     
-    print(f"Copied {len(source_mesh.data.shape_keys.key_blocks) - 1} shapekeys to target mesh.")
+    debug_print(f"Copied {len(source_mesh.data.shape_keys.key_blocks) - 1} shapekeys to target mesh.")
 
 
 def rename_mesh(mesh_object, new_name):
@@ -110,7 +111,7 @@ def transfer_weights_for_specific_bones(bone_names, source_mesh, target_mesh):
 
     for bone_name in bone_names:
         if bone_name not in source_mesh.vertex_groups and target_mesh.vertex_groups.get(bone_name):
-            print(f"creating vertex group: {bone_name}")
+            debug_print(f"creating vertex group: {bone_name}")
             source_mesh.vertex_groups.new(name=bone_name)
 
         bpy.context.view_layer.objects.active = target_mesh
@@ -131,4 +132,4 @@ def transfer_weights_for_specific_bones(bone_names, source_mesh, target_mesh):
     
     bpy.ops.object.mode_set(mode='OBJECT')
 
-    print("Weight transfer complete.")
+    debug_print("Weight transfer complete.")

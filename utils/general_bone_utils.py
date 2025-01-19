@@ -22,7 +22,6 @@ def find_mirror_bone_name(armature, bone_name):
         bpy.ops.object.mode_set(mode='EDIT')
     
     bpy.ops.armature.select_all(action='DESELECT')
-    print(armature.data.edit_bones)
     if bone_name in armature.data.edit_bones:
         armature.data.edit_bones[bone_name].select = True
         bpy.context.object.data.edit_bones.active = armature.data.edit_bones[bone_name]
@@ -34,18 +33,15 @@ def find_mirror_bone_name(armature, bone_name):
         
         mirrored_bone_name = None
         for bone in armature.data.edit_bones:
-            print(f"check: {bone.name}: {bone.select}")
             if bone.select:
-                print(f"passed, {bone.name}")
                 mirrored_bone_name = bone.name
                 break
         
         if mirrored_bone_name:
-            print(mirrored_bone_name)
             bpy.ops.object.mode_set(mode='POSE')
             return mirrored_bone_name
     else:
-        print(f"Bone, {bone_name} was not in the bone list: {armature.data.edit_bones}")
+        debug_print(f"Bone, {bone_name} was not in the bone list: {armature.data.edit_bones}")
     
     bpy.context.view_layer.objects.active = armature
     if bpy.context.object.mode != 'EDIT':
@@ -57,7 +53,7 @@ def find_mirror_bone_name(armature, bone_name):
         return None
 
     if mirrored_bone_name:
-        print(f"Mirrored bone for '{bone_name}' is '{mirrored_bone_name}'")
+        debug_print(f"Mirrored bone for '{bone_name}' is '{mirrored_bone_name}'")
     else:
         debug_print(f"GeneralBoneUtils-FindMirrorBoneName: No mirrored bone found for '{bone_name}' using blenders inbuilt mirror bone finder. Trying simple side_indicator_swap")
         side_indicator = find_side_indicator_in_bone_name(bone_name, side_indicator_list)
@@ -114,13 +110,13 @@ def add_copy_location_constraint(armature, bone_to_constraint, bone_to_constrain
 
     bone = armature.pose.bones.get(bone_to_constraint)
     if not bone:
-        print(f"Bone '{bone_to_constraint}' not found.")
+        debug_print(f"Bone '{bone_to_constraint}' not found.")
         return
 
     constraint = bone.constraints.new(type='COPY_LOCATION')
     constraint.target = armature
     constraint.subtarget = bone_to_constraint_to
-    print(f"Added Copy Location constraint to '{bone_to_constraint}' targeting '{bone_to_constraint_to}'.")
+    debug_print(f"Added Copy Location constraint to '{bone_to_constraint}' targeting '{bone_to_constraint_to}'.")
 
 
 def add_copy_rotation_constraint(armature, bone_to_constraint, bone_to_constraint_to):
@@ -129,13 +125,13 @@ def add_copy_rotation_constraint(armature, bone_to_constraint, bone_to_constrain
 
     bone = armature.pose.bones.get(bone_to_constraint)
     if not bone:
-        print(f"Bone '{bone_to_constraint}' not found.")
+        debug_print(f"Bone '{bone_to_constraint}' not found.")
         return
 
     constraint = bone.constraints.new(type='COPY_ROTATION')
     constraint.target = armature
     constraint.subtarget = bone_to_constraint_to
-    print(f"Added Copy Rotation constraint to '{bone_to_constraint}' targeting '{bone_to_constraint_to}'.")
+    debug_print(f"Added Copy Rotation constraint to '{bone_to_constraint}' targeting '{bone_to_constraint_to}'.")
 
 def apply_bone_constraints(armature):
     bpy.context.view_layer.objects.active = armature
@@ -150,7 +146,6 @@ def apply_bone_constraints(armature):
         clear_constraints=True, 
         use_current_action=True
     )
-    print("Constraints applied and baked into the pose.")
 
 def rename_bone(armature, bone_name, new_name):
 
@@ -165,6 +160,5 @@ def rename_bone(armature, bone_name, new_name):
         raise ValueError(f"Bone '{bone_name}' not found in armature.")
 
     edit_bone.name = new_name
-    print(f"Renamed bone '{bone_name}' to '{new_name}'.")
 
     bpy.ops.object.mode_set(mode='OBJECT')
