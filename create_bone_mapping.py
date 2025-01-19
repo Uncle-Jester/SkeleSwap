@@ -65,19 +65,6 @@ class BonePairItem(bpy.types.PropertyGroup):
     target_bone_name: bpy.props.StringProperty(name="Target Bone") # type: ignore
     source_bone_name: bpy.props.StringProperty(name="Source Bone") # type: ignore
 
-
-class OBJECT_OT_add_bone_pair(bpy.types.Operator):
-    bl_idname = "object.add_bone_pair"
-    bl_label = "Add Transform"
-
-    def execute(self, context):
-        scene = context.scene
-
-        new_item = scene.bone_pair_list.add()
-        new_item.target_bone_name = ""
-        new_item.source_bone_name = ""
-        return {'FINISHED'}
-
 class OBJECT_UL_bone_pair_list(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         scene = context.scene
@@ -94,6 +81,19 @@ class OBJECT_UL_bone_pair_list(bpy.types.UIList):
             sub_row.prop_search(item, "source_bone_name", armature_source.data, "bones", text="")
             sub_row.operator("object.set_source_bone", text="", icon='EYEDROPPER').index = index
             row.operator("object.remove_bone_pair_from_list", text="", icon='X', emboss=False).index = index
+
+
+class OBJECT_OT_add_bone_pair(bpy.types.Operator):
+    bl_idname = "object.add_bone_pair"
+    bl_label = "Add Transform"
+
+    def execute(self, context):
+        scene = context.scene
+
+        new_item = scene.bone_pair_list.add()
+        new_item.target_bone_name = ""
+        new_item.source_bone_name = ""
+        return {'FINISHED'}
 
 
 class OBJECT_OT_remove_bone_pair_from_list(bpy.types.Operator):
@@ -237,7 +237,7 @@ class OBJECT_OT_export_bone_mapping(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        file_name = f"{context.scene.input_text}.json" or "bone_mappings.json"
+        file_name = f"{context.scene.input_text}" or "bone_mappings.json"
         self.filepath = bpy.path.abspath(f"//{file_name}")
 
         context.window_manager.fileselect_add(self)
@@ -273,6 +273,7 @@ class OBJECT_OT_save_bone_mapping(bpy.types.Operator):
             self.report({'INFO'}, f"Bone mapping saved to {json_file_path} under '{property_name}'")
         except Exception as e:
             self.report({'ERROR'}, f"Failed to save bone mapping: {e}")
+            return {'CANCELLED'}
 
         return {'FINISHED'}
 
@@ -301,6 +302,7 @@ class OBJECT_OT_load_bone_mapping(bpy.types.Operator):
             self.report({'INFO'}, f"Bone mapping loaded from {self.filepath}")
         except Exception as e:
             self.report({'ERROR'}, f"Failed to load bone mapping: {e}")
+            return {"CANCELLED"}
 
         return {'FINISHED'}
 
