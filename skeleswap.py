@@ -514,7 +514,7 @@ class OBJECT_OT_remove_face_rig(bpy.types.Operator):
                     obj.select_set(True)
                     face_rig = obj
                     context.view_layer.objects.active = obj
-                    print(f"Selected armature: {obj.name}")
+                    debug_print(f"Selected armature: {obj.name}")
                     if(skeleswap_props.is_mb_to_epic):
                         delete_collection(face_rig)
                         self.report({'INFO'}, f"Deleted face rig and its collection")

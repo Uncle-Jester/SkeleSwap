@@ -2,6 +2,8 @@ import bpy # type: ignore
 import os
 import json
 
+from .utils import debug_print
+
 addon_dir = os.path.dirname(os.path.realpath(__file__))
 utils_dir = os.path.join(addon_dir, "utils")
 data_dir = os.path.join(utils_dir, "data")
@@ -52,7 +54,7 @@ class OBJECT_OT_select_T_bone_mapping(bpy.types.Operator):
     def execute(self, context):
         create_template_properties = context.scene.create_template_properties
         selected_mapping_name = create_template_properties.selected_bone_mapping
-        print(f"CreateTemplate: Selected bone mapping: {selected_mapping_name}")
+        debug_print(f"CreateTemplate: Selected bone mapping: {selected_mapping_name}")
         self.report({'INFO'}, f"CreateTemplate: Selected bone mapping: {selected_mapping_name}")
         return {'FINISHED'}
 
@@ -68,7 +70,7 @@ class OBJECT_OT_select_T_transform_map(bpy.types.Operator):
     def execute(self, context):
         create_template_properties = context.scene.create_template_properties
         selected_transform_map_name = create_template_properties.selected_bone_mapping
-        print(f"CreateTemplate: Selected Transform Map: {selected_transform_map_name}")
+        debug_print(f"CreateTemplate: Selected Transform Map: {selected_transform_map_name}")
         self.report({'INFO'}, f"CreateTemplate: Selected Transform Map: {selected_transform_map_name}")
         return {'FINISHED'}
 
@@ -88,7 +90,6 @@ class OBJECT_OT_save_template(bpy.types.Operator):
                     template = create_template_json(create_template_properties)
                     data = json.load(json_file)
                     data[property_name] = template
-                    print("template_to_be_created: ", template)
                     json_file.seek(0)
                     json.dump(data, json_file, indent=4)
                     json_file.truncate()
@@ -122,18 +123,13 @@ class CreateTemplateProperties(bpy.types.PropertyGroup):
         update=transform_map_t_update_callback
     ) # type: ignore
     def get_enum_value(self, prop_name):
-        print("in get enum value")
         prop = getattr(self, prop_name)
         for item in self.bl_rna.properties[prop_name].enum_items:
-            print(f"{item.value}  :  {item.name}")
             if item.value == prop:
                 return item.name
         return ""
 
     def get_data(self):
-        print("Getting Data")
-        print("bone_mapping: ", self.selected_bone_mapping,
-            "   transform_map: ", self.selected_transform_map)
         return {
             "option_name": self.template_name if self.template_name else None,
             "bone_mapping": self.selected_bone_mapping,

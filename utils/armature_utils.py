@@ -1,10 +1,7 @@
 import bpy # type: ignore
-
+from .dev_utils import debug_print
 
 def parent_armature(mesh, armature):
-    """
-    Parents the mesh to the armature using standard armature deform.
-    """
     bpy.context.view_layer.objects.active = mesh
     bpy.ops.object.select_all(action='DESELECT')
     mesh.select_set(True)
@@ -12,7 +9,7 @@ def parent_armature(mesh, armature):
     bpy.context.view_layer.objects.active = armature
 
     bpy.ops.object.parent_set(type='ARMATURE')
-    print(f"Parented mesh '{mesh.name}' to armature '{armature.name}'.")
+    debug_print(f"Parented mesh '{mesh.name}' to armature '{armature.name}'.")
 
 
 def apply_armature(mesh, armature):
@@ -20,7 +17,7 @@ def apply_armature(mesh, armature):
     Applies the armature modifier to the mesh only if it is parented to the armature.
     """
     if mesh.parent != armature:
-        print(f"Mesh '{mesh.name}' is not parented to the armature '{armature.name}'.")
+        debug_print(f"Mesh '{mesh.name}' is not parented to the armature '{armature.name}'.")
         return
 
     bpy.context.view_layer.objects.active = mesh
@@ -41,11 +38,11 @@ def clear_all_armatures(mesh):
 
     armature_modifiers = [mod for mod in mesh.modifiers if mod.type == 'ARMATURE']
     for mod in armature_modifiers:
-        print(f"Removing armature modifier: {mod.name} from {mesh.name}")
+        debug_print(f"Removing armature modifier: {mod.name} from {mesh.name}")
         mesh.modifiers.remove(mod)
 
     if mesh.parent and mesh.parent.type == 'ARMATURE':
-        print(f"Clearing parent armature: {mesh.parent.name} from {mesh.name}")
+        debug_print(f"Clearing parent armature: {mesh.parent.name} from {mesh.name}")
         mesh.parent = None
 
     print(f"All armatures cleared from {mesh.name}.")

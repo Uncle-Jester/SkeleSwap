@@ -148,7 +148,6 @@ def add_transform(context, target_bone_name, source_bone_name, global_axis, axis
     )
 
     foot_z_no_template = scene.create_transform_props.get_data()
-    print(f"foot_z_no_template: {foot_z_no_template}")
     new_transform = None
     if transform_type == 'rotate_bone':
         revert_data = rotate_bone(target_armature, target_bone_name, axis, transform_value, global_axis, mirror) # calls the function and saves the return value, which can be used to revert the changes
@@ -249,8 +248,11 @@ class OBJECT_OT_add_transform(bpy.types.Operator):
         mirror = scene.mirror
 
         transform_type = scene.transform_type
-        new_transform = add_transform(context, target_bone_name, source_bone_name, global_axis, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain)
-        
+        try:
+            new_transform = add_transform(context, target_bone_name, source_bone_name, global_axis, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain)
+        except Exception as e:
+            self.report({'WARNING'}, f"Something went wrong when trying to add transform. Try re-selecting the target and source bones, and make sure you have the correct armatures selected. Error: {e}")
+            return {'CANCELLED'}
         self.report({'INFO'}, f"{new_transform.name} added to the list")
         return {'FINISHED'}
 
@@ -275,71 +277,74 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
         revert_data = scene.transform_list[self.index].get_data("revert_data")
         if not revert_data:
            scene.transform_list.remove(self.index)
- 
-        if scene.transform_list[self.index].transform_type == "rotate_bone":
-            rotate_bone(
-                revert_data['armature'], 
-                revert_data['bone_name'], 
-                revert_data['axis'], 
-                revert_data['degrees'], 
-                revert_data['global_axis'], 
-                revert_data['mirror']
-            )
-            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted rotation for bone: {revert_data['bone_name']}")
-        elif scene.transform_list[self.index].transform_type == "scale_bone":
-            scale_pose_bone(
-                revert_data['armature'], 
-                revert_data['bone_name'], 
-                revert_data['scale_value'], 
-                revert_data['axis'], 
-                revert_data['global_axis']
-            )
-            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted scale for bone: {revert_data['bone_name']}")
-        elif scene.transform_list[self.index].transform_type == "match_pose_bone_head_pos":
-            move_pose_bone(
-                revert_data['armature'], 
-                revert_data['bone_name'], 
-                revert_data['previous_head_position'], 
-                revert_data['foot_z_location']
-            )
-            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted head position for bone: {revert_data['bone_name']}")
-        elif scene.transform_list[self.index].transform_type == "match_pose_bone_orientation":
-            orient_bone(
-                revert_data['armature'], 
-                revert_data['bone_name'], 
-                revert_data['orientation'], 
-            )
-            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted orientation for bone: {revert_data['bone_name']}")
-        elif scene.transform_list[self.index].transform_type == "chain_pose_bone_position":
-            move_pose_bone(
-                revert_data['armature'], 
-                revert_data['bone_name'], 
-                revert_data['previous_head_position']
-            )
-            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted orientation for bone: {revert_data['bone_name']}")
-        elif scene.transform_list[self.index].transform_type == "match_edit_bone_pos":
-            move_edit_bone(
-                revert_data['target_armature'], 
-                revert_data['target_bone_name'], 
-                revert_data['offset']
-            )
-            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted edit bone position for bone: {revert_data['target_bone_name']}")
-        elif scene.transform_list[self.index].transform_type == "match_edit_bone_z_location":
-            move_edit_bone(
-                revert_data['target_armature'], 
-                revert_data['target_bone_name'], 
-                revert_data['offset']
-            )
-            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted edit bone position for bone: {revert_data['target_bone_name']}")
-        elif scene.transform_list[self.index].transform_type == "match_edit_bone_chain_scale":
-            scale_edit_bone_chain(
-                revert_data['target_armature'], 
-                revert_data['target_chain'], 
-                revert_data['scale_factor']
-            )
-            debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted edit bone chain scale for the bone chain: {revert_data['target_chain']}")
-        else:
-            print('TBD')
+        try:
+            if scene.transform_list[self.index].transform_type == "rotate_bone":
+                rotate_bone(
+                    revert_data['armature'], 
+                    revert_data['bone_name'], 
+                    revert_data['axis'], 
+                    revert_data['degrees'], 
+                    revert_data['global_axis'], 
+                    revert_data['mirror']
+                )
+                debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted rotation for bone: {revert_data['bone_name']}")
+            elif scene.transform_list[self.index].transform_type == "scale_bone":
+                scale_pose_bone(
+                    revert_data['armature'], 
+                    revert_data['bone_name'], 
+                    revert_data['scale_value'], 
+                    revert_data['axis'], 
+                    revert_data['global_axis']
+                )
+                debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted scale for bone: {revert_data['bone_name']}")
+            elif scene.transform_list[self.index].transform_type == "match_pose_bone_head_pos":
+                move_pose_bone(
+                    revert_data['armature'], 
+                    revert_data['bone_name'], 
+                    revert_data['previous_head_position'], 
+                    revert_data['foot_z_location']
+                )
+                debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted head position for bone: {revert_data['bone_name']}")
+            elif scene.transform_list[self.index].transform_type == "match_pose_bone_orientation":
+                orient_bone(
+                    revert_data['armature'], 
+                    revert_data['bone_name'], 
+                    revert_data['orientation'], 
+                )
+                debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted orientation for bone: {revert_data['bone_name']}")
+            elif scene.transform_list[self.index].transform_type == "chain_pose_bone_position":
+                move_pose_bone(
+                    revert_data['armature'], 
+                    revert_data['bone_name'], 
+                    revert_data['previous_head_position']
+                )
+                debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted orientation for bone: {revert_data['bone_name']}")
+            elif scene.transform_list[self.index].transform_type == "match_edit_bone_pos":
+                move_edit_bone(
+                    revert_data['target_armature'], 
+                    revert_data['target_bone_name'], 
+                    revert_data['offset']
+                )
+                debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted edit bone position for bone: {revert_data['target_bone_name']}")
+            elif scene.transform_list[self.index].transform_type == "match_edit_bone_z_location":
+                move_edit_bone(
+                    revert_data['target_armature'], 
+                    revert_data['target_bone_name'], 
+                    revert_data['offset']
+                )
+                debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted edit bone position for bone: {revert_data['target_bone_name']}")
+            elif scene.transform_list[self.index].transform_type == "match_edit_bone_chain_scale":
+                scale_edit_bone_chain(
+                    revert_data['target_armature'], 
+                    revert_data['target_chain'], 
+                    revert_data['scale_factor']
+                )
+                debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted edit bone chain scale for the bone chain: {revert_data['target_chain']}")
+            else:
+                print('TBD')
+        except Exception as e:
+            self.report({'WARNING'}, f"Something went wrong when trying to revert transform. Error: {e}")
+        
         scene.transform_list.remove(self.index)
         return {'FINISHED'}
 

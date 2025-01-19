@@ -46,8 +46,8 @@ def assign_bone_color_to_armature(armature_object, rgb_color):
     def brighten(color, factor=1.5):
         return tuple(min(1.0, c * factor) for c in color)
 
-    selected_color = brighten(base_color, factor=1.2)
-    active_color = brighten(base_color, factor=1.5)
+    selected_color = brighten(base_color, factor=2)
+    active_color = brighten(base_color, factor=3)
 
     bpy.context.view_layer.objects.active = armature_object
     bpy.ops.object.mode_set(mode='POSE')
