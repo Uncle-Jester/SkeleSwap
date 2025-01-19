@@ -17,26 +17,20 @@ def delete_collection(collection_or_child):
             print(f"No collection found for object '{collection_or_child.name}'.")
             return
     else:
-        print("Invalid parameter type. Must be a string (collection name) or an object.")
-        return
+        raise ValueError(f"In BlendOperationUtils-DeleteCollection: Invalid parameter type. Must be a string (collection name) or an object.")
 
-    # Fetch the collection
     collection = bpy.data.collections.get(collection_name)
     if not collection:
-        print(f"Collection '{collection_name}' not found.")
-        return
+        raise ValueError(f"In BlendOperationUtils-DeleteCollection: Collection '{collection_name}' not found.")
 
-    # Unlink the collection from all scenes
-    for scene in bpy.data.scenes:
-        # Check by collection name
-        if collection_name in [child.name for child in scene.collection.children]:
-            scene.collection.children.unlink(collection)
-    
-    # Delete all objects in the collection
-    for obj in collection.objects:
-        print(f"Deleting object: {obj.name}")
-        bpy.data.objects.remove(obj, do_unlink=True)
-    
-    # Delete the collection itself
-    print(f"Deleting collection: {collection_name}")
-    bpy.data.collections.remove(collection)
+    try:
+        for scene in bpy.data.scenes:
+            if collection_name in [child.name for child in scene.collection.children]:
+                scene.collection.children.unlink(collection)
+
+        for obj in collection.objects:
+            bpy.data.objects.remove(obj, do_unlink=True)
+
+        bpy.data.collections.remove(collection)
+    except Exception as e:
+        raise Exception(f"In BlendOperationUtils-DeleteCollection: Couldn't delete collection. Error: {e}")
