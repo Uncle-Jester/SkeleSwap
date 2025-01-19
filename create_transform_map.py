@@ -15,16 +15,18 @@ class CreateTransformProperties(bpy.types.PropertyGroup):
             value = [list(row) for row in value]
         elif isinstance(value, Vector):
             value = list(value)
-
         self["create_transform_foot_z_location"] = json.dumps(value)
 
     def get_data(self):
-        data = json.loads(self["create_transform_foot_z_location"])
-        if isinstance(data, list):
-            if len(data) == 4 and all(isinstance(row, list) and len(row) == 4 for row in data):
-                return Matrix(data)
-            elif len(data) == 3 and all(isinstance(x, (int, float)) for x in data):
-                return Vector(data)
+        if self.get("create_transform_foot_z_location"):
+            data = json.loads(self["create_transform_foot_z_location"])
+            if isinstance(data, list):
+                if len(data) == 4 and all(isinstance(row, list) and len(row) == 4 for row in data):
+                    return Matrix(data)
+                elif len(data) == 3 and all(isinstance(x, (int, float)) for x in data):
+                    return Vector(data)
+        else:
+            return None
         return data
     
 class BoneTransformPanel(bpy.types.Panel):
@@ -144,6 +146,9 @@ def add_transform(context, target_bone_name, source_bone_name, global_axis, axis
         else scene.target_armature if source_armature_indicator == "T"
         else None
     )
+
+    foot_z_no_template = scene.create_transform_props.get_data()
+    print(f"foot_z_no_template: {foot_z_no_template}")
     new_transform = None
     if transform_type == 'rotate_bone':
         revert_data = rotate_bone(target_armature, target_bone_name, axis, transform_value, global_axis, mirror) # calls the function and saves the return value, which can be used to revert the changes
@@ -160,7 +165,8 @@ def add_transform(context, target_bone_name, source_bone_name, global_axis, axis
         new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "transform_value":transform_value, "axis": axis, "global_axis": global_axis}, 'transform_details')            
         new_transform.name = f"Scale Bone {target_armature.name}-{target_bone_name} {global_axis} {axis}-{transform_value} - mirrored = {mirror}"
     elif transform_type == 'match_pose_bone_head_pos':
-        foot_z_location = None if "foot" not in target_bone_name.lower() else scene.create_transform_props.get_data()
+
+        foot_z_location = None if "foot" not in target_bone_name.lower() else (get_foot_z_location(target_armature, target_bone_name) if not foot_z_no_template else foot_z_no_template)
         revert_data = match_pose_bone_head_pos(target_armature, source_armature, target_bone_name, source_bone_name, foot_z_location)
         new_transform = scene.transform_list.add()
         new_transform.transform_type = transform_type
@@ -630,6 +636,8 @@ class OBJECT_OT_load_bone_transform(bpy.types.Operator):
             for transform_data in bone_transforms:
                 target_bone_name = transform_data.get("target_bone_name")
                 source_bone_name = transform_data.get("source_bone_name")
+                target_chain = transform_data.get("target_chain")
+                source_chain = transform_data.get("source_chain")
                 global_axis = transform_data.get("global_axis")
                 axis = transform_data.get("axis")
                 transform_value = transform_data.get("transform_value")
@@ -637,7 +645,7 @@ class OBJECT_OT_load_bone_transform(bpy.types.Operator):
                 transform_type = transform_data.get("transform_type")
                 target_armature_indicator = transform_data.get("target_armature_indicator")
                 source_armature_indicator = transform_data.get("source_armature_indicator")
-                add_transform(context, target_bone_name, source_bone_name, global_axis, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator)
+                add_transform(context, target_bone_name, source_bone_name, global_axis, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain)
 
             self.report({'INFO'}, f"Bone transform loaded from {self.filepath}")
         except Exception as e:
