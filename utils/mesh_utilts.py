@@ -59,7 +59,7 @@ def copy_shapekeys(source_mesh, target_mesh):
         bpy.ops.object.shape_key_add(from_mix=False)
     
     for shape_key in source_mesh.data.shape_keys.key_blocks:
-        if shape_key.name == 'Basis':
+        if shape_key.name == 'Basis' or shape_key.name == 'basis':
             continue
         
         target_mesh.shape_key_add(name=shape_key.name, from_mix=False)
@@ -129,7 +129,10 @@ def transfer_weights_for_specific_bones(bone_names, source_mesh, target_mesh):
             layers_select_dst='NAME',
             mix_mode='REPLACE'
         )
-    
+        
     bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.select_all(action='DESELECT')
+    target_mesh.select_set(True)
+    source_mesh.select_set(True)
 
     debug_print("Weight transfer complete.")

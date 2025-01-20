@@ -338,12 +338,12 @@ def unregister():
     bpy.utils.unregister_class(OBJECT_OT_add_bone_pair)
     bpy.utils.unregister_class(OBJECT_OT_remove_bone_pair_from_list)
     bpy.utils.unregister_class(OBJECT_UL_bone_pair_list)
-    bpy.utils.register_class(OBJECT_OT_set_target_bone)
-    bpy.utils.register_class(OBJECT_OT_set_source_bone)
-    bpy.utils.register_class(OBJECT_OT_prefill_target_bones)
-    bpy.utils.register_class(OBJECT_OT_auto_map_bones)
-    bpy.utils.register_class(OBJECT_OT_export_bone_mapping)
-    bpy.utils.register_class(OBJECT_OT_save_bone_mapping)
+    bpy.utils.unregister_class(OBJECT_OT_set_target_bone)
+    bpy.utils.unregister_class(OBJECT_OT_set_source_bone)
+    bpy.utils.unregister_class(OBJECT_OT_prefill_target_bones)
+    bpy.utils.unregister_class(OBJECT_OT_auto_map_bones)
+    bpy.utils.unregister_class(OBJECT_OT_export_bone_mapping)
+    bpy.utils.unregister_class(OBJECT_OT_save_bone_mapping)
     del bpy.types.Scene.input_text
     del bpy.types.Scene.source_armature
     del bpy.types.Scene.target_armature

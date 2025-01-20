@@ -2,15 +2,34 @@ import bpy # type: ignore
 from .dev_utils import debug_print
 
 def parent_armature(mesh, armature):
-    bpy.context.view_layer.objects.active = mesh
-    bpy.ops.object.select_all(action='DESELECT')
-    mesh.select_set(True)
-    armature.select_set(True)
-    bpy.context.view_layer.objects.active = armature
+    if not mesh:
+       raise ValueError(f"In ArmatureUtils-ParentArmature: Mesh was not a provided.")     
+    if mesh.type != 'MESH':
+        raise ValueError(f"In ArmatureUtils-ParentArmature: Input is type: {mesh.type}. Excpected type MESH")
+    
+    if not armature or armature.type != "ARMATURE":
+        if armature:
+            raise ValueError(f"In ArmatureUtils-ParentArmature: Input is type: {armature.type}. Excpected type ARMATURE")
+        raise ValueError(f"In ArmatureUtils-ParentArmature: No Armature Provided")
+    
+    if mesh.parent == armature:
+        debug_print(f"ArmatureUtils-ApplyArmature: Armature is already the mesh's parent")
+        return
+    
+    try:
+        bpy.context.view_layer.objects.active = mesh
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.select_all(action='DESELECT')
+        mesh.select_set(True)
+        armature.select_set(True)
+        bpy.context.view_layer.objects.active = armature
 
-    bpy.ops.object.parent_set(type='ARMATURE')
-    debug_print(f"Parented mesh '{mesh.name}' to armature '{armature.name}'.")
-
+        bpy.ops.object.parent_set(type='ARMATURE')
+        debug_print(f"Parented mesh '{mesh.name}' to armature '{armature.name}'.")
+        
+    except Exception as e:
+        debug_print(f"ArmatureUtils-ApplyArmature: Error: {e}")
+        raise RuntimeError(f"In ArmatureUtils-ApplyArmature: Couldn't Parent mesh {mesh.name} to armature, {armature.name} Error: {e}")
 
 def apply_armature(mesh, armature):
     if not mesh:
@@ -70,7 +89,7 @@ def delete_armature(armature):
         bpy.ops.object.delete()
     except Exception as e:
         debug_print(f"In ArmatureUtils-DeleteArmature: Error: {e}")
-        raise e
+        raise RuntimeError(f"In ArmatureUtils-DeleteArmature: Error: {e}")
 
 
 

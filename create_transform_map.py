@@ -155,14 +155,14 @@ def add_transform(context, target_bone_name, source_bone_name, global_axis, axis
         new_transform.transform_type = transform_type
         new_transform.set_data(revert_data, 'revert_data')
         new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "axis":axis, "transform_value": transform_value, "global_axis": global_axis, "mirror": mirror}, 'transform_details')
-        new_transform.name = f"Rotate Bone: {target_bone_name} -> {"GLOBAL" if global_axis else "LOCAL"} '{axis}' - {transform_value} | {'MIRRORED' if mirror else ''}"
+        new_transform.name = f"Rotate Bone: {target_bone_name} -> {'GLOBAL' if global_axis else 'LOCAL'} '{axis}' - {transform_value} | {'MIRRORED' if mirror else ''}"
     elif transform_type == 'scale_bone':
         revert_data = scale_pose_bone(target_armature, target_bone_name, transform_value, axis, global_axis)
         new_transform = scene.transform_list.add()
         new_transform.transform_type = transform_type
         new_transform.set_data(revert_data, 'revert_data')
         new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "transform_value":transform_value, "axis": axis, "global_axis": global_axis}, 'transform_details')            
-        new_transform.name = f"Scale Bone: {target_bone_name} -> {"GLOBAL" if global_axis else "LOCAL"} '{axis}' - {transform_value}"
+        new_transform.name = f"Scale Bone: {target_bone_name} -> {'GLOBAL' if global_axis else 'LOCAL'} '{axis}' - {transform_value}"
     elif transform_type == 'match_pose_bone_head_pos':
         foot_z_location = None if "foot" not in target_bone_name.lower() else (get_foot_z_location(target_armature, target_bone_name) if not foot_z_no_template else foot_z_no_template)
         revert_data = match_pose_bone_head_pos(target_armature, source_armature, target_bone_name, source_bone_name, foot_z_location)
@@ -735,7 +735,7 @@ def register():
         items=[
             ('match_pose_bone_head_pos', "Match POSE Bone Head Position", "Match Pose Bone Head Position"),
             ('match_pose_bone_orientation', "Match POSE Bone Orientation", "Match Pose Bone Orientation"),
-            ('chain_pose_bone_position', "Chain POSE Bone", "Chain Bone"),
+            ('chain_pose_bone_position', "Chain POSE Bone", "Chain Pose Bone"),
             ('scale_bone', "Scale POSE Bone", "Scale Bone"),
             ('rotate_bone', "Rotate POSE Bone", "Rotate Bone"),
             ('match_edit_bone_pos', "Match EDIT Bone Head Position", "Match Edit Bone Head Position"),
