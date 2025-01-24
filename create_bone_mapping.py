@@ -326,8 +326,8 @@ def register():
     bpy.utils.register_class(OBJECT_OT_export_bone_mapping)
     bpy.utils.register_class(OBJECT_OT_save_bone_mapping)
     bpy.types.Scene.input_text = bpy.props.StringProperty(name="Bone Map Name")
-    bpy.types.Scene.source_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_source_armature)
-    bpy.types.Scene.target_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_target_armature)
+    #bpy.types.Scene.source_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_source_armature)
+    #bpy.types.Scene.target_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_target_armature)
     bpy.types.Scene.bone_pair_list = bpy.props.CollectionProperty(type=BonePairItem)
     bpy.types.Scene.bone_pair_list_index = bpy.props.IntProperty()
 
@@ -345,8 +345,8 @@ def unregister():
     bpy.utils.unregister_class(OBJECT_OT_export_bone_mapping)
     bpy.utils.unregister_class(OBJECT_OT_save_bone_mapping)
     del bpy.types.Scene.input_text
-    del bpy.types.Scene.source_armature
-    del bpy.types.Scene.target_armature
+    #del bpy.types.Scene.source_armature
+    #del bpy.types.Scene.target_armature
     del bpy.types.Scene.bone_pair_list
     del bpy.types.Scene.bone_pair_list_index
 

@@ -12,8 +12,7 @@ def normalize_matrix(matrix):
     return rotation.to_4x4() @ Matrix.Translation(matrix.to_translation())
 
 
-def rotate_bone(armature, bone_name, axis, degrees, globalAxis=False, mirror=False):
-    
+def rotate_bone(armature, bone_name, axis, degrees, globalAxis=False, mirror=False): 
     if not armature or armature.type != "ARMATURE":
         if armature:
             raise ValueError(f"In BoneTransformUtils-RotateBone: Input is type: {armature.type}. Excpected type ARMATURE")
@@ -75,9 +74,9 @@ def rotate_bone(armature, bone_name, axis, degrees, globalAxis=False, mirror=Fal
                     debug_print(f"BoneTransformUtils-RotateBone-Mirror: Target is NOT epic skeleton")
                     if not globalAxis:
                         mirror_bone.rotation_mode = 'XYZ'
-                        mirror_bone.rotation_euler.rotate_axis(axis, -radians)
+                        mirror_bone.rotation_euler.rotate_axis(axis, radians) # Wut? When it is -radians as it should be, it doesnt mirror properly....WHAT? WHY IS MIRROR ON ROTATE BONE IS THE FEATURE  HAVE TO SPEND THE MOST TIME ON? WHY?!?!?!
                     else:
-                        mirror_rotation["XYZ".index(axis)] = -radians
+                        mirror_rotation["XYZ".index(axis)] = radians # Wut?
                         mirror_bone.rotation_mode = 'XYZ'
                         mirror_bone.rotation_euler = [sum(x) for x in zip(mirror_bone.rotation_euler, mirror_rotation)]
             else:

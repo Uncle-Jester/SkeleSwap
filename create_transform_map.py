@@ -690,8 +690,8 @@ def register():
     bpy.utils.register_class(OBJECT_OT_save_foot_z_location)
 
 
-    bpy.types.Scene.source_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_source_armature)
-    bpy.types.Scene.target_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_target_armature)
+    #bpy.types.Scene.source_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_source_armature)
+    #bpy.types.Scene.target_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_target_armature)
     bpy.types.Scene.selected_source_bone = bpy.props.StringProperty(name="Selected Source Bone")
     bpy.types.Scene.selected_target_bone = bpy.props.StringProperty(name="Selected Target Bone")
     bpy.types.Scene.source_bone_chain = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
@@ -770,8 +770,8 @@ def unregister():
     bpy.utils.unregister_class(OBJECT_OT_save_foot_z_location)
     
     del bpy.types.Scene.create_transform_props
-    del bpy.types.Scene.source_armature
-    del bpy.types.Scene.target_armature
+    #del bpy.types.Scene.source_armature
+    #del bpy.types.Scene.target_armature
     del bpy.types.Scene.selected_source_bone
     del bpy.types.Scene.selected_target_bone
     del bpy.types.Scene.target_bone_chain

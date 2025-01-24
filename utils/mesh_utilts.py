@@ -3,35 +3,55 @@ from .dev_utils import debug_print
 
 def duplicate_mesh(mesh_to_duplicate):
     if not mesh_to_duplicate or mesh_to_duplicate.type != 'MESH':
-        raise ValueError("Provided object is not a valid mesh.")
-    
-    bpy.ops.object.select_all(action='DESELECT')
-    mesh_to_duplicate.select_set(True)
-    bpy.context.view_layer.objects.active = mesh_to_duplicate
-    
-    bpy.ops.object.duplicate()
-    duplicated_mesh = bpy.context.object
-    return duplicated_mesh
+        if mesh_to_duplicate:
+            raise ValueError(f"In MeshUtils-DuplicateMesh: Provided object is not a valid mesh. Expected {mesh_to_duplicate} to be of type 'MESH', instead got {mesh_to_duplicate.type}")
+        else:
+            raise ValueError(f"In MeshUtils-DuplicateMesh: Mesh to duplicate was not provided")
+    try:
+        bpy.ops.object.select_all(action='DESELECT')
+        mesh_to_duplicate.select_set(True)
+        bpy.context.view_layer.objects.active = mesh_to_duplicate
+
+        bpy.ops.object.duplicate()
+        duplicated_mesh = bpy.context.object
+        return duplicated_mesh
+    except Exception as e:
+        raise RuntimeError(f"In MeshUtils-DuplicateMesh: Could not duplicate mesh. Error: {e}")
 
 def delete_mesh(mesh_to_delete):
     if not mesh_to_delete or mesh_to_delete.type != 'MESH':
-        raise ValueError("Provided object is not a valid mesh.")
+        if mesh_to_delete:
+            raise ValueError(f"In MeshUtils-DeleteMesh: Provided object is not a valid mesh. Expected {mesh_to_delete} to be of type 'MESH', instead got {mesh_to_delete.type}")
+        else:
+            raise ValueError(f"In MeshUtils-DeleteMesh: Mesh to delete was not provided")
     
-    bpy.ops.object.select_all(action='DESELECT')
-    mesh_to_delete.select_set(True)
-    bpy.context.view_layer.objects.active = mesh_to_delete
-    
-    bpy.ops.object.delete()
+    bpy.ops.object.mode_set(mode='OBJECT')
+    try:
+        bpy.ops.object.select_all(action='DESELECT')
+        mesh_to_delete.select_set(True)
+        bpy.context.view_layer.objects.active = mesh_to_delete
+        bpy.ops.object.delete()
+    except Exception as e:
+        raise RuntimeError(f"In MeshUtils-DeleteMesh: Mesh couldn't be deleted. Error: {e}")
 
 
 def delete_all_shapekeys(mesh):
-    if mesh.data.shape_keys:  # Check if the mesh has shapekeys
-        keys = mesh.data.shape_keys.key_blocks
-        for key in list(keys):
-            mesh.shape_key_remove(key)
-        debug_print("Deleted all shapekeys.")
-    else:
-        debug_print("No shapekeys found.")
+    if not mesh or mesh.type != 'MESH':
+        if mesh:
+            raise ValueError(f"In MeshUtils-DeleteAllShapekeys: Provided object is not a valid mesh. Expected {mesh} to be of type 'MESH', instead got {mesh.type}")
+        else:
+            raise ValueError(f"In MeshUtils-DeleteAllShapekeys: Mesh was not provided")
+    
+    try:
+        if mesh.data.shape_keys:
+            keys = mesh.data.shape_keys.key_blocks
+            for key in list(keys):
+                mesh.shape_key_remove(key)
+            debug_print("Deleted all shapekeys.")
+        else:
+            debug_print("No shapekeys found.")
+    except Exception as e:
+        raise RuntimeError(f"In MeshUtils-DeleteAllShapekeys: Delete all Shapekey couldn't be executed. Error: {e}")
 
 def create_basis_shape_key(mesh):
     if not mesh.data.shape_keys:
