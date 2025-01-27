@@ -72,9 +72,9 @@ class BoneTransformPanel(bpy.types.Panel):
         row.operator("object.save_foot_z_location", text="Save Current Foot Z location")
 
         if scene.transform_type == "rotate_bone" or scene.transform_type == "scale_bone":
-            layout.prop(scene, "axis", text="Axis")
-            layout.prop(scene, "value", text="Transform Value")
-            layout.prop(scene, "global_axis", text="Global Axis")
+            row = layout.row()
+            row.prop(scene, "axis", text="Axis")
+            row.prop(scene, "value", text="Transform Value")
         
         if scene.transform_type == "rotate_bone":
             layout.prop(scene, "mirror", text="Mirror")
@@ -133,7 +133,7 @@ class Transform_item(bpy.types.PropertyGroup):
         return data
 
 
-def add_transform(context, target_bone_name, source_bone_name, global_axis, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain=[], source_chain=[]):
+def add_transform(context, target_bone_name, source_bone_name, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain=[], source_chain=[]):
     scene = context.scene
 
     target_armature = (
@@ -150,19 +150,19 @@ def add_transform(context, target_bone_name, source_bone_name, global_axis, axis
     foot_z_no_template = scene.create_transform_props.get_data()
     new_transform = None
     if transform_type == 'rotate_bone':
-        revert_data = rotate_bone(target_armature, target_bone_name, axis, transform_value, global_axis, mirror) # calls the function and saves the return value, which can be used to revert the changes
+        revert_data = rotate_bone(target_armature, target_bone_name, axis, transform_value, mirror) # calls the function and saves the return value, which can be used to revert the changes
         new_transform = scene.transform_list.add()
         new_transform.transform_type = transform_type
         new_transform.set_data(revert_data, 'revert_data')
-        new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "axis":axis, "transform_value": transform_value, "global_axis": global_axis, "mirror": mirror}, 'transform_details')
-        new_transform.name = f"Rotate Bone: {target_bone_name} -> {'GLOBAL' if global_axis else 'LOCAL'} '{axis}' - {transform_value} | {'MIRRORED' if mirror else ''}"
+        new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "axis":axis, "transform_value": transform_value, "mirror": mirror}, 'transform_details')
+        new_transform.name = f"Rotate Bone: {target_bone_name} -> LOCAL '{axis}' - {transform_value} | {'MIRRORED' if mirror else ''}"
     elif transform_type == 'scale_bone':
-        revert_data = scale_pose_bone(target_armature, target_bone_name, transform_value, axis, global_axis)
+        revert_data = scale_pose_bone(target_armature, target_bone_name, transform_value, axis)
         new_transform = scene.transform_list.add()
         new_transform.transform_type = transform_type
         new_transform.set_data(revert_data, 'revert_data')
-        new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "transform_value":transform_value, "axis": axis, "global_axis": global_axis}, 'transform_details')            
-        new_transform.name = f"Scale Bone: {target_bone_name} -> {'GLOBAL' if global_axis else 'LOCAL'} '{axis}' - {transform_value}"
+        new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "transform_value":transform_value, "axis": axis}, 'transform_details')            
+        new_transform.name = f"Scale Bone: {target_bone_name} -> LOCAL '{axis}' - {transform_value}"
     elif transform_type == 'match_pose_bone_head_pos':
         foot_z_location = None if "foot" not in target_bone_name.lower() else (get_foot_z_location(target_armature, target_bone_name) if not foot_z_no_template else foot_z_no_template)
         revert_data = match_pose_bone_head_pos(target_armature, source_armature, target_bone_name, source_bone_name, foot_z_location)
@@ -241,14 +241,13 @@ class OBJECT_OT_add_transform(bpy.types.Operator):
         source_chain = [item.name for item in scene.source_bone_chain]
         target_armature_indicator = scene.target_armature_indicator
         source_armature_indicator = scene.source_armature_indicator
-        global_axis = scene.global_axis
         axis = scene.axis
         transform_value = scene.value
         mirror = scene.mirror
 
         transform_type = scene.transform_type
         try:
-            new_transform = add_transform(context, target_bone_name, source_bone_name, global_axis, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain)
+            new_transform = add_transform(context, target_bone_name, source_bone_name, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain)
         except Exception as e:
             self.report({'WARNING'}, f"Something went wrong when trying to add transform. Try re-selecting the target and source bones, and make sure you have the correct armatures selected. Error: {e}")
             return {'CANCELLED'}
@@ -283,7 +282,6 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
                     revert_data['bone_name'], 
                     revert_data['axis'], 
                     revert_data['degrees'], 
-                    revert_data['global_axis'], 
                     revert_data['mirror']
                 )
                 debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted rotation for bone: {revert_data['bone_name']}")
@@ -293,7 +291,6 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
                     revert_data['bone_name'], 
                     revert_data['scale_value'], 
                     revert_data['axis'], 
-                    revert_data['global_axis']
                 )
                 debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted scale for bone: {revert_data['bone_name']}")
             elif scene.transform_list[self.index].transform_type == "match_pose_bone_head_pos":
@@ -650,14 +647,13 @@ class OBJECT_OT_load_bone_transform(bpy.types.Operator):
                 source_bone_name = transform_data.get("source_bone_name")
                 target_chain = transform_data.get("target_chain")
                 source_chain = transform_data.get("source_chain")
-                global_axis = transform_data.get("global_axis")
                 axis = transform_data.get("axis")
                 transform_value = transform_data.get("transform_value")
                 mirror = transform_data.get("mirror")
                 transform_type = transform_data.get("transform_type")
                 target_armature_indicator = transform_data.get("target_armature_indicator")
                 source_armature_indicator = transform_data.get("source_armature_indicator")
-                add_transform(context, target_bone_name, source_bone_name, global_axis, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain)
+                add_transform(context, target_bone_name, source_bone_name, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain)
 
             self.report({'INFO'}, f"Bone transform loaded from {self.filepath}")
         except Exception as e:
@@ -690,8 +686,6 @@ def register():
     bpy.utils.register_class(OBJECT_OT_save_foot_z_location)
 
 
-    #bpy.types.Scene.source_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_source_armature)
-    #bpy.types.Scene.target_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_target_armature)
     bpy.types.Scene.selected_source_bone = bpy.props.StringProperty(name="Selected Source Bone")
     bpy.types.Scene.selected_target_bone = bpy.props.StringProperty(name="Selected Target Bone")
     bpy.types.Scene.source_bone_chain = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
@@ -702,7 +696,6 @@ def register():
 
     bpy.types.Scene.mirror = bpy.props.BoolProperty(name="Mirror", default=False)
     bpy.types.Scene.value = bpy.props.FloatProperty(name="Transform Value", default=0.0)
-    bpy.types.Scene.global_axis = bpy.props.BoolProperty(name="Global Axis", default=False)
     
 
 
@@ -770,8 +763,6 @@ def unregister():
     bpy.utils.unregister_class(OBJECT_OT_save_foot_z_location)
     
     del bpy.types.Scene.create_transform_props
-    #del bpy.types.Scene.source_armature
-    #del bpy.types.Scene.target_armature
     del bpy.types.Scene.selected_source_bone
     del bpy.types.Scene.selected_target_bone
     del bpy.types.Scene.target_bone_chain
@@ -779,7 +770,6 @@ def unregister():
     del bpy.types.Scene.source_armature_indicator
     del bpy.types.Scene.target_armature_indicator
     del bpy.types.Scene.mirror
-    del bpy.types.Scene.global_axis
     del bpy.types.Scene.value
     del bpy.types.Scene.selected_bone_mapping
     bpy.types.Scene.bone_mapping_contents

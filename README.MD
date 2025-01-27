@@ -35,7 +35,7 @@ If your face rigs are the same accross multiple characters, and you want facial 
 
 ## Planned Features (In order of Priority)
 
-- **Generating Dynamic Control Rigs (IK, FK)**
+- **Generating Dynamic Control Rig (IK, FK) -> Already done for UE5 Skeleton**
 - **Supporting Multi-Mesh/Modular Skeletal Meshes**
 - **Tool to copy a bone from one armature to the other (Logic is already done, just not included in the bone transforms list yet)**
 - **Facial Shapekey Creation from deformbone based face rigs**

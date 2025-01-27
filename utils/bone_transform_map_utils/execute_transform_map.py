@@ -13,7 +13,6 @@ def apply_transform_map(transform_map, foot_z_loc, global_target_armature, globa
         transform_value = transform.get("transform_value")
         foot_z_location = foot_z_loc if transform.get("foot_z_location") else None
         unreal_right = transform.get("unreal_right") if transform.get("unreal_right") else False
-        global_axis =  transform.get("global_axis") if transform.get("global_axis") else False
         mirror =  transform.get("mirror") if transform.get("mirror") else False
 
         target_armature = (
@@ -28,9 +27,9 @@ def apply_transform_map(transform_map, foot_z_loc, global_target_armature, globa
         )
 
         if transform_type == 'rotate_bone':
-            rotate_bone(target_armature, target_bone_name, axis, transform_value, global_axis, mirror) # calls the function and saves the return value, which can be used to revert the changes
+            rotate_bone(target_armature, target_bone_name, axis, transform_value, mirror) # calls the function and saves the return value, which can be used to revert the changes
         elif transform_type == 'scale_bone':
-            scale_pose_bone(target_armature, target_bone_name, transform_value, axis, global_axis)
+            scale_pose_bone(target_armature, target_bone_name, transform_value, axis)
         elif transform_type == 'match_pose_bone_head_pos':
             match_pose_bone_head_pos(target_armature, source_armature, target_bone_name, source_bone_name, foot_z_location)
         elif transform_type == 'match_pose_bone_orientation':

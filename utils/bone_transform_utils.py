@@ -1,18 +1,19 @@
 import math
 import bpy # type: ignore
-from mathutils import Matrix, Vector # type: ignore
+from mathutils import Matrix, Vector, Euler # type: ignore
 from .general_bone_utils import find_mirror_bone_name, remove_connected_relation
 from .dev_utils import debug_print
 from .ue_specific_utils import is_flipped_unreal_bone
 
 # TBD: Create a separate function for validating inputs, to get rid of the unholy amount of code duplication in every function when validating armatures/bone_names/etc. 
 
+
 def normalize_matrix(matrix):
     rotation = matrix.to_3x3().normalized()
     return rotation.to_4x4() @ Matrix.Translation(matrix.to_translation())
 
 
-def rotate_bone(armature, bone_name, axis, degrees, globalAxis=False, mirror=False): 
+def rotate_bone(armature, bone_name, axis, degrees, mirror=False): 
     if not armature or armature.type != "ARMATURE":
         if armature:
             raise ValueError(f"In BoneTransformUtils-RotateBone: Input is type: {armature.type}. Excpected type ARMATURE")
@@ -21,13 +22,14 @@ def rotate_bone(armature, bone_name, axis, degrees, globalAxis=False, mirror=Fal
     if not bone_name:
         raise ValueError(f"In BoneTransformUtils-RotateBone: No Bone Name Provided")
     
-    debug_print(f"BoneTransformUtils-RotateBone: Rotating {bone_name}, of the armature {armature.name}, on the {axis} axis, by {degrees} degrees")
+    debug_print(f"BoneTransformUtils-RotateBone: Rotating {bone_name}, of the armature {armature.name}, on the LOCAL {axis} axis, by {degrees} degrees")
     try:
         bpy.context.view_layer.objects.active = armature
         if bpy.context.object.mode != 'POSE':
             bpy.ops.object.mode_set(mode='POSE')
 
         pose_bones = armature.pose.bones
+        radians = math.radians(degrees)
 
         if bone_name not in pose_bones:
             raise ValueError(f"In BoneTransformUtils-RotateBone: Bone Name: '{bone_name}', could not be found within the the bones of the provided armature: {armature}")
@@ -37,16 +39,10 @@ def rotate_bone(armature, bone_name, axis, degrees, globalAxis=False, mirror=Fal
 
         bone = pose_bones[bone_name]
         debug_print(f"BoneTransformUtils-RotateBone: Current rotation of {bone_name} is {bone.rotation_euler}")
-        radians = math.radians(degrees)
-        rotation = [0, 0, 0]
-
-        if globalAxis:
-            rotation["XYZ".index(axis)] = radians
-            bone.rotation_mode = 'XYZ'
-            bone.rotation_euler = [sum(x) for x in zip(bone.rotation_euler, rotation)]
-        else:
-            bone.rotation_mode = "XYZ"
-            bone.rotation_euler.rotate_axis(axis, radians)
+        
+        debug_print(f"BoneTransformUtils-RotateBone: Rotating of {bone_name} on Local Axis")
+        bone.rotation_mode = "XYZ"
+        bone.rotation_euler.rotate_axis(axis, radians)
         debug_print(f"BoneTransformUtils-RotateBone: Rotation of {bone_name} after rotating is {bone.rotation_euler}")
 
         if mirror: #TBD: test if mirror works for both normal and epic skeletons
@@ -58,30 +54,18 @@ def rotate_bone(armature, bone_name, axis, degrees, globalAxis=False, mirror=Fal
             if mirror_bone_name:
                 unreal_mirror = is_epic_skeleton and is_flipped_unreal_bone(mirror_bone_name, is_epic_skeleton)
                 mirror_bone = pose_bones[mirror_bone_name]
-                mirror_rotation = [0, 0, 0]
                 if unreal_mirror:
-                    debug_print(f"BoneTransformUtils-RotateBone-Mirror: Target is epic skeleton")
-                    if not globalAxis:
-                        debug_print(f"BoneTransformUtils-RotateBone-Mirror: Mirroring epic skeleton bone on LOCAL axis")
-                        mirror_bone.rotation_mode = 'XYZ'
-                        mirror_bone.rotation_euler.rotate_axis(axis, radians)
-                    else:
-                        debug_print(f"BoneTransformUtils-RotateBone-Mirror: Mirroring epic skeleton bone on GLOBAL axis")
-                        mirror_rotation = rotation.copy()
-                        mirror_bone.rotation_mode = 'XYZ'
-                        mirror_bone.rotation_euler = [sum(x) for x in zip(mirror_bone.rotation_euler, mirror_rotation)]
+                    debug_print(f"BoneTransformUtils-RotateBone-Mirror: Target is epic skeleton")  
+                    debug_print(f"BoneTransformUtils-RotateBone-Mirror: Mirroring epic skeleton bone on LOCAL axis")
+                    mirror_bone.rotation_mode = 'XYZ'
+                    mirror_bone.rotation_euler.rotate_axis(axis, radians)                    
                 else:
-                    debug_print(f"BoneTransformUtils-RotateBone-Mirror: Target is NOT epic skeleton")
-                    if not globalAxis:
-                        mirror_bone.rotation_mode = 'XYZ'
-                        mirror_bone.rotation_euler.rotate_axis(axis, radians) # Wut? When it is -radians as it should be, it doesnt mirror properly....WHAT? WHY IS MIRROR ON ROTATE BONE IS THE FEATURE  HAVE TO SPEND THE MOST TIME ON? WHY?!?!?!
-                    else:
-                        mirror_rotation["XYZ".index(axis)] = radians # Wut?
-                        mirror_bone.rotation_mode = 'XYZ'
-                        mirror_bone.rotation_euler = [sum(x) for x in zip(mirror_bone.rotation_euler, mirror_rotation)]
-            else:
+                    debug_print(f"BoneTransformUtils-RotateBone-Mirror: Target is NOT epic skeleton") 
+                    mirror_bone.rotation_mode = 'XYZ'
+                    mirror_bone.rotation_euler.rotate_axis(axis, -radians if axis != 'X' else radians) # This can depend on how the armature is built, but most of the ones i encountered this was necessary
+        else:
                 mirror = False
-        return {"axis": axis, "degrees": degrees*-1, "bone_name": bone_name, "armature": armature, "mirror": mirror, "global_axis": globalAxis}
+        return {"axis": axis, "degrees": degrees*-1, "bone_name": bone_name, "armature": armature, "mirror": mirror}
     except Exception as e:
         raise RuntimeError(f"In BoneTransformUtils-RotateBone: Could not rotate bone. Error: {e}")
 
@@ -412,7 +396,7 @@ def orient_bone(armature, bone_name, orientation):
     except Exception as e:
        raise RuntimeError(f"In BoneTransformUtils-OrientBone: Could not orient bone. Error: {e}") 
 
-def scale_pose_bone(armature, bone_name, scale_value, axis=None, global_axis=False): #TBD Implement Mirror
+def scale_pose_bone(armature, bone_name, scale_value, axis=None): #TBD Implement Mirror
     if not armature or armature.type != "ARMATURE":
         if armature:
             raise ValueError(f"In BoneTransformUtils-ScalePoseBone: Armature Input is type: {armature.type}. Excpected type ARMATURE")
@@ -426,6 +410,7 @@ def scale_pose_bone(armature, bone_name, scale_value, axis=None, global_axis=Fal
     
     try:
         bpy.context.view_layer.objects.active = armature
+        
         if bpy.context.object.mode != 'POSE':
             bpy.ops.object.mode_set(mode='POSE')
 
@@ -442,19 +427,13 @@ def scale_pose_bone(armature, bone_name, scale_value, axis=None, global_axis=Fal
 
             constraint_axis = (axis == "X", axis == "Y", axis == "Z")
 
-            if not global_axis:
-                bpy.ops.transform.resize(value=(scale_value if axis == "X" else 1,
-                                                scale_value if axis == "Y" else 1,
-                                                scale_value if axis == "Z" else 1),
-                                         constraint_axis=constraint_axis, orient_type='LOCAL')
-            else:
-                bpy.ops.transform.resize(value=(scale_value if axis == "X" else 1,
-                                                scale_value if axis == "Y" else 1,
-                                                scale_value if axis == "Z" else 1),
-                                         constraint_axis=constraint_axis, orient_type='GLOBAL')
+            bpy.ops.transform.resize(value=(scale_value if axis == "X" else 1,
+                                            scale_value if axis == "Y" else 1,
+                                            scale_value if axis == "Z" else 1),
+                                     constraint_axis=constraint_axis, orient_type='LOCAL')
 
         bpy.context.view_layer.update()
-        return {"armature": armature, "bone_name": bone_name, "scale_value": 1/scale_value, "axis": axis, "global_axis": global_axis}
+        return {"armature": armature, "bone_name": bone_name, "scale_value": 1/scale_value, "axis": axis}
     except Exception as e:
        raise RuntimeError(f"In BoneTransformUtils-ScalePoseBone: Could not scale pose bone. Error: {e}") 
 

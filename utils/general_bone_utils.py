@@ -41,11 +41,13 @@ def find_mirror_bone_name(armature, bone_name):
             bpy.ops.object.mode_set(mode='POSE')
             return mirrored_bone_name
     else:
+        bpy.ops.object.mode_set(mode='POSE')
         debug_print(f"Bone, {bone_name} was not in the bone list: {armature.data.edit_bones}")
     
     bpy.context.view_layer.objects.active = armature
-    if bpy.context.object.mode != 'EDIT':
-        bpy.ops.object.mode_set(mode='EDIT')   
+    
+    if bpy.context.object.mode != 'POSE':
+        bpy.ops.object.mode_set(mode='POSE')   
 
     pose_bones = armature.pose.bones
     if bone_name not in pose_bones:
