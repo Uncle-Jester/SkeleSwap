@@ -1,7 +1,8 @@
 import bpy
-from mathutils import Vector
+from.utils.create_control_rig_utils import create_custom_shape_mesh, add_custom_shape_for_bone, create_deform_bones_collection, add_ik_fk_switch_property, add_copy_transforms_constraints_to_deform_bones_for_drivers, create_driver_bones, duplicate_bone, clear_parent, connect_bone_tail_to_head, extrude_bone, parent_bone_keep_offset, add_IK_constraint, add_copy_location_constraint, add_damped_track_constraint, add_track_to_constraint, add_copy_rotation_constraint, remove_constraint, move_constraint_to_top, move_edit_bone_by_vector, scale_edit_bone, create_bone_at_intersection, assign_bones_to_new_collection, set_bone_collection_visibility
 
-main_bones = [
+
+""" main_bones = [
     "clavicle_l", "upperarm_l", "lowerarm_l", "hand_l",
     "thigh_r", "calf_r", "foot_r", "ball_l",
     "pelvis",
@@ -70,7 +71,7 @@ def create_bone_collection(name):
 def get_bone_collection(name):
     return armature_data.collections[name]
 
-def create_driver_bones(collection_name, driver_prefix):
+def create_driver_bones(armature, collection_name, driver_prefix):
     new_collection = create_bone_collection(collection_name)
     bpy.ops.object.mode_set(mode='OBJECT')
     deform_bone_collection = get_bone_collection("DEFORM_BONES")
@@ -126,7 +127,7 @@ def create_driver_bones(collection_name, driver_prefix):
     bpy.ops.armature.select_all(action='DESELECT')
 
 
-def add_copy_transforms_constraints_to_deform_bones_for_drivers(driver_bone_collection_name, driver_prefix, add_transform_constraint_to_flipped_bones=True, add_driver_to_copy_transform_influence = False):
+def add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, driver_bone_collection_name, driver_prefix, add_transform_constraint_to_flipped_bones=True, add_driver_to_copy_transform_influence = False):
     bpy.ops.object.mode_set(mode='POSE')
     driver_bone_collection = get_bone_collection(driver_bone_collection_name)
     pose_bones = armature.pose.bones
@@ -169,7 +170,7 @@ def add_copy_transforms_constraints_to_deform_bones_for_drivers(driver_bone_coll
 
 
 
-def assign_bones_to_new_collection(bone_names, new_collection_name, should_remove_from_previous_collections=True):
+def assign_bones_to_new_collection(armature, bone_names, new_collection_name, should_remove_from_previous_collections=True):
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.armature.select_all(action='DESELECT')
     
@@ -216,7 +217,7 @@ def create_deform_bones_collection():
 
 
 
-def set_bone_collection_visibility(collection_name, is_visible):
+def set_bone_collection_visibility(armature, collection_name, is_visible):
     bpy.ops.object.mode_set(mode='EDIT')
     bone_collection = get_bone_collection(collection_name)
     if bone_collection:
@@ -244,7 +245,7 @@ def create_curled_plane(name, width, height, curl_factor=1.3):
 
     return plane
 
-def duplicate_bone(bone_name_to_duplicate, new_bone_name):
+def duplicate_bone(armature, bone_name_to_duplicate, new_bone_name):
     bpy.ops.object.mode_set(mode='EDIT')
     bone = armature_data.edit_bones.get(bone_name_to_duplicate)
     bpy.ops.armature.select_all(action='DESELECT')
@@ -258,7 +259,7 @@ def duplicate_bone(bone_name_to_duplicate, new_bone_name):
             new_bone.name = new_bone_name
         bpy.ops.armature.select_all(action='DESELECT')
 
-def scale_edit_bone(bone_name, scale_value):
+def scale_edit_bone(armature, bone_name, scale_value):
     bpy.ops.object.mode_set(mode='EDIT')
     bone = armature_data.edit_bones.get(bone_name)
     bpy.ops.armature.select_all(action='DESELECT')
@@ -284,7 +285,7 @@ def find_intersection_point(bone_name_1, bone_name_2):
     
     return intersection_point
 
-def connect_bone_tail_to_head(tail_bone_name, head_bone_name):
+def connect_bone_tail_to_head(armature, tail_bone_name, head_bone_name):
     bpy.ops.object.mode_set(mode='EDIT')
     tail_bone = armature_data.edit_bones.get(tail_bone_name)
     head_bone = armature_data.edit_bones.get(head_bone_name)
@@ -292,7 +293,7 @@ def connect_bone_tail_to_head(tail_bone_name, head_bone_name):
         tail_bone.tail = head_bone.head
 
 
-def create_bone_at_intersection(bone_name_1, bone_name_2, translate_vector, new_bone_name):
+def create_bone_at_intersection(armature, bone_name_1, bone_name_2, translate_vector, new_bone_name):
     intersection_point = find_intersection_point(bone_name_1, bone_name_2)
     if intersection_point:
         bpy.ops.object.mode_set(mode='EDIT')
@@ -307,7 +308,7 @@ def create_bone_at_intersection(bone_name_1, bone_name_2, translate_vector, new_
         bpy.ops.armature.parent_clear(type='CLEAR')
         bpy.ops.armature.select_all(action='DESELECT')
 
-def extrude_bone(bone_head_to_extrude_from, bone_name, translate_vector, unparent=True):
+def extrude_bone(armature, bone_head_to_extrude_from, bone_name, translate_vector, unparent=True):
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.armature.select_all(action='DESELECT')
     bone = armature_data.edit_bones.get(bone_head_to_extrude_from)
@@ -327,13 +328,13 @@ def extrude_bone(bone_head_to_extrude_from, bone_name, translate_vector, unparen
             bpy.ops.object.mode_set(mode='EDIT')
             bpy.ops.armature.parent_clear(type='CLEAR')
 
-def clear_parent(bone_name):
+def clear_parent(armature, bone_name):
     bpy.ops.object.mode_set(mode='EDIT')
     bone = armature_data.edit_bones.get(bone_name)
     if bone:
         bone.parent = None
 
-def move_edit_bone_by_vector(edit_bone_name, translate_vector):
+def move_edit_bone_by_vector(armature, edit_bone_name, translate_vector):
     bpy.ops.object.mode_set(mode='EDIT')
     edit_bone = armature_data.edit_bones.get(edit_bone_name)
     bpy.ops.armature.select_all(action='DESELECT')
@@ -344,7 +345,7 @@ def move_edit_bone_by_vector(edit_bone_name, translate_vector):
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.transform.translate(value=translate_vector)
 
-def parent_bone_keep_offset(child_bone_name, parent_bone_name):
+def parent_bone_keep_offset(armature, child_bone_name, parent_bone_name):
     bpy.ops.object.mode_set(mode='EDIT')
     child_bone = armature_data.edit_bones.get(child_bone_name)
     parent_bone = armature_data.edit_bones.get(parent_bone_name)
@@ -357,7 +358,7 @@ def parent_bone_keep_offset(child_bone_name, parent_bone_name):
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.armature.parent_set(type='OFFSET')
 
-def add_IK_constraint(target_bone_name, effector_bone_name, pole_target_name, chain_length=2, pole_angle=0):
+def add_IK_constraint(armature, target_bone_name, effector_bone_name, pole_target_name, chain_length=2, pole_angle=0):
     bpy.ops.object.mode_set(mode='POSE')
     pole_angle = pole_angle * 0.0174533
     pose_bones = armature.pose.bones
@@ -380,7 +381,7 @@ def add_IK_constraint(target_bone_name, effector_bone_name, pole_target_name, ch
             ik_constraint.pole_angle = pole_angle
             ik_constraint.chain_count = chain_length
 
-def add_copy_location_constraint(target_bone_name, source_bone_name, head_tail=1, target_space='WORLD', owner_space='WORLD', influence=1):
+def add_copy_location_constraint(armature, target_bone_name, source_bone_name, head_tail=1, target_space='WORLD', owner_space='WORLD', influence=1):
     bpy.ops.object.mode_set(mode='POSE')
     pose_bones = armature.pose.bones
     target_bone = pose_bones.get(target_bone_name)
@@ -400,7 +401,7 @@ def add_copy_location_constraint(target_bone_name, source_bone_name, head_tail=1
             copy_location_constraint.owner_space = owner_space
             copy_location_constraint.influence = influence
 
-def add_damped_track_constraint(target_bone_name, source_bone_name):
+def add_damped_track_constraint(armature, target_bone_name, source_bone_name):
     bpy.ops.object.mode_set(mode='POSE')
     pose_bones = armature.pose.bones
     target_bone = pose_bones.get(target_bone_name)
@@ -416,7 +417,7 @@ def add_damped_track_constraint(target_bone_name, source_bone_name):
             damped_track_constraint.target = armature
             damped_track_constraint.subtarget = source_bone_name
 
-def add_track_to_constraint(target_bone_name, source_bone_name, track_axis="X", up="Y"):
+def add_track_to_constraint(armature, target_bone_name, source_bone_name, track_axis="X", up="Y"):
     bpy.ops.object.mode_set(mode='POSE')
     pose_bones = armature.pose.bones
     target_bone = pose_bones.get(target_bone_name)
@@ -433,7 +434,7 @@ def add_track_to_constraint(target_bone_name, source_bone_name, track_axis="X", 
             track_to_constraint.track_axis = f'TRACK_{track_axis}'
             track_to_constraint.up_axis = f'UP_{up}'
 
-def add_copy_rotation_constraint(bone_constrain, bone_to_copy, axes=(1, 1, 1), space='LOCAL', to_space='LOCAL'):
+def add_copy_rotation_constraint(armature, bone_constrain, bone_to_copy, axes=(1, 1, 1), space='LOCAL', to_space='LOCAL'):
     bpy.ops.object.mode_set(mode='POSE')
     pose_bones = armature.pose.bones
     target_bone = pose_bones.get(bone_constrain)
@@ -454,7 +455,7 @@ def add_copy_rotation_constraint(bone_constrain, bone_to_copy, axes=(1, 1, 1), s
             copy_rotation_constraint.target_space = space
             copy_rotation_constraint.owner_space = to_space
 
-def remove_constraint(target_bone_name, constraint_type):
+def remove_constraint(armature, target_bone_name, constraint_type):
     bpy.ops.object.mode_set(mode='POSE')
     pose_bones = armature.pose.bones
     target_bone = pose_bones.get(target_bone_name)
@@ -465,7 +466,7 @@ def remove_constraint(target_bone_name, constraint_type):
                 break
 
 
-def move_constraint_to_top(bone_name, constraint_name="Copy Rotation"):
+def move_constraint_to_top(armature, bone_name, constraint_name="Copy Rotation"):
     bpy.ops.object.mode_set(mode='POSE')
     pose_bones = armature.pose.bones
     bone = pose_bones.get(bone_name)
@@ -526,9 +527,8 @@ def add_mesh_to_collection(mesh, collection_name):
 
     if mesh.name not in collection.objects:
         collection.objects.link(mesh)
-#_______________________________________________________________________________________________________________________
 
-def add_custom_shape_for_bone(bone_name, shape, theme_number, wireframe=True, scale=[1,1,1], translation=[0,0,0], rotation=[0,0,0], mode=None):
+def add_custom_shape_for_bone(armature, bone_name, shape, theme_number, wireframe=True, scale=[1,1,1], translation=[0,0,0], rotation=[0,0,0], mode=None):
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.select_all(action='DESELECT')
 
@@ -579,154 +579,164 @@ def add_custom_shape_for_bone(bone_name, shape, theme_number, wireframe=True, sc
     else:
         print(f"Bone {bone_name} not found in the armature.")
 
-
+ """
 #_______________________________________________________________________________________________________________________
-create_deform_bones_collection()
+armature = bpy.context.active_object
+
+
+if not armature or armature.type != 'ARMATURE':
+    print("Please select an armature object.")
+    exit()
+
+bpy.ops.object.mode_set(mode='EDIT')
+
+
+create_deform_bones_collection(armature)
 add_ik_fk_switch_property(armature, "IK_controls")
-create_driver_bones("IK_DRIVER_BONES", "DRV_IK")
-create_driver_bones("FK_DRIVER_BONES", "DRV_FK")
-add_copy_transforms_constraints_to_deform_bones_for_drivers("IK_DRIVER_BONES", "DRV_IK", True, add_driver_to_copy_transform_influence=True)
-add_copy_transforms_constraints_to_deform_bones_for_drivers("FK_DRIVER_BONES", "DRV_FK", True, add_driver_to_copy_transform_influence=True)
+create_driver_bones(armature, "IK_DRIVER_BONES", "DRV_IK")
+create_driver_bones(armature, "FK_DRIVER_BONES", "DRV_FK")
+add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, "IK_DRIVER_BONES", "DRV_IK", True, add_driver_to_copy_transform_influence=True)
+add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, "FK_DRIVER_BONES", "DRV_FK", True, add_driver_to_copy_transform_influence=True)
 
-duplicate_bone("center_of_mass", "CTRL_base")
-clear_parent("CTRL_base")
+duplicate_bone(armature, "center_of_mass", "CTRL_base")
+clear_parent(armature, "CTRL_base")
 
-connect_bone_tail_to_head("DRV_IK_lowerarm_l", "DRV_IK_hand_l")
-connect_bone_tail_to_head("DRV_IK_lowerarm_r", "DRV_IK_hand_r")
+connect_bone_tail_to_head(armature, "DRV_IK_lowerarm_l", "DRV_IK_hand_l")
+connect_bone_tail_to_head(armature, "DRV_IK_lowerarm_r", "DRV_IK_hand_r")
 
-extrude_bone("DRV_IK_hand_l", "CTRL_hand_l", (0, 20, 0))
-parent_bone_keep_offset("DRV_IK_hand_l", "CTRL_hand_l")
-extrude_bone("DRV_IK_lowerarm_l", "PT_elbow_l", (0, 20, 0))
-move_edit_bone_by_vector("PT_elbow_l", (0, 30, 0))
-add_IK_constraint("DRV_IK_lowerarm_l", "CTRL_hand_l", "PT_elbow_l", 2, 135)
-add_copy_location_constraint("DRV_IK_hand_l", "DRV_IK_lowerarm_l", 1)
+extrude_bone(armature, "DRV_IK_hand_l", "CTRL_hand_l", (0, 20, 0))
+parent_bone_keep_offset(armature, "DRV_IK_hand_l", "CTRL_hand_l")
+extrude_bone(armature, "DRV_IK_lowerarm_l", "PT_elbow_l", (0, 20, 0))
+move_edit_bone_by_vector(armature, "PT_elbow_l", (0, 30, 0))
+add_IK_constraint(armature, "DRV_IK_lowerarm_l", "CTRL_hand_l", "PT_elbow_l", 2, 135)
+add_copy_location_constraint(armature, "DRV_IK_hand_l", "DRV_IK_lowerarm_l", 1)
 
-extrude_bone("DRV_IK_hand_r", "CTRL_hand_r", (0, 20, 0))
-parent_bone_keep_offset("DRV_IK_hand_r", "CTRL_hand_r")
-extrude_bone("DRV_IK_lowerarm_r", "PT_elbow_r", (0, 20, 0))
-move_edit_bone_by_vector("PT_elbow_r", (0, 30, 0))
-add_IK_constraint("DRV_IK_lowerarm_r", "CTRL_hand_r", "PT_elbow_r", 2)
-add_copy_location_constraint("DRV_IK_hand_r", "DRV_IK_lowerarm_r", 1)
+extrude_bone(armature, "DRV_IK_hand_r", "CTRL_hand_r", (0, 20, 0))
+parent_bone_keep_offset(armature, "DRV_IK_hand_r", "CTRL_hand_r")
+extrude_bone(armature, "DRV_IK_lowerarm_r", "PT_elbow_r", (0, 20, 0))
+move_edit_bone_by_vector(armature, "PT_elbow_r", (0, 30, 0))
+add_IK_constraint(armature, "DRV_IK_lowerarm_r", "CTRL_hand_r", "PT_elbow_r", 2)
+add_copy_location_constraint(armature, "DRV_IK_hand_r", "DRV_IK_lowerarm_r", 1)
 
-connect_bone_tail_to_head("DRV_IK_calf_r", "DRV_IK_foot_r")
-extrude_bone("DRV_IK_foot_r", "foot_r_CTRL", (0, 20, 0))
-parent_bone_keep_offset("DRV_IK_foot_r", "foot_r_CTRL")
-extrude_bone("DRV_IK_calf_r", "PT_knee_r", (0, -20, 0))
-move_edit_bone_by_vector("PT_knee_r", (0, -40, 0))
-add_IK_constraint("DRV_IK_calf_r", "foot_r_CTRL", "PT_knee_r", 2, -172)
-add_copy_location_constraint("DRV_IK_foot_r", "DRV_IK_calf_r", 1)
+connect_bone_tail_to_head(armature, "DRV_IK_calf_r", "DRV_IK_foot_r")
+extrude_bone(armature, "DRV_IK_foot_r", "foot_r_CTRL", (0, 20, 0))
+parent_bone_keep_offset(armature, "DRV_IK_foot_r", "foot_r_CTRL")
+extrude_bone(armature, "DRV_IK_calf_r", "PT_knee_r", (0, -20, 0))
+move_edit_bone_by_vector(armature, "PT_knee_r", (0, -40, 0))
+add_IK_constraint(armature, "DRV_IK_calf_r", "foot_r_CTRL", "PT_knee_r", 2, -172)
+add_copy_location_constraint(armature, "DRV_IK_foot_r", "DRV_IK_calf_r", 1)
 
-connect_bone_tail_to_head("DRV_IK_calf_l", "DRV_IK_foot_l")
-extrude_bone("DRV_IK_foot_l", "foot_l_CTRL", (0, 20, 0))
-parent_bone_keep_offset("DRV_IK_foot_l", "foot_l_CTRL")
-extrude_bone("DRV_IK_calf_l", "PT_knee_l", (0, -20, 0))
-move_edit_bone_by_vector("PT_knee_l", (0, -40, 0))
-add_IK_constraint("DRV_IK_calf_l", "foot_l_CTRL", "PT_knee_l", 2, -8)
-add_copy_location_constraint("DRV_IK_foot_l", "DRV_IK_calf_l", 1)
+connect_bone_tail_to_head(armature, "DRV_IK_calf_l", "DRV_IK_foot_l")
+extrude_bone(armature, "DRV_IK_foot_l", "foot_l_CTRL", (0, 20, 0))
+parent_bone_keep_offset(armature, "DRV_IK_foot_l", "foot_l_CTRL")
+extrude_bone(armature, "DRV_IK_calf_l", "PT_knee_l", (0, -20, 0))
+move_edit_bone_by_vector(armature, "PT_knee_l", (0, -40, 0))
+add_IK_constraint(armature, "DRV_IK_calf_l", "foot_l_CTRL", "PT_knee_l", 2, -8)
+add_copy_location_constraint(armature, "DRV_IK_foot_l", "DRV_IK_calf_l", 1)
 
-extrude_bone("DRV_IK_spine_01", "CTRL_center_of_gravity", (0, 20, 0))
-parent_bone_keep_offset("DRV_IK_spine_01", "CTRL_center_of_gravity")
-parent_bone_keep_offset("DRV_IK_pelvis", "CTRL_center_of_gravity")
+extrude_bone(armature, "DRV_IK_spine_01", "CTRL_center_of_gravity", (0, 20, 0))
+parent_bone_keep_offset(armature, "DRV_IK_spine_01", "CTRL_center_of_gravity")
+parent_bone_keep_offset(armature, "DRV_IK_pelvis", "CTRL_center_of_gravity")
 
-duplicate_bone("DRV_IK_head", "CTRL_head")
-move_edit_bone_by_vector("CTRL_head", (0, -30, 0))
-clear_parent("CTRL_head")
+duplicate_bone(armature, "DRV_IK_head", "CTRL_head")
+move_edit_bone_by_vector(armature, "CTRL_head", (0, -30, 0))
+clear_parent(armature, "CTRL_head")
 
-duplicate_bone("DRV_IK_head", "MCH_head")
-scale_edit_bone("MCH_head", (1.1, 1.1, 1.1))
-parent_bone_keep_offset("DRV_IK_head", "MCH_head")
-parent_bone_keep_offset("MCH_head", "DRV_IK_neck_02")
-add_track_to_constraint("MCH_head", "CTRL_head", "X", "Y")
-add_copy_rotation_constraint("DRV_IK_head", "CTRL_head", (1, 1, 1), "LOCAL", "LOCAL")
+duplicate_bone(armature, "DRV_IK_head", "MCH_head")
+scale_edit_bone(armature, "MCH_head", (1.1, 1.1, 1.1))
+parent_bone_keep_offset(armature, "DRV_IK_head", "MCH_head")
+parent_bone_keep_offset(armature, "MCH_head", "DRV_IK_neck_02")
+add_track_to_constraint(armature, "MCH_head", "CTRL_head", "X", "Y")
+add_copy_rotation_constraint(armature, "DRV_IK_head", "CTRL_head", (1, 1, 1), "LOCAL", "LOCAL")
 
-create_bone_at_intersection("DRV_IK_clavicle_l", "CTRL_hand_l", (0, 20, 0), "MCH_clavicle_target_l")
-add_damped_track_constraint("DRV_IK_clavicle_l", "MCH_clavicle_target_l")
-add_copy_location_constraint("MCH_clavicle_target_l", "CTRL_hand_l", 0, "LOCAL", "LOCAL", 0.3)
+create_bone_at_intersection(armature, "DRV_IK_clavicle_l", "CTRL_hand_l", (0, 20, 0), "MCH_clavicle_target_l")
+add_damped_track_constraint(armature, "DRV_IK_clavicle_l", "MCH_clavicle_target_l")
+add_copy_location_constraint(armature, "MCH_clavicle_target_l", "CTRL_hand_l", 0, "LOCAL", "LOCAL", 0.3)
 
-duplicate_bone("DRV_IK_clavicle_l", "MCH_clavicle_l")
-scale_edit_bone("MCH_clavicle_l", (1.1, 1.1, 1.1))
+duplicate_bone(armature, "DRV_IK_clavicle_l", "MCH_clavicle_l")
+scale_edit_bone(armature, "MCH_clavicle_l", (1.1, 1.1, 1.1))
 
-parent_bone_keep_offset("DRV_IK_clavicle_l", "MCH_clavicle_l")
-remove_constraint("DRV_IK_clavicle_l", "DAMPED_TRACK")
+parent_bone_keep_offset(armature, "DRV_IK_clavicle_l", "MCH_clavicle_l")
+remove_constraint(armature, "DRV_IK_clavicle_l", "DAMPED_TRACK")
 
-create_bone_at_intersection("DRV_IK_clavicle_r", "CTRL_hand_r", (0, 20, 0), "MCH_clavicle_target_r")
-add_damped_track_constraint("DRV_IK_clavicle_r", "MCH_clavicle_target_r")
-add_copy_location_constraint("MCH_clavicle_target_r", "CTRL_hand_r", 0, "LOCAL", "LOCAL", 0.3)
+create_bone_at_intersection(armature, "DRV_IK_clavicle_r", "CTRL_hand_r", (0, 20, 0), "MCH_clavicle_target_r")
+add_damped_track_constraint(armature, "DRV_IK_clavicle_r", "MCH_clavicle_target_r")
+add_copy_location_constraint(armature, "MCH_clavicle_target_r", "CTRL_hand_r", 0, "LOCAL", "LOCAL", 0.3)
 
-duplicate_bone("DRV_IK_clavicle_r", "MCH_clavicle_r")
-scale_edit_bone("MCH_clavicle_r", (1.1, 1.1, 1.1))
+duplicate_bone(armature, "DRV_IK_clavicle_r", "MCH_clavicle_r")
+scale_edit_bone(armature, "MCH_clavicle_r", (1.1, 1.1, 1.1))
 
-parent_bone_keep_offset("DRV_IK_clavicle_r", "MCH_clavicle_r")
-remove_constraint("DRV_IK_clavicle_r", "DAMPED_TRACK")
+parent_bone_keep_offset(armature, "DRV_IK_clavicle_r", "MCH_clavicle_r")
+remove_constraint(armature, "DRV_IK_clavicle_r", "DAMPED_TRACK")
 
-extrude_bone("DRV_IK_ball_l", "CTRL_PV_ball_l", (0, 0, 10))
-parent_bone_keep_offset("CTRL_PV_ball_l", "DRV_IK_ball_l")
-parent_bone_keep_offset("foot_l_CTRL", "CTRL_PV_ball_l")
-clear_parent("DRV_IK_ball_l")
+extrude_bone(armature, "DRV_IK_ball_l", "CTRL_PV_ball_l", (0, 0, 10))
+parent_bone_keep_offset(armature, "CTRL_PV_ball_l", "DRV_IK_ball_l")
+parent_bone_keep_offset(armature, "foot_l_CTRL", "CTRL_PV_ball_l")
+clear_parent(armature, "DRV_IK_ball_l")
 
-extrude_bone("DRV_IK_ball_r", "CTRL_PV_ball_r", (0, 0, 10))
-parent_bone_keep_offset("CTRL_PV_ball_r", "DRV_IK_ball_r")
-parent_bone_keep_offset("foot_r_CTRL", "CTRL_PV_ball_r")
-clear_parent("DRV_IK_ball_r")
-
-
+extrude_bone(armature, "DRV_IK_ball_r", "CTRL_PV_ball_r", (0, 0, 10))
+parent_bone_keep_offset(armature, "CTRL_PV_ball_r", "DRV_IK_ball_r")
+parent_bone_keep_offset(armature, "foot_r_CTRL", "CTRL_PV_ball_r")
+clear_parent(armature, "DRV_IK_ball_r")
 
 
-add_copy_rotation_constraint("DRV_IK_thumb_03_l", "DRV_IK_thumb_02_l", (0, 0, 1), "LOCAL", "LOCAL")
-
-add_copy_rotation_constraint("DRV_IK_index_02_l", "DRV_IK_index_01_l", (0, 0, 1), "LOCAL", "LOCAL")
-add_copy_rotation_constraint("DRV_IK_index_03_l", "DRV_IK_index_02_l", (0, 0, 1), "LOCAL", "LOCAL")
-
-add_copy_rotation_constraint("DRV_IK_middle_02_l", "DRV_IK_middle_01_l", (0, 0, 1), "LOCAL", "LOCAL")
-add_copy_rotation_constraint("DRV_IK_middle_03_l", "DRV_IK_middle_02_l", (0, 0, 1), "LOCAL", "LOCAL")
-
-add_copy_rotation_constraint("DRV_IK_ring_02_l", "DRV_IK_ring_01_l", (0, 0, 1), "LOCAL", "LOCAL")
-add_copy_rotation_constraint("DRV_IK_ring_03_l", "DRV_IK_ring_02_l", (0, 0, 1), "LOCAL", "LOCAL")
-
-add_copy_rotation_constraint("DRV_IK_pinky_02_l", "DRV_IK_pinky_01_l", (0, 0, 1), "LOCAL", "LOCAL")
-add_copy_rotation_constraint("DRV_IK_pinky_03_l", "DRV_IK_pinky_02_l", (0, 0, 1), "LOCAL", "LOCAL")
 
 
-add_copy_rotation_constraint("DRV_IK_thumb_03_r", "DRV_IK_thumb_02_r", (0, 0, 1), "LOCAL", "LOCAL")
+add_copy_rotation_constraint(armature, "DRV_IK_thumb_03_l", "DRV_IK_thumb_02_l", (0, 0, 1), "LOCAL", "LOCAL")
 
-add_copy_rotation_constraint("DRV_IK_index_02_r", "DRV_IK_index_01_r", (0, 0, 1), "LOCAL", "LOCAL")
-add_copy_rotation_constraint("DRV_IK_index_03_r", "DRV_IK_index_02_r", (0, 0, 1), "LOCAL", "LOCAL")
+add_copy_rotation_constraint(armature, "DRV_IK_index_02_l", "DRV_IK_index_01_l", (0, 0, 1), "LOCAL", "LOCAL")
+add_copy_rotation_constraint(armature, "DRV_IK_index_03_l", "DRV_IK_index_02_l", (0, 0, 1), "LOCAL", "LOCAL")
 
-add_copy_rotation_constraint("DRV_IK_middle_02_r", "DRV_IK_middle_01_r", (0, 0, 1), "LOCAL", "LOCAL")
-add_copy_rotation_constraint("DRV_IK_middle_03_r", "DRV_IK_middle_02_r", (0, 0, 1), "LOCAL", "LOCAL")
+add_copy_rotation_constraint(armature, "DRV_IK_middle_02_l", "DRV_IK_middle_01_l", (0, 0, 1), "LOCAL", "LOCAL")
+add_copy_rotation_constraint(armature, "DRV_IK_middle_03_l", "DRV_IK_middle_02_l", (0, 0, 1), "LOCAL", "LOCAL")
 
-add_copy_rotation_constraint("DRV_IK_ring_02_r", "DRV_IK_ring_01_r", (0, 0, 1), "LOCAL", "LOCAL")
-add_copy_rotation_constraint("DRV_IK_ring_03_r", "DRV_IK_ring_02_r", (0, 0, 1), "LOCAL", "LOCAL")
+add_copy_rotation_constraint(armature, "DRV_IK_ring_02_l", "DRV_IK_ring_01_l", (0, 0, 1), "LOCAL", "LOCAL")
+add_copy_rotation_constraint(armature, "DRV_IK_ring_03_l", "DRV_IK_ring_02_l", (0, 0, 1), "LOCAL", "LOCAL")
 
-add_copy_rotation_constraint("DRV_IK_pinky_02_r", "DRV_IK_pinky_01_r", (0, 0, 1), "LOCAL", "LOCAL")
-add_copy_rotation_constraint("DRV_IK_pinky_03_r", "DRV_IK_pinky_02_r", (0, 0, 1), "LOCAL", "LOCAL")
-
-
-remove_constraint("ball_l", "COPY_TRANSFORMS")
-add_copy_rotation_constraint("ball_l", "DRV_IK_ball_l", (1, 1, 1), "WORLD", "WORLD")
-move_constraint_to_top("ball_l", "Copy Rotation")
+add_copy_rotation_constraint(armature, "DRV_IK_pinky_02_l", "DRV_IK_pinky_01_l", (0, 0, 1), "LOCAL", "LOCAL")
+add_copy_rotation_constraint(armature, "DRV_IK_pinky_03_l", "DRV_IK_pinky_02_l", (0, 0, 1), "LOCAL", "LOCAL")
 
 
-remove_constraint("ball_r", "COPY_TRANSFORMS")
-add_copy_rotation_constraint("ball_r", "DRV_IK_ball_r", (1, 1, 1), "WORLD", "WORLD")
-move_constraint_to_top("ball_r", "Copy Rotation")
+add_copy_rotation_constraint(armature, "DRV_IK_thumb_03_r", "DRV_IK_thumb_02_r", (0, 0, 1), "LOCAL", "LOCAL")
+
+add_copy_rotation_constraint(armature, "DRV_IK_index_02_r", "DRV_IK_index_01_r", (0, 0, 1), "LOCAL", "LOCAL")
+add_copy_rotation_constraint(armature, "DRV_IK_index_03_r", "DRV_IK_index_02_r", (0, 0, 1), "LOCAL", "LOCAL")
+
+add_copy_rotation_constraint(armature, "DRV_IK_middle_02_r", "DRV_IK_middle_01_r", (0, 0, 1), "LOCAL", "LOCAL")
+add_copy_rotation_constraint(armature, "DRV_IK_middle_03_r", "DRV_IK_middle_02_r", (0, 0, 1), "LOCAL", "LOCAL")
+
+add_copy_rotation_constraint(armature, "DRV_IK_ring_02_r", "DRV_IK_ring_01_r", (0, 0, 1), "LOCAL", "LOCAL")
+add_copy_rotation_constraint(armature, "DRV_IK_ring_03_r", "DRV_IK_ring_02_r", (0, 0, 1), "LOCAL", "LOCAL")
+
+add_copy_rotation_constraint(armature, "DRV_IK_pinky_02_r", "DRV_IK_pinky_01_r", (0, 0, 1), "LOCAL", "LOCAL")
+add_copy_rotation_constraint(armature, "DRV_IK_pinky_03_r", "DRV_IK_pinky_02_r", (0, 0, 1), "LOCAL", "LOCAL")
+
+
+remove_constraint(armature, "ball_l", "COPY_TRANSFORMS")
+add_copy_rotation_constraint(armature, "ball_l", "DRV_IK_ball_l", (1, 1, 1), "WORLD", "WORLD")
+move_constraint_to_top(armature, "ball_l", "Copy Rotation")
+
+
+remove_constraint(armature, "ball_r", "COPY_TRANSFORMS")
+add_copy_rotation_constraint(armature, "ball_r", "DRV_IK_ball_r", (1, 1, 1), "WORLD", "WORLD")
+move_constraint_to_top(armature, "ball_r", "Copy Rotation")
 
 
 
 
 # Parenting all MCH and CTRL bones to the CTRL_base bone
-parent_bone_keep_offset("MCH_clavicle_target_l", "CTRL_base")
-parent_bone_keep_offset("MCH_clavicle_target_r", "CTRL_base")
-parent_bone_keep_offset("CTRL_center_of_gravity", "CTRL_base")
-parent_bone_keep_offset("CTRL_head", "CTRL_base")
-parent_bone_keep_offset("CTRL_hand_l", "CTRL_base")
-parent_bone_keep_offset("CTRL_hand_r", "CTRL_base")
-parent_bone_keep_offset("PT_elbow_r", "CTRL_base")
-parent_bone_keep_offset("PT_knee_r", "CTRL_base")
-parent_bone_keep_offset("PT_elbow_l", "CTRL_base")
-parent_bone_keep_offset("PT_knee_l", "CTRL_base")
-parent_bone_keep_offset("DRV_IK_ball_l", "CTRL_base")
-parent_bone_keep_offset("DRV_IK_ball_r", "CTRL_base")
+parent_bone_keep_offset(armature, "MCH_clavicle_target_l", "CTRL_base")
+parent_bone_keep_offset(armature, "MCH_clavicle_target_r", "CTRL_base")
+parent_bone_keep_offset(armature, "CTRL_center_of_gravity", "CTRL_base")
+parent_bone_keep_offset(armature, "CTRL_head", "CTRL_base")
+parent_bone_keep_offset(armature, "CTRL_hand_l", "CTRL_base")
+parent_bone_keep_offset(armature, "CTRL_hand_r", "CTRL_base")
+parent_bone_keep_offset(armature, "PT_elbow_r", "CTRL_base")
+parent_bone_keep_offset(armature, "PT_knee_r", "CTRL_base")
+parent_bone_keep_offset(armature, "PT_elbow_l", "CTRL_base")
+parent_bone_keep_offset(armature, "PT_knee_l", "CTRL_base")
+parent_bone_keep_offset(armature, "DRV_IK_ball_l", "CTRL_base")
+parent_bone_keep_offset(armature, "DRV_IK_ball_r", "CTRL_base")
 
 
 
@@ -738,131 +748,131 @@ create_custom_shape_mesh("circle")
 create_custom_shape_mesh("sphere")
 create_custom_shape_mesh("plane", curled=True)
 
-add_custom_shape_for_bone("CTRL_base", "circle", "14", wireframe=False, scale=[50,50,50], mode="IK")
+add_custom_shape_for_bone(armature, "CTRL_base", "circle", "14", wireframe=False, scale=[50,50,50], mode="IK")
 
-add_custom_shape_for_bone("CTRL_head", "sphere", "01", wireframe=False, scale=[5,5,5], mode="IK")
+add_custom_shape_for_bone(armature, "CTRL_head", "sphere", "01", wireframe=False, scale=[5,5,5], mode="IK")
 
-add_custom_shape_for_bone("PT_elbow_l", "sphere", "05", wireframe=True, scale=[5,5,5], mode="IK")
-add_custom_shape_for_bone("PT_elbow_r", "sphere", "05", wireframe=True, scale=[5,5,5], mode="IK")
+add_custom_shape_for_bone(armature, "PT_elbow_l", "sphere", "05", wireframe=True, scale=[5,5,5], mode="IK")
+add_custom_shape_for_bone(armature, "PT_elbow_r", "sphere", "05", wireframe=True, scale=[5,5,5], mode="IK")
 
-add_custom_shape_for_bone("PT_knee_l", "sphere", "11", wireframe=True, scale=[5,5,5], mode="IK")
-add_custom_shape_for_bone("PT_knee_r", "sphere", "11", wireframe=True, scale=[5,5,5], mode="IK")
+add_custom_shape_for_bone(armature, "PT_knee_l", "sphere", "11", wireframe=True, scale=[5,5,5], mode="IK")
+add_custom_shape_for_bone(armature, "PT_knee_r", "sphere", "11", wireframe=True, scale=[5,5,5], mode="IK")
 
-add_custom_shape_for_bone("CTRL_center_of_gravity", "cube", "09", wireframe=True, scale=[ 20,30,40], mode="IK")
-
-
-add_custom_shape_for_bone("DRV_IK_neck_01", "sphere", "04", wireframe=True, scale=[ 2,2,2], mode="IK")
-add_custom_shape_for_bone("DRV_IK_neck_02", "sphere", "04", wireframe=True, scale=[ 2,2,2], mode="IK")
-add_custom_shape_for_bone("DRV_IK_spine_01", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode="IK")
-add_custom_shape_for_bone("DRV_IK_spine_02", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode="IK")
-add_custom_shape_for_bone("DRV_IK_spine_03", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode="IK")
-add_custom_shape_for_bone("DRV_IK_spine_04", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode="IK")
-add_custom_shape_for_bone("DRV_IK_spine_05", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode="IK")
-
-add_custom_shape_for_bone("DRV_IK_ball_r", "circle", "02", wireframe=True, scale=[5,10,0], translation=[-1.5, -12, -1], rotation=[0,90,0], mode="IK")
-add_custom_shape_for_bone("DRV_IK_ball_l", "circle", "02", wireframe=True, scale=[5,10,0], translation=[-1.5, -12, -1], rotation=[0,90,0], mode="IK")
-add_custom_shape_for_bone("CTRL_PV_ball_r", "circle", "02", wireframe=True, scale=[5,5,5], translation=[0, -1.5, 0], rotation=[90,0,0], mode="IK")
-add_custom_shape_for_bone("CTRL_PV_ball_l", "circle", "02", wireframe=True, scale=[5,5,5], translation=[0, -1.5, 0], rotation=[90,0,0], mode="IK")
-
-add_custom_shape_for_bone("DRV_IK_thumb_02_l", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
-add_custom_shape_for_bone("DRV_IK_index_01_l", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
-add_custom_shape_for_bone("DRV_IK_middle_01_l", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
-add_custom_shape_for_bone("DRV_IK_ring_01_l", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
-add_custom_shape_for_bone("DRV_IK_pinky_01_l", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
-
-add_custom_shape_for_bone("CTRL_hand_l", "cube", "02", wireframe=True, scale=[ 15,8,1], translation=[10, -3, 5], rotation=[0,10,-10], mode="IK")
-
-add_custom_shape_for_bone("DRV_IK_thumb_02_r", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
-add_custom_shape_for_bone("DRV_IK_index_01_r", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
-add_custom_shape_for_bone("DRV_IK_middle_01_r", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
-add_custom_shape_for_bone("DRV_IK_ring_01_r", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
-add_custom_shape_for_bone("DRV_IK_pinky_01_r", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
-
-add_custom_shape_for_bone("CTRL_hand_r", "cube", "02", wireframe=True, scale=[ 15,8,1], translation=[-10, 3, 5], rotation=[0,-10,10], mode="IK")
-
-add_custom_shape_for_bone("DRV_IK_clavicle_l", "curled_plane", "02", wireframe=True, scale=[5,10,10], translation=[0, 10, 8.5], rotation=[0,15,90], mode="IK")
-add_custom_shape_for_bone("DRV_IK_clavicle_r", "curled_plane", "02", wireframe=True, scale=[5,10,10], translation=[0, 10, 8.5], rotation=[0,15,90], mode="IK")
+add_custom_shape_for_bone(armature, "CTRL_center_of_gravity", "cube", "09", wireframe=True, scale=[ 20,30,40], mode="IK")
 
 
+add_custom_shape_for_bone(armature, "DRV_IK_neck_01", "sphere", "04", wireframe=True, scale=[ 2,2,2], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_neck_02", "sphere", "04", wireframe=True, scale=[ 2,2,2], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_spine_01", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_spine_02", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_spine_03", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_spine_04", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_spine_05", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode="IK")
 
-assign_bones_to_new_collection(["MCH_head", "MCH_clavicle_l", "MCH_clavicle_target_l", "MCH_clavicle_r", "MCH_clavicle_target_r"], "MCH_BONES")
+add_custom_shape_for_bone(armature, "DRV_IK_ball_r", "circle", "02", wireframe=True, scale=[5,10,0], translation=[-1.5, -12, -1], rotation=[0,90,0], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_ball_l", "circle", "02", wireframe=True, scale=[5,10,0], translation=[-1.5, -12, -1], rotation=[0,90,0], mode="IK")
+add_custom_shape_for_bone(armature, "CTRL_PV_ball_r", "circle", "02", wireframe=True, scale=[5,5,5], translation=[0, -1.5, 0], rotation=[90,0,0], mode="IK")
+add_custom_shape_for_bone(armature, "CTRL_PV_ball_l", "circle", "02", wireframe=True, scale=[5,5,5], translation=[0, -1.5, 0], rotation=[90,0,0], mode="IK")
 
-add_custom_shape_for_bone("DRV_FK_thumb_02_r", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
-add_custom_shape_for_bone("DRV_FK_index_01_r", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
-add_custom_shape_for_bone("DRV_FK_middle_01_r", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
-add_custom_shape_for_bone("DRV_FK_ring_01_r", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
-add_custom_shape_for_bone("DRV_FK_pinky_01_r", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
-add_custom_shape_for_bone("DRV_FK_thumb_02_l", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
-add_custom_shape_for_bone("DRV_FK_index_01_l", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
-add_custom_shape_for_bone("DRV_FK_middle_01_l", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
-add_custom_shape_for_bone("DRV_FK_ring_01_l", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
-add_custom_shape_for_bone("DRV_FK_pinky_01_l", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_IK_thumb_02_l", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_index_01_l", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_middle_01_l", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_ring_01_l", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_pinky_01_l", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
 
-add_custom_shape_for_bone("DRV_FK_thumb_03_r", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
-add_custom_shape_for_bone("DRV_FK_index_02_r", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
-add_custom_shape_for_bone("DRV_FK_middle_02_r", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
-add_custom_shape_for_bone("DRV_FK_ring_02_r", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
-add_custom_shape_for_bone("DRV_FK_pinky_02_r", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
-add_custom_shape_for_bone("DRV_FK_thumb_03_l", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
-add_custom_shape_for_bone("DRV_FK_index_02_l", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
-add_custom_shape_for_bone("DRV_FK_middle_02_l", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
-add_custom_shape_for_bone("DRV_FK_ring_02_l", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
-add_custom_shape_for_bone("DRV_FK_pinky_02_l", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
+add_custom_shape_for_bone(armature, "CTRL_hand_l", "cube", "02", wireframe=True, scale=[ 15,8,1], translation=[10, -3, 5], rotation=[0,10,-10], mode="IK")
 
-add_custom_shape_for_bone("DRV_FK_index_03_r", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_middle_03_r", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_ring_03_r", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_pinky_03_r", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_index_03_l", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_middle_03_l", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_ring_03_l", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_pinky_03_l", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_IK_thumb_02_r", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_index_01_r", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_middle_01_r", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_ring_01_r", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_pinky_01_r", "sphere", "04", wireframe=True, scale=[1,1,1], mode="IK")
 
-add_custom_shape_for_bone("DRV_FK_index_metacarpal_r", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_middle_metacarpal_r", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_ring_metacarpal_r", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_pinky_metacarpal_r", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_index_metacarpal_l", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_middle_metacarpal_l", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_ring_metacarpal_l", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_pinky_metacarpal_l", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "CTRL_hand_r", "cube", "02", wireframe=True, scale=[ 15,8,1], translation=[-10, 3, 5], rotation=[0,-10,10], mode="IK")
 
-add_custom_shape_for_bone("DRV_FK_clavicle_l", "sphere", "03", wireframe=True, scale=[1,1,1], mode="FK")
-add_custom_shape_for_bone("DRV_FK_upperarm_l", "sphere", "12", wireframe=True, scale=[5,5,5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_lowerarm_l", "sphere", "03", wireframe=True, scale=[3,3,3], mode="FK")
-add_custom_shape_for_bone("DRV_FK_hand_l", "sphere", "12", wireframe=True, scale=[2,2,2], mode="FK")
-
-add_custom_shape_for_bone("DRV_FK_clavicle_r", "sphere", "03", wireframe=True, scale=[1,1,1], mode="FK")
-add_custom_shape_for_bone("DRV_FK_upperarm_r", "sphere", "12", wireframe=True, scale=[5,5,5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_lowerarm_r", "sphere", "03", wireframe=True, scale=[3,3,3], mode="FK")
-add_custom_shape_for_bone("DRV_FK_hand_r", "sphere", "12", wireframe=True, scale=[2,2,2], mode="FK")
-
-add_custom_shape_for_bone("DRV_FK_thigh_l", "sphere", "03", wireframe=True, scale=[5,5,5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_calf_l", "sphere", "03", wireframe=True, scale=[5,5,5], mode="FK")
-
-add_custom_shape_for_bone("DRV_FK_foot_l", "sphere", "07", wireframe=True, scale=[3,3,3], mode="FK")
-add_custom_shape_for_bone("DRV_FK_ball_l", "sphere", "07", wireframe=True, scale=[2,2,2], mode="FK")
-
-add_custom_shape_for_bone("DRV_FK_thigh_r", "sphere", "03", wireframe=True, scale=[5,5,5], mode="FK")
-add_custom_shape_for_bone("DRV_FK_calf_r", "sphere", "03", wireframe=True, scale=[5,5,5], mode="FK")
-
-add_custom_shape_for_bone("DRV_FK_foot_r", "sphere", "07", wireframe=True, scale=[3,3,3], mode="FK")
-add_custom_shape_for_bone("DRV_FK_ball_r", "sphere", "07", wireframe=True, scale=[2,2,2], mode="FK")
-
-add_custom_shape_for_bone("DRV_FK_pelvis", "sphere", "04", wireframe=True, scale=[3,3,3], mode="FK")
-
-add_custom_shape_for_bone("DRV_FK_spine_01", "sphere", "03", wireframe=True, scale=[2,2,2], mode="FK")
-add_custom_shape_for_bone("DRV_FK_spine_02", "sphere", "03", wireframe=True, scale=[2,2,2], mode="FK")
-add_custom_shape_for_bone("DRV_FK_spine_03", "sphere", "03", wireframe=True, scale=[2,2,2], mode="FK")
-add_custom_shape_for_bone("DRV_FK_spine_04", "sphere", "03", wireframe=True, scale=[2,2,2], mode="FK")
-add_custom_shape_for_bone("DRV_FK_spine_05", "sphere", "03", wireframe=True, scale=[3,3,3], mode="FK")
-
-add_custom_shape_for_bone("DRV_FK_neck_01", "sphere", "12", wireframe=True, scale=[1,1,1], mode="FK")
-add_custom_shape_for_bone("DRV_FK_neck_02", "sphere", "12", wireframe=True, scale=[1,1,1], mode="FK")
-add_custom_shape_for_bone("DRV_FK_head", "sphere", "07", wireframe=True, scale=[5,5,5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_IK_clavicle_l", "curled_plane", "02", wireframe=True, scale=[5,10,10], translation=[0, 10, 8.5], rotation=[0,15,90], mode="IK")
+add_custom_shape_for_bone(armature, "DRV_IK_clavicle_r", "curled_plane", "02", wireframe=True, scale=[5,10,10], translation=[0, 10, 8.5], rotation=[0,15,90], mode="IK")
 
 
-assign_bones_to_new_collection([
+
+assign_bones_to_new_collection(armature, ["MCH_head", "MCH_clavicle_l", "MCH_clavicle_target_l", "MCH_clavicle_r", "MCH_clavicle_target_r"], "MCH_BONES")
+
+add_custom_shape_for_bone(armature, "DRV_FK_thumb_02_r", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_index_01_r", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_middle_01_r", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_ring_01_r", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_pinky_01_r", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_thumb_02_l", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_index_01_l", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_middle_01_l", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_ring_01_l", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_pinky_01_l", "sphere", "07", wireframe=True, scale=[1,1,1], mode="FK")
+
+add_custom_shape_for_bone(armature, "DRV_FK_thumb_03_r", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_index_02_r", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_middle_02_r", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_ring_02_r", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_pinky_02_r", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_thumb_03_l", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_index_02_l", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_middle_02_l", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_ring_02_l", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_pinky_02_l", "sphere", "03", wireframe=True, scale=[0.7,0.7,0.7], mode="FK")
+
+add_custom_shape_for_bone(armature, "DRV_FK_index_03_r", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_middle_03_r", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_ring_03_r", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_pinky_03_r", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_index_03_l", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_middle_03_l", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_ring_03_l", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_pinky_03_l", "sphere", "12", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+
+add_custom_shape_for_bone(armature, "DRV_FK_index_metacarpal_r", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_middle_metacarpal_r", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_ring_metacarpal_r", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_pinky_metacarpal_r", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_index_metacarpal_l", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_middle_metacarpal_l", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_ring_metacarpal_l", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_pinky_metacarpal_l", "sphere", "03", wireframe=True, scale=[0.5,0.5,0.5], mode="FK")
+
+add_custom_shape_for_bone(armature, "DRV_FK_clavicle_l", "sphere", "03", wireframe=True, scale=[1,1,1], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_upperarm_l", "sphere", "12", wireframe=True, scale=[5,5,5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_lowerarm_l", "sphere", "03", wireframe=True, scale=[3,3,3], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_hand_l", "sphere", "12", wireframe=True, scale=[2,2,2], mode="FK")
+
+add_custom_shape_for_bone(armature, "DRV_FK_clavicle_r", "sphere", "03", wireframe=True, scale=[1,1,1], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_upperarm_r", "sphere", "12", wireframe=True, scale=[5,5,5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_lowerarm_r", "sphere", "03", wireframe=True, scale=[3,3,3], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_hand_r", "sphere", "12", wireframe=True, scale=[2,2,2], mode="FK")
+
+add_custom_shape_for_bone(armature, "DRV_FK_thigh_l", "sphere", "03", wireframe=True, scale=[5,5,5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_calf_l", "sphere", "03", wireframe=True, scale=[5,5,5], mode="FK")
+
+add_custom_shape_for_bone(armature, "DRV_FK_foot_l", "sphere", "07", wireframe=True, scale=[3,3,3], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_ball_l", "sphere", "07", wireframe=True, scale=[2,2,2], mode="FK")
+
+add_custom_shape_for_bone(armature, "DRV_FK_thigh_r", "sphere", "03", wireframe=True, scale=[5,5,5], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_calf_r", "sphere", "03", wireframe=True, scale=[5,5,5], mode="FK")
+
+add_custom_shape_for_bone(armature, "DRV_FK_foot_r", "sphere", "07", wireframe=True, scale=[3,3,3], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_ball_r", "sphere", "07", wireframe=True, scale=[2,2,2], mode="FK")
+
+add_custom_shape_for_bone(armature, "DRV_FK_pelvis", "sphere", "04", wireframe=True, scale=[3,3,3], mode="FK")
+
+add_custom_shape_for_bone(armature, "DRV_FK_spine_01", "sphere", "03", wireframe=True, scale=[2,2,2], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_spine_02", "sphere", "03", wireframe=True, scale=[2,2,2], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_spine_03", "sphere", "03", wireframe=True, scale=[2,2,2], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_spine_04", "sphere", "03", wireframe=True, scale=[2,2,2], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_spine_05", "sphere", "03", wireframe=True, scale=[3,3,3], mode="FK")
+
+add_custom_shape_for_bone(armature, "DRV_FK_neck_01", "sphere", "12", wireframe=True, scale=[1,1,1], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_neck_02", "sphere", "12", wireframe=True, scale=[1,1,1], mode="FK")
+add_custom_shape_for_bone(armature, "DRV_FK_head", "sphere", "07", wireframe=True, scale=[5,5,5], mode="FK")
+
+
+assign_bones_to_new_collection(armature, [
 "DRV_FK_index_metacarpal_r",
 "DRV_FK_middle_metacarpal_r",
 "DRV_FK_ring_metacarpal_r",
@@ -926,7 +936,7 @@ assign_bones_to_new_collection([
 "DRV_FK_head"
 ],"CONTROL_RIG", False)
 
-assign_bones_to_new_collection([
+assign_bones_to_new_collection(armature, [
 "CTRL_base",
 "CTRL_head",
 "DRV_IK_neck_01",
@@ -961,9 +971,9 @@ assign_bones_to_new_collection([
 "DRV_IK_clavicle_r"
 ], "CONTROL_RIG")
 
-set_bone_collection_visibility("DEFORM_BONES", False)
-set_bone_collection_visibility("IK_DRIVER_BONES", False)
-set_bone_collection_visibility("FK_DRIVER_BONES", False)
-set_bone_collection_visibility("MCH_BONES", False)
+set_bone_collection_visibility(armature, "DEFORM_BONES", False)
+set_bone_collection_visibility(armature, "IK_DRIVER_BONES", False)
+set_bone_collection_visibility(armature, "FK_DRIVER_BONES", False)
+set_bone_collection_visibility(armature, "MCH_BONES", False)
 
 bpy.ops.object.mode_set(mode='POSE')
