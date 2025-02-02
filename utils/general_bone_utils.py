@@ -87,8 +87,9 @@ def remove_connected_relation(armature, bone_name):
     if armature.type != 'ARMATURE':
         raise ValueError(f"In RemoveConnectedRelation: Error: {armature.name} is not an armature.")
 
-
-    bpy.ops.object.mode_set(mode='OBJECT')
+    if bpy.context.object and bpy.context.object.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
+    
     bpy.context.view_layer.objects.active = armature
 
     if bone_name not in armature.data.bones:

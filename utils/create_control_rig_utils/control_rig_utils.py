@@ -1,13 +1,13 @@
 import bpy
 from mathutils import Vector
-
+from .. import remove_connected_relation
 
 ######################################## Unreal Specific Utils ##########################################################
 main_bones = [
-    "clavicle_l", "upperarm_l", "lowerarm_l", "hand_l",
-    "thigh_r", "calf_r", "foot_r", "ball_l",
     "pelvis",
     "spine_01", "spine_02", "spine_03", "spine_04", "spine_05",
+    "clavicle_l", "upperarm_l", "lowerarm_l", "hand_l",
+    "thigh_r", "calf_r", "foot_r", "ball_l",
     "neck_01", "neck_02", "head",
     "thumb_01_l", "thumb_02_l", "thumb_03_l",
     "index_metacarpal_l", "index_01_l", "index_02_l", "index_03_l",
@@ -25,9 +25,144 @@ flipped_bones = [
     "pinky_metacarpal_r", "pinky_01_r", "pinky_02_r", "pinky_03_r"
 ]
 
+def apply_ik_transforms(armature):
+    bpy.context.view_layer.objects.active = armature
+    bpy.ops.object.mode_set(mode='POSE')
+    
+    ik_driver_collection = get_bone_collection(armature, "IK_DRIVER_BONES")
+    ik_ctrl_collection = get_bone_collection(armature, "IK_CTRL_BONES")
+    if not ik_ctrl_collection:
+        return
+    
+    bpy.context.view_layer.update()
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    armature_eval = armature.evaluated_get(depsgraph)
+
+    for bone in ik_ctrl_collection.bones:
+        pose_bone = armature.pose.bones.get(bone.name)
+        eval_bone = armature_eval.pose.bones.get(bone.name)
+
+        if pose_bone and eval_bone:
+           pose_bone.matrix = eval_bone.matrix
+    
+    for bone in ik_driver_collection.bones:
+        pose_bone = armature.pose.bones.get(bone.name)
+        eval_bone = armature_eval.pose.bones.get(bone.name)
+
+        if pose_bone and eval_bone:
+           pose_bone.matrix = eval_bone.matrix
+
+    print("IK transforms locked in without baking.")
+
+def apply_fk_transforms(armature):
+    bpy.context.view_layer.objects.active = armature
+    bpy.ops.object.mode_set(mode='POSE')
+    
+    fk_driver_collection = get_bone_collection(armature, "FK_DRIVER_BONES")
+    if not fk_driver_collection:
+        return
+    
+    bpy.context.view_layer.update()
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    armature_eval = armature.evaluated_get(depsgraph)
+
+    for bone in fk_driver_collection.bones:
+        pose_bone = armature.pose.bones.get(bone.name)
+        eval_bone = armature_eval.pose.bones.get(bone.name)
+
+        if pose_bone and eval_bone:
+           pose_bone.matrix = eval_bone.matrix
+
+    print("IK transforms locked in without baking.")
+
+def add_transform_constraint_to_flipped_bone_with_driver(armature, bone, constraint_name, driver):
+    transform_constraint = bone.constraints.new(type='TRANSFORM')
+    transform_constraint.name = constraint_name
+    transform_constraint.target = armature
+    transform_constraint.subtarget = bone.name
+    transform_constraint.map_from = 'ROTATION'
+    transform_constraint.map_to = 'ROTATION'
+    transform_constraint.to_min_x_rot = 3.14159
+    if driver is not None:
+        driver_property_name = driver.get("property_name")
+        invert = driver.get("invert")
+        add_driver_to_constraint_influence(armature, transform_constraint, driver_property_name, invert=invert)
+
+
+
+def add_copy_transforms_constraint_with_driver(armature, bone_name, target_bone_name, constraint_name, driver):
+    bone = armature.pose.bones.get(bone_name)
+    if not bone:
+        return
+    copy_transform_constraint = bone.constraints.new(type='COPY_TRANSFORMS')
+    copy_transform_constraint.name = constraint_name
+    copy_transform_constraint.target = armature
+    copy_transform_constraint.subtarget = target_bone_name
+    
+    if driver is not None:
+        driver_property_name = driver.get("property_name")
+        invert = driver.get("invert")
+        add_driver_to_constraint_influence(armature, copy_transform_constraint, driver_property_name, invert=invert)
+
+def add_copy_rotation_constraint_with_driver(armature, bone_name, target_bone_name, constraint_name, driver):
+    bone = armature.pose.bones.get(bone_name)
+    if not bone:
+        return
+    copy_transform_constraint = bone.constraints.new(type='COPY_ROTATION')
+    copy_transform_constraint.name = constraint_name
+    copy_transform_constraint.target = armature
+    copy_transform_constraint.subtarget = target_bone_name
+    
+    if driver is not None:
+        driver_property_name = driver.get("property_name")
+        invert = driver.get("invert")
+        add_driver_to_constraint_influence(armature, copy_transform_constraint, driver_property_name, invert=invert)
+
+def add_copy_location_constraint_with_driver(armature, bone_name, target_bone_name, constraint_name, driver):
+    bone = armature.pose.bones.get(bone_name)
+    if not bone:
+        return
+    copy_transform_constraint = bone.constraints.new(type='COPY_LOCATION')
+    copy_transform_constraint.name = constraint_name
+    copy_transform_constraint.target = armature
+    copy_transform_constraint.subtarget = target_bone_name
+    
+    if driver is not None:
+        driver_property_name = driver.get("property_name")
+        invert = driver.get("invert")
+        add_driver_to_constraint_influence(armature, copy_transform_constraint, driver_property_name, invert=invert)
+
+# driver = {"property_name": driver_property_name, "invert_condition" : invert_condition} src IK trg SNAP
+def add_driver_bone_constraints_to_collection_of_bones(armature, source_driver_bone_collection_name, source_driver_prefix, target_driver_bone_collection_name, target_driver_prefix, add_transform_constraint_to_flipped_bones=True, driver=None):
+    bpy.ops.object.mode_set(mode='POSE')
+    source_driver_bone_collection = get_bone_collection(armature, source_driver_bone_collection_name)
+    target_driver_bone_collection = get_bone_collection(armature, target_driver_bone_collection_name)
+    pose_bones = armature.pose.bones
+    for bone in source_driver_bone_collection.bones:
+        bone.select = True
+        driven_bone = pose_bones.get(bone.name.replace(f"{source_driver_prefix}_", f"{target_driver_prefix}_"))
+        
+        if driven_bone and driven_bone.name in target_driver_bone_collection.bones:
+            copy_constraint_name = f"Copy {source_driver_prefix.replace('DRV_', '')} Transforms -> {bone.name}"
+            driven_bone.bone.select = True
+            armature.data.bones.active = driven_bone.bone
+            
+            if driven_bone.name.replace(f"{target_driver_prefix}_", "") in flipped_bones:                
+                add_copy_transforms_constraint_with_driver(armature, driven_bone.name, bone.name, copy_constraint_name, driver)                
+            
+                if add_transform_constraint_to_flipped_bones:
+                    transform_constraint_name = f"{target_driver_prefix}_TRANSFORM (FLIP rotation) -> {bone.name}"
+                    add_transform_constraint_to_flipped_bone_with_driver(armature, driven_bone, transform_constraint_name, driver)
+            
+            else:
+                add_copy_transforms_constraint_with_driver(armature, driven_bone.name, bone.name, copy_constraint_name, driver)
+
+            driven_bone.bone.select = False
+            bone.select = False
+
 def add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, driver_bone_collection_name, driver_prefix, add_transform_constraint_to_flipped_bones=True, add_driver_to_copy_transform_influence = False):
     bpy.ops.object.mode_set(mode='POSE')
-    driver_bone_collection = get_bone_collection(driver_bone_collection_name)
+    driver_bone_collection = get_bone_collection(armature, driver_bone_collection_name)
     pose_bones = armature.pose.bones
     for bone in driver_bone_collection.bones:
         bone.select = True
@@ -69,9 +204,9 @@ def add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, driver
 ######################################## Overly Specific bone creation Utils #####################################
 
 def create_driver_bones(armature, collection_name, driver_prefix):
-    new_collection = create_bone_collection(collection_name)
+    new_collection = create_bone_collection(armature, collection_name)
     bpy.ops.object.mode_set(mode='OBJECT')
-    deform_bone_collection = get_bone_collection("DEFORM_BONES")
+    deform_bone_collection = get_bone_collection(armature, "DEFORM_BONES")
     deform_bone_names = [bone.name for bone in deform_bone_collection.bones]
 
     
@@ -98,6 +233,7 @@ def create_driver_bones(armature, collection_name, driver_prefix):
 
     for edit_bone in duplicated_bones:
         edit_bone.use_deform = False
+        edit_bone.use_connect = False
         edit_bone_obj = armature_data.bones.get(edit_bone.name)
         if edit_bone_obj:
             bone_name = edit_bone_obj.name
@@ -124,6 +260,7 @@ def create_driver_bones(armature, collection_name, driver_prefix):
     bpy.ops.armature.collection_unassign(name=deform_bone_collection.name)
     bpy.ops.armature.collection_assign(name=new_collection.name)
     bpy.ops.armature.select_all(action='DESELECT')
+
 
 ######################################## Edit Bone Operation Utils ###############################################
 # TBD: A lot of the below util functions should be moved to the bone_transform_utils.py file
@@ -210,12 +347,14 @@ def extrude_bone(armature, bone_head_to_extrude_from, bone_name, translate_vecto
         bpy.ops.armature.select_all(action='DESELECT')
         new_bone = armature_data.edit_bones.get(f"{bone_head_to_extrude_from}.001")
         new_bone.name = bone_name
-        if new_bone and unparent:
+        if new_bone:
+            new_bone.use_deform = False
             new_bone.select = True
             armature_data.edit_bones.active = new_bone
             bpy.ops.object.mode_set(mode='OBJECT')
             bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.armature.parent_clear(type='CLEAR')
+            if unparent:
+                bpy.ops.armature.parent_clear(type='CLEAR')
 
 def clear_parent(armature, bone_name):
     bpy.ops.object.mode_set(mode='EDIT')
@@ -277,6 +416,8 @@ def add_driver_to_constraint_influence(armature, constraint, property_name, inve
 ######################################## Collection and Bone collection related Utils ###################################
 
 def create_bone_collection(armature, name):
+    if bpy.context.object and bpy.context.object.mode != 'EDIT':
+        bpy.ops.object.mode_set(mode='EDIT')
     armature_data = armature.data
     if name not in armature_data.collections:
         return armature_data.collections.new(name)
@@ -307,7 +448,7 @@ def assign_bones_to_new_collection(armature, bone_names, new_collection_name, sh
         
     
 
-    new_collection = create_bone_collection(new_collection_name)
+    new_collection = create_bone_collection(armature, new_collection_name)
     print(f"new_collection: {new_collection}")
     
     if not new_collection:
@@ -326,6 +467,11 @@ def assign_bones_to_new_collection(armature, bone_names, new_collection_name, sh
 
 
 def create_deform_bones_collection(armature):
+    if bpy.context.object and bpy.context.object.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+    bpy.context.view_layer.objects.active = armature
+
     deform_bone_collection = create_bone_collection(armature, "DEFORM_BONES")
     bpy.ops.armature.select_all(action='SELECT')
     bpy.ops.object.mode_set(mode='OBJECT')
@@ -339,7 +485,7 @@ def create_deform_bones_collection(armature):
 def set_bone_collection_visibility(armature, collection_name, is_visible):
     bpy.ops.object.mode_set(mode='EDIT')
     armature_data = armature.data
-    bone_collection = get_bone_collection(collection_name)
+    bone_collection = get_bone_collection(armature, collection_name)
     if bone_collection:
         armature_data.collections[bone_collection.name].is_visible = is_visible
     else:
@@ -370,7 +516,7 @@ def add_IK_constraint(armature, target_bone_name, effector_bone_name, pole_targe
             ik_constraint.pole_angle = pole_angle
             ik_constraint.chain_count = chain_length
 
-def add_copy_location_constraint(armature, target_bone_name, source_bone_name, head_tail=1, target_space='WORLD', owner_space='WORLD', influence=1):
+def add_copy_location_constraint(armature, target_bone_name, source_bone_name, head_tail=1, target_space='WORLD', owner_space='WORLD', influence=1, driver=None):
     bpy.ops.object.mode_set(mode='POSE')
     pose_bones = armature.pose.bones
     target_bone = pose_bones.get(target_bone_name)
@@ -468,7 +614,8 @@ def move_constraint_to_top(armature, bone_name, constraint_name="Copy Rotation")
 ######################################## Custom Bone Shape Utils ########################################################
 
 def create_curled_plane(name, width, height, curl_factor=1.3):
-    bpy.ops.object.mode_set(mode='OBJECT')
+    if bpy.context.object and bpy.context.object.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.select_all(action='DESELECT')
     bpy.ops.mesh.primitive_plane_add(size=1)
     plane = bpy.context.active_object
@@ -486,7 +633,9 @@ def create_curled_plane(name, width, height, curl_factor=1.3):
     return plane
 
 def create_custom_shape_mesh(shape, curled=False):
-    bpy.ops.object.mode_set(mode='OBJECT')
+    if bpy.context.object and bpy.context.object.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
+
     bpy.ops.object.select_all(action='DESELECT')
     
     if shape == 'circle':
@@ -514,7 +663,8 @@ def create_custom_shape_mesh(shape, curled=False):
     add_mesh_to_collection(custom_shape, "rig_shapes")
 
 def find_mesh_by_name(mesh_name):
-    bpy.ops.object.mode_set(mode='OBJECT')
+    if bpy.context.object and bpy.context.object.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
     for obj in bpy.data.objects:
         if obj.type == 'MESH' and obj.name == mesh_name:
             return obj
@@ -522,7 +672,8 @@ def find_mesh_by_name(mesh_name):
     return None
  
 def add_mesh_to_collection(mesh, collection_name):
-    bpy.ops.object.mode_set(mode='OBJECT')
+    if bpy.context.object and bpy.context.object.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
     
     if collection_name in bpy.data.collections:
         collection = bpy.data.collections[collection_name]
@@ -538,7 +689,9 @@ def add_mesh_to_collection(mesh, collection_name):
         collection.objects.link(mesh)
 
 def add_custom_shape_for_bone(armature, bone_name, shape, theme_number, wireframe=True, scale=[1,1,1], translation=[0,0,0], rotation=[0,0,0], mode=None):
-    bpy.ops.object.mode_set(mode='OBJECT')
+    print(f"MODE FOR SHAPE = {mode}")
+    if bpy.context.object and bpy.context.object.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.select_all(action='DESELECT')
 
     custom_shape = find_mesh_by_name(f"{shape}_custom_shape")
@@ -552,8 +705,8 @@ def add_custom_shape_for_bone(armature, bone_name, shape, theme_number, wirefram
 
     bpy.ops.object.mode_set(mode='POSE')
     pose_bone = armature.pose.bones.get(bone_name)
-    pose_bone.bone.color.palette = f"THEME{theme_number}"
     if pose_bone:
+        pose_bone.bone.color.palette = f"THEME{theme_number}"
         pose_bone.custom_shape = custom_shape
         pose_bone.custom_shape_scale_xyz[0] = scale[0]
         pose_bone.custom_shape_scale_xyz[1] = scale[1]
