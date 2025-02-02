@@ -25,8 +25,6 @@ def generate_rig(armature, ik=True, fk=False, snap=False):
         exit()
 
     bpy.ops.object.mode_set(mode='EDIT')
-    driverSnapToIk = {"property_name": "IK_controls", "invert" : False}
-    driverSnapToFk = {"property_name": "IK_controls", "invert" : True}
 
     create_custom_shape_mesh("cube")
     create_custom_shape_mesh("circle")
@@ -45,108 +43,39 @@ def generate_rig(armature, ik=True, fk=False, snap=False):
     add_copy_location_constraint(armature, "ik_hand_gun", "hand_r")
     
     if(ik and fk):
+        create_driver_bones(armature, "IK_DRIVER_BONES", "DRV_IK") # these were originally in the generate_ik and generate_fk rigs... but since they copied the copy transform constraints, as well it led to a feedback loop when the rig was generated
+        create_driver_bones(armature, "FK_DRIVER_BONES", "DRV_FK") # so they have to be created before any of the constraints get applied on them
         add_ik_fk_switch_property(armature, "IK_controls")
 
-    if(ik):
-        shape_mode = "IK" if ik and fk else None
-        print(f"Generating IK rig. Shape mode: {shape_mode}")
-        generate_ik_rig(armature, shape_mode)
+    if ik and (not fk):
+        create_driver_bones(armature, "IK_DRIVER_BONES", "DRV_IK")
+    
+    if fk and (not ik):
+        create_driver_bones(armature, "FK_DRIVER_BONES", "DRV_FK")
+    
     if(fk):
         shape_mode = "FK" if ik and fk else None
         print(f"Generating FK rig. Shape mode: {shape_mode}")
         generate_fk_rig(armature, shape_mode)
     
+    if(ik):
+        shape_mode = "IK" if ik and fk else None
+        print(f"Generating IK rig. Shape mode: {shape_mode}")
+        generate_ik_rig(armature, shape_mode, snap)
     
-    if (ik and fk and snap):
-        add_driver_bone_constraints_to_collection_of_bones(armature, "IK_DRIVER_BONES", "DRV_IK", "FK_DRIVER_BONES", "DRV_FK", False, driverSnapToIk)
-        add_driver_bone_constraints_to_collection_of_bones(armature, "FK_DRIVER_BONES", "DRV_FK", "IK_DRIVER_BONES", "DRV_IK", False, driverSnapToFk)
-
-        duplicate_bone(armature, "CTRL_head", "SNAP_CTRL_head")
-        clear_parent(armature, "SNAP_CTRL_head")
-        parent_bone_keep_offset(armature, "SNAP_CTRL_head", "DRV_FK_head")
-
-        ################################ Creat faux pole targets ##############################
-
-        duplicate_bone(armature, "PT_elbow_r", "SNAP_PT_elbow_r")
-        clear_parent(armature, "SNAP_PT_elbow_r")
-        parent_bone_keep_offset(armature, "SNAP_PT_elbow_r", "DRV_FK_lowerarm_r")
-
-        duplicate_bone(armature, "PT_elbow_l", "SNAP_PT_elbow_l")
-        clear_parent(armature, "SNAP_PT_elbow_l")
-        parent_bone_keep_offset(armature, "SNAP_PT_elbow_l", "DRV_FK_lowerarm_l")
-
-        duplicate_bone(armature, "PT_knee_l", "SNAP_PT_knee_l")
-        clear_parent(armature, "SNAP_PT_knee_l")
-        parent_bone_keep_offset(armature, "SNAP_PT_knee_l", "DRV_FK_calf_l")
-
-        duplicate_bone(armature, "PT_knee_r", "SNAP_PT_knee_r")
-        clear_parent(armature, "SNAP_PT_knee_r")
-        parent_bone_keep_offset(armature, "SNAP_PT_knee_r", "DRV_FK_calf_r")
-
-        duplicate_bone(armature, "MCH_clavicle_target_l", "SNAP_clavicle_target_l")
-        clear_parent(armature, "SNAP_clavicle_target_l")
-        add_copy_location_constraint(armature ,"SNAP_clavicle_target_l", "SNAP_CTRL_hand_l", 1, "LOCAL", "LOCAL", 0.3)
-
-        duplicate_bone(armature, "MCH_clavicle_target_r", "SNAP_clavicle_target_r")
-        clear_parent(armature, "SNAP_clavicle_target_r")
-        add_copy_location_constraint(armature ,"SNAP_clavicle_target_r", "SNAP_CTRL_hand_r", 1, "LOCAL", "LOCAL", 0.3)
-
-        ################################ Create faux ctrl bones ##############################
-
-        duplicate_bone(armature, "CTRL_hand_l", "SNAP_CTRL_hand_l")
-        clear_parent(armature, "SNAP_CTRL_hand_l")
-        parent_bone_keep_offset(armature, "SNAP_CTRL_hand_l", "DRV_FK_hand_l")
-
-        duplicate_bone(armature, "CTRL_hand_r", "SNAP_CTRL_hand_r")
-        clear_parent(armature, "SNAP_CTRL_hand_r")
-        parent_bone_keep_offset(armature, "SNAP_CTRL_hand_r", "DRV_FK_hand_r")
-
-        duplicate_bone(armature, "CTRL_PV_ball_l", "SNAP_CTRL_PV_ball_l")
-        clear_parent(armature, "SNAP_CTRL_PV_ball_l")
-        parent_bone_keep_offset(armature, "SNAP_CTRL_PV_ball_l", "DRV_FK_ball_l")
-
-        duplicate_bone(armature, "CTRL_PV_ball_r", "SNAP_CTRL_PV_ball_r")
-        clear_parent(armature, "SNAP_CTRL_PV_ball_r")
-        parent_bone_keep_offset(armature, "SNAP_CTRL_PV_ball_r", "DRV_FK_ball_r")
-
-        duplicate_bone(armature, "CTRL_center_of_gravity", "SNAP_CTRL_center_of_gravity")
-        clear_parent(armature, "SNAP_CTRL_center_of_gravity")
-        parent_bone_keep_offset(armature, "SNAP_CTRL_center_of_gravity", "DRV_FK_pelvis")
-
-        ################################ Create faux ctrl bones ##############################
-
-        assign_bones_to_new_collection(armature, ["SNAP_PT_knee_l","SNAP_PT_knee_r","SNAP_PT_elbow_l","SNAP_PT_elbow_r","SNAP_CTRL_head", "SNAP_CTRL_PV_ball_l", "SNAP_CTRL_PV_ball_r", "SNAP_CTRL_center_of_gravity", "SNAP_CTRL_hand_l", "SNAP_CTRL_hand_r"],"SNAP_DRIVER_BONES", True)
-
-
-        ################################ Add copy transform with driver to the faux pole target bones ##############################
-        add_copy_location_constraint_with_driver(armature, "CTRL_head" ,"SNAP_CTRL_head", "Copy SNAP Location -> SNAP_CTRL_head", driver=driverSnapToFk)
-        add_copy_rotation_constraint_with_driver(armature, "CTRL_head" ,"SNAP_CTRL_head", "Copy SNAP Rotation -> SNAP_CTRL_head", driver=driverSnapToFk)
-
-        add_copy_location_constraint_with_driver(armature, "PT_elbow_r" ,"SNAP_PT_elbow_r", "Copy SNAP Location -> SNAP_PT_elbow_r", driver=driverSnapToFk)
-        add_copy_location_constraint_with_driver(armature, "PT_elbow_l" ,"SNAP_PT_elbow_l", "Copy SNAP Location -> SNAP_PT_elbow_l", driver=driverSnapToFk)
-        add_copy_location_constraint_with_driver(armature, "PT_knee_r" ,"SNAP_PT_knee_r", "Copy SNAP Location -> SNAP_PT_knee_r", driver=driverSnapToFk)
-        add_copy_location_constraint_with_driver(armature, "PT_knee_l" ,"SNAP_PT_knee_l", "Copy SNAP Location -> SNAP_PT_knee_l", driver=driverSnapToFk)
-
-        add_copy_transforms_constraint_with_driver(armature, "CTRL_hand_l", "SNAP_CTRL_hand_l", 'Copy SNAP Transforms -> SNAP_CTRL_hand_l', driver=driverSnapToFk)
-        add_copy_transforms_constraint_with_driver(armature, "CTRL_hand_r", "SNAP_CTRL_hand_r", 'Copy SNAP Transforms -> SNAP_CTRL_hand_r', driver=driverSnapToFk)
-
-        add_copy_transforms_constraint_with_driver(armature, "CTRL_PV_ball_l", "SNAP_CTRL_PV_ball_l", 'Copy SNAP Transforms -> SNAP_CTRL_PV_ball_l', driver=driverSnapToFk)
-        add_copy_transforms_constraint_with_driver(armature, "CTRL_PV_ball_r", "SNAP_CTRL_PV_ball_r", 'Copy SNAP Transforms -> SNAP_CTRL_PV_ball_r', driver=driverSnapToFk)
-
-        add_copy_transforms_constraint_with_driver(armature, "CTRL_center_of_gravity", "SNAP_CTRL_center_of_gravity", 'Copy SNAP Transforms -> SNAP_CTRL_center_of_gravity', driver=driverSnapToFk)
-
-        add_copy_transforms_constraint_with_driver(armature, "MCH_clavicle_target_r", "SNAP_clavicle_target_r", 'Copy SNAP Transforms -> SNAP_clavicle_target_r', driver=driverSnapToFk)
-        add_copy_transforms_constraint_with_driver(armature, "MCH_clavicle_target_l", "SNAP_clavicle_target_l", 'Copy SNAP Transforms -> SNAP_clavicle_target_l', driver=driverSnapToFk)
-
+    
+    if ik:
+        set_bone_collection_visibility(armature, "IK_DRIVER_BONES", False)
+    if fk:
+        set_bone_collection_visibility(armature, "FK_DRIVER_BONES", False)
+    if snap:
         set_bone_collection_visibility(armature, "SNAP_DRIVER_BONES", False)
-
-
     set_bone_collection_visibility(armature, "DEFORM_BONES", False)
 
     bpy.ops.object.mode_set(mode='POSE')
 
 def generate_fk_rig(armature, shape_mode = None):
-    create_driver_bones(armature, "FK_DRIVER_BONES", "DRV_FK")
+    #create_driver_bones(armature, "FK_DRIVER_BONES", "DRV_FK")
     add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, "FK_DRIVER_BONES", "DRV_FK", True, add_driver_to_copy_transform_influence=True)
 
     add_custom_shape_for_bone(armature, "DRV_FK_thumb_02_r", "sphere", "07", wireframe=True, scale=[1,1,1], mode=shape_mode)
@@ -223,14 +152,12 @@ def generate_fk_rig(armature, shape_mode = None):
     add_custom_shape_for_bone(armature, "DRV_FK_neck_02", "sphere", "12", wireframe=True, scale=[1,1,1], mode=shape_mode)
     add_custom_shape_for_bone(armature, "DRV_FK_head", "sphere", "07", wireframe=True, scale=[5,5,5], mode=shape_mode)
 
-    set_bone_collection_visibility(armature, "FK_DRIVER_BONES", False)
     assign_bones_to_new_collection(armature, [ "DRV_FK_index_metacarpal_r", "DRV_FK_middle_metacarpal_r", "DRV_FK_ring_metacarpal_r", "DRV_FK_pinky_metacarpal_r", "DRV_FK_index_metacarpal_l", "DRV_FK_middle_metacarpal_l", "DRV_FK_ring_metacarpal_l", "DRV_FK_pinky_metacarpal_l", "DRV_FK_thumb_02_r", "DRV_FK_index_01_r", "DRV_FK_middle_01_r", "DRV_FK_ring_01_r", "DRV_FK_pinky_01_r", "DRV_FK_thumb_02_l", "DRV_FK_index_01_l", "DRV_FK_middle_01_l", "DRV_FK_ring_01_l", "DRV_FK_pinky_01_l", "DRV_FK_thumb_03_r", "DRV_FK_index_02_r", "DRV_FK_middle_02_r", "DRV_FK_ring_02_r", "DRV_FK_pinky_02_r", "DRV_FK_thumb_03_l", "DRV_FK_index_02_l", "DRV_FK_middle_02_l", "DRV_FK_ring_02_l", "DRV_FK_pinky_02_l", "DRV_FK_index_03_r", "DRV_FK_middle_03_r", "DRV_FK_ring_03_r", "DRV_FK_pinky_03_r", "DRV_FK_index_03_l", "DRV_FK_middle_03_l", "DRV_FK_ring_03_l", "DRV_FK_pinky_03_l", "DRV_FK_clavicle_l", "DRV_FK_upperarm_l", "DRV_FK_lowerarm_l", "DRV_FK_hand_l", "DRV_FK_clavicle_r", "DRV_FK_upperarm_r", "DRV_FK_lowerarm_r", "DRV_FK_hand_r", "DRV_FK_thigh_l", "DRV_FK_calf_l", "DRV_FK_foot_l", "DRV_FK_ball_l", "DRV_FK_thigh_r", "DRV_FK_calf_r", "DRV_FK_foot_r", "DRV_FK_ball_r", "DRV_FK_pelvis", "DRV_FK_spine_01", "DRV_FK_spine_02", "DRV_FK_spine_03", "DRV_FK_spine_04", "DRV_FK_spine_05", "DRV_FK_neck_01", "DRV_FK_neck_02", "DRV_FK_head"
     ],"CONTROL_RIG", False)
 
 
 
-def generate_ik_rig(armature, shape_mode):
-    create_driver_bones(armature, "IK_DRIVER_BONES", "DRV_IK")
+def generate_ik_rig(armature, shape_mode, snap):
     add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, "IK_DRIVER_BONES", "DRV_IK", True, add_driver_to_copy_transform_influence=True)
 
     duplicate_bone(armature, "center_of_mass", "CTRL_base")
@@ -282,7 +209,7 @@ def generate_ik_rig(armature, shape_mode):
     parent_bone_keep_offset(armature, "DRV_IK_head", "MCH_head")
     parent_bone_keep_offset(armature, "MCH_head", "DRV_IK_neck_02")
     add_track_to_constraint(armature, "MCH_head", "CTRL_head", "X", "Y")
-    add_copy_rotation_constraint(armature, "DRV_IK_head", "CTRL_head", (1, 1, 1), "LOCAL", "LOCAL")
+    add_copy_rotation_constraint(armature, "DRV_IK_head", "CTRL_head", (1, 0, 0), "LOCAL", "LOCAL")
 
     create_bone_at_intersection(armature, "DRV_IK_clavicle_l", "CTRL_hand_l", (0, 20, 0), "MCH_clavicle_target_l")
     add_damped_track_constraint(armature, "DRV_IK_clavicle_l", "MCH_clavicle_target_l")
@@ -356,7 +283,96 @@ def generate_ik_rig(armature, shape_mode):
     add_copy_rotation_constraint(armature, "ball_r", "DRV_IK_ball_r", (1, 1, 1), "WORLD", "WORLD")
     move_constraint_to_top(armature, "ball_r", "Copy Rotation")
 
+    ##################################################################### SNAP CONTROLS BELOW ########################################################################
+    if snap:
+        driverSnapToIk = {"property_name": "IK_controls", "invert" : False}
+        driverSnapToFk = {"property_name": "IK_controls", "invert" : True}
+        add_driver_bone_constraints_to_collection_of_bones(armature, "IK_DRIVER_BONES", "DRV_IK", "FK_DRIVER_BONES", "DRV_FK", False, driverSnapToIk)
+        add_driver_bone_constraints_to_collection_of_bones(armature, "FK_DRIVER_BONES", "DRV_FK", "IK_DRIVER_BONES", "DRV_IK", False, driverSnapToFk)
 
+        duplicate_bone(armature, "CTRL_head", "SNAP_CTRL_head")
+        clear_parent(armature, "SNAP_CTRL_head")
+        parent_bone_keep_offset(armature, "SNAP_CTRL_head", "DRV_FK_head")
+
+        ################################ Creat faux pole targets ##############################
+
+        duplicate_bone(armature, "PT_elbow_r", "SNAP_PT_elbow_r")
+        clear_parent(armature, "SNAP_PT_elbow_r")
+        parent_bone_keep_offset(armature, "SNAP_PT_elbow_r", "DRV_FK_lowerarm_r")
+
+        duplicate_bone(armature, "PT_elbow_l", "SNAP_PT_elbow_l")
+        clear_parent(armature, "SNAP_PT_elbow_l")
+        parent_bone_keep_offset(armature, "SNAP_PT_elbow_l", "DRV_FK_lowerarm_l")
+
+        duplicate_bone(armature, "PT_knee_l", "SNAP_PT_knee_l")
+        clear_parent(armature, "SNAP_PT_knee_l")
+        parent_bone_keep_offset(armature, "SNAP_PT_knee_l", "DRV_FK_calf_l")
+
+        duplicate_bone(armature, "PT_knee_r", "SNAP_PT_knee_r")
+        clear_parent(armature, "SNAP_PT_knee_r")
+        parent_bone_keep_offset(armature, "SNAP_PT_knee_r", "DRV_FK_calf_r")
+
+        duplicate_bone(armature, "MCH_clavicle_target_l", "SNAP_clavicle_target_l")
+        clear_parent(armature, "SNAP_clavicle_target_l")
+        parent_bone_keep_offset(armature, "SNAP_clavicle_target_l", "DRV_FK_pelvis")
+        add_copy_location_constraint(armature ,"SNAP_clavicle_target_l", "SNAP_CTRL_hand_l", 1, "LOCAL", "LOCAL", 0.3)
+
+        duplicate_bone(armature, "MCH_clavicle_target_r", "SNAP_clavicle_target_r")
+        clear_parent(armature, "SNAP_clavicle_target_r")
+        parent_bone_keep_offset(armature, "SNAP_clavicle_target_r", "DRV_FK_pelvis")
+        add_copy_location_constraint(armature ,"SNAP_clavicle_target_r", "SNAP_CTRL_hand_r", 1, "LOCAL", "LOCAL", 0.3)
+
+        ################################ Create faux ctrl bones ##############################
+
+        duplicate_bone(armature, "CTRL_hand_l", "SNAP_CTRL_hand_l")
+        clear_parent(armature, "SNAP_CTRL_hand_l")
+        parent_bone_keep_offset(armature, "SNAP_CTRL_hand_l", "DRV_FK_hand_l")
+
+        duplicate_bone(armature, "CTRL_hand_r", "SNAP_CTRL_hand_r")
+        clear_parent(armature, "SNAP_CTRL_hand_r")
+        parent_bone_keep_offset(armature, "SNAP_CTRL_hand_r", "DRV_FK_hand_r")
+
+        duplicate_bone(armature, "CTRL_PV_ball_l", "SNAP_CTRL_PV_ball_l")
+        clear_parent(armature, "SNAP_CTRL_PV_ball_l")
+        parent_bone_keep_offset(armature, "SNAP_CTRL_PV_ball_l", "DRV_FK_ball_l")
+
+        duplicate_bone(armature, "CTRL_PV_ball_r", "SNAP_CTRL_PV_ball_r")
+        clear_parent(armature, "SNAP_CTRL_PV_ball_r")
+        parent_bone_keep_offset(armature, "SNAP_CTRL_PV_ball_r", "DRV_FK_ball_r")
+
+        duplicate_bone(armature, "CTRL_center_of_gravity", "SNAP_CTRL_center_of_gravity")
+        clear_parent(armature, "SNAP_CTRL_center_of_gravity")
+        parent_bone_keep_offset(armature, "SNAP_CTRL_center_of_gravity", "DRV_FK_pelvis")
+
+        ################################ Create faux ctrl bones ##############################
+
+        assign_bones_to_new_collection(armature, ["SNAP_PT_knee_l","SNAP_PT_knee_r","SNAP_PT_elbow_l","SNAP_PT_elbow_r","SNAP_CTRL_head", "SNAP_CTRL_PV_ball_l", "SNAP_CTRL_PV_ball_r", "SNAP_CTRL_center_of_gravity", "SNAP_CTRL_hand_l", "SNAP_CTRL_hand_r", "SNAP_clavicle_target_l", "SNAP_clavicle_target_r"],"SNAP_DRIVER_BONES", True)
+
+
+        ################################ Add copy transform with driver to the faux pole target bones ##############################
+        add_copy_location_constraint_with_driver(armature, "CTRL_head" ,"SNAP_CTRL_head", "Copy SNAP Location -> SNAP_CTRL_head", driver=driverSnapToFk)
+
+        #alter below function to only copy the location of the local X axis
+        add_copy_rotation_constraint_with_driver(armature, "CTRL_head" ,"SNAP_CTRL_head", "Copy SNAP Rotation -> SNAP_CTRL_head", driver=driverSnapToFk, rotation_details={"axes": (1,0,0), "space": "LOCAL", "to_space":"LOCAL"})
+
+        add_copy_location_constraint_with_driver(armature, "PT_elbow_r" ,"SNAP_PT_elbow_r", "Copy SNAP Location -> SNAP_PT_elbow_r", driver=driverSnapToFk)
+        add_copy_location_constraint_with_driver(armature, "PT_elbow_l" ,"SNAP_PT_elbow_l", "Copy SNAP Location -> SNAP_PT_elbow_l", driver=driverSnapToFk)
+        add_copy_location_constraint_with_driver(armature, "PT_knee_r" ,"SNAP_PT_knee_r", "Copy SNAP Location -> SNAP_PT_knee_r", driver=driverSnapToFk)
+        add_copy_location_constraint_with_driver(armature, "PT_knee_l" ,"SNAP_PT_knee_l", "Copy SNAP Location -> SNAP_PT_knee_l", driver=driverSnapToFk)
+
+        add_copy_transforms_constraint_with_driver(armature, "CTRL_hand_l", "SNAP_CTRL_hand_l", 'Copy SNAP Transforms -> SNAP_CTRL_hand_l', driver=driverSnapToFk)
+        add_copy_transforms_constraint_with_driver(armature, "CTRL_hand_r", "SNAP_CTRL_hand_r", 'Copy SNAP Transforms -> SNAP_CTRL_hand_r', driver=driverSnapToFk)
+
+        add_copy_transforms_constraint_with_driver(armature, "CTRL_PV_ball_l", "SNAP_CTRL_PV_ball_l", 'Copy SNAP Transforms -> SNAP_CTRL_PV_ball_l', driver=driverSnapToFk)
+        add_copy_transforms_constraint_with_driver(armature, "CTRL_PV_ball_r", "SNAP_CTRL_PV_ball_r", 'Copy SNAP Transforms -> SNAP_CTRL_PV_ball_r', driver=driverSnapToFk)
+
+        add_copy_transforms_constraint_with_driver(armature, "CTRL_center_of_gravity", "SNAP_CTRL_center_of_gravity", 'Copy SNAP Transforms -> SNAP_CTRL_center_of_gravity', driver=driverSnapToFk)
+
+        add_copy_transforms_constraint_with_driver(armature, "MCH_clavicle_target_r", "SNAP_clavicle_target_r", 'Copy SNAP Transforms -> SNAP_clavicle_target_r', driver=driverSnapToFk)
+        add_copy_transforms_constraint_with_driver(armature, "MCH_clavicle_target_l", "SNAP_clavicle_target_l", 'Copy SNAP Transforms -> SNAP_clavicle_target_l', driver=driverSnapToFk)
+
+
+    ##################################################################### SNAP CONTROLS ABOVE ########################################################################
 
 
     # Parenting all MCH and CTRL bones to the CTRL_base bone
@@ -422,11 +438,10 @@ def generate_ik_rig(armature, shape_mode):
 
 
     assign_bones_to_new_collection(armature, ["PT_knee_l","PT_knee_r","PT_elbow_l","PT_elbow_r","CTRL_head", "CTRL_PV_ball_l", "CTRL_PV_ball_r", "CTRL_center_of_gravity", "CTRL_hand_l", "CTRL_hand_r"],"IK_CTRL_BONES", False)
-    assign_bones_to_new_collection(armature, ["MCH_head", "MCH_clavicle_l", "MCH_clavicle_target_l", "MCH_clavicle_r", "MCH_clavicle_target_r"], "MCH_BONES", False)
+    assign_bones_to_new_collection(armature, ["MCH_head", "MCH_clavicle_l", "MCH_clavicle_target_l", "MCH_clavicle_r", "MCH_clavicle_target_r"], "MCH_BONES", True)
     assign_bones_to_new_collection(armature, [ "CTRL_base", "CTRL_head", "DRV_IK_neck_01", "DRV_IK_neck_02", "DRV_IK_spine_01", "DRV_IK_spine_02", "DRV_IK_spine_03", "DRV_IK_spine_04", "DRV_IK_spine_05", "CTRL_hand_l", "CTRL_hand_r", "PT_elbow_l", "PT_elbow_r", "DRV_IK_thumb_02_l", "DRV_IK_index_01_l", "DRV_IK_middle_01_l", "DRV_IK_ring_01_l", "DRV_IK_pinky_01_l", "DRV_IK_thumb_02_r", "DRV_IK_index_01_r", "DRV_IK_middle_01_r", "DRV_IK_ring_01_r", "DRV_IK_pinky_01_r", "CTRL_center_of_gravity", "PT_knee_l", "PT_knee_r", "CTRL_PV_ball_l", "CTRL_PV_ball_r", "DRV_IK_ball_r", "DRV_IK_ball_l", "DRV_IK_clavicle_l", "DRV_IK_clavicle_r"
     ], "CONTROL_RIG", False)
 
-    set_bone_collection_visibility(armature, "IK_DRIVER_BONES", False)
     set_bone_collection_visibility(armature, "MCH_BONES", False)
 
 

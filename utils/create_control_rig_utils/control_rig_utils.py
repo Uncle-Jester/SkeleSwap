@@ -104,19 +104,28 @@ def add_copy_transforms_constraint_with_driver(armature, bone_name, target_bone_
         invert = driver.get("invert")
         add_driver_to_constraint_influence(armature, copy_transform_constraint, driver_property_name, invert=invert)
 
-def add_copy_rotation_constraint_with_driver(armature, bone_name, target_bone_name, constraint_name, driver):
+def add_copy_rotation_constraint_with_driver(armature, bone_name, target_bone_name, constraint_name, driver, rotation_details = None):
     bone = armature.pose.bones.get(bone_name)
     if not bone:
         return
-    copy_transform_constraint = bone.constraints.new(type='COPY_ROTATION')
-    copy_transform_constraint.name = constraint_name
-    copy_transform_constraint.target = armature
-    copy_transform_constraint.subtarget = target_bone_name
+    copy_rotation_constraint = bone.constraints.new(type='COPY_ROTATION')
+    copy_rotation_constraint.name = constraint_name
+    copy_rotation_constraint.target = armature
+    copy_rotation_constraint.subtarget = target_bone_name
+    if rotation_details:
+        axes = rotation_details.get('axes')
+        space = rotation_details.get('space')
+        to_space = rotation_details.get('to_space')
+        copy_rotation_constraint.use_x = bool(axes[0])
+        copy_rotation_constraint.use_y = bool(axes[1])
+        copy_rotation_constraint.use_z = bool(axes[2])
+        copy_rotation_constraint.target_space = space
+        copy_rotation_constraint.owner_space = to_space
     
     if driver is not None:
         driver_property_name = driver.get("property_name")
         invert = driver.get("invert")
-        add_driver_to_constraint_influence(armature, copy_transform_constraint, driver_property_name, invert=invert)
+        add_driver_to_constraint_influence(armature, copy_rotation_constraint, driver_property_name, invert=invert)
 
 def add_copy_location_constraint_with_driver(armature, bone_name, target_bone_name, constraint_name, driver):
     bone = armature.pose.bones.get(bone_name)
@@ -132,7 +141,6 @@ def add_copy_location_constraint_with_driver(armature, bone_name, target_bone_na
         invert = driver.get("invert")
         add_driver_to_constraint_influence(armature, copy_transform_constraint, driver_property_name, invert=invert)
 
-# driver = {"property_name": driver_property_name, "invert_condition" : invert_condition} src IK trg SNAP
 def add_driver_bone_constraints_to_collection_of_bones(armature, source_driver_bone_collection_name, source_driver_prefix, target_driver_bone_collection_name, target_driver_prefix, add_transform_constraint_to_flipped_bones=True, driver=None):
     bpy.ops.object.mode_set(mode='POSE')
     source_driver_bone_collection = get_bone_collection(armature, source_driver_bone_collection_name)
@@ -233,7 +241,7 @@ def create_driver_bones(armature, collection_name, driver_prefix):
 
     for edit_bone in duplicated_bones:
         edit_bone.use_deform = False
-        edit_bone.use_connect = False
+        edit_bone.use_connect = False        
         edit_bone_obj = armature_data.bones.get(edit_bone.name)
         if edit_bone_obj:
             bone_name = edit_bone_obj.name
@@ -244,6 +252,7 @@ def create_driver_bones(armature, collection_name, driver_prefix):
                     bone_name = bone_name.replace(".002", "")
                 elif ".003" in bone_name:
                     bone_name = bone_name.replace(".003", "")
+            
             armature_data.bones.get(edit_bone.name).name = f"{driver_prefix}_{bone_name}"
 
 
