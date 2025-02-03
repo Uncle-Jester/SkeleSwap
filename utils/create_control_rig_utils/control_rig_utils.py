@@ -52,7 +52,7 @@ def apply_ik_transforms(armature):
         if pose_bone and eval_bone:
            pose_bone.matrix = eval_bone.matrix
 
-    print("IK transforms locked in without baking.")
+    bpy.context.view_layer.update()
 
 def apply_fk_transforms(armature):
     bpy.context.view_layer.objects.active = armature
@@ -72,8 +72,8 @@ def apply_fk_transforms(armature):
 
         if pose_bone and eval_bone:
            pose_bone.matrix = eval_bone.matrix
-
-    print("IK transforms locked in without baking.")
+    
+    bpy.context.view_layer.update()
 
 def add_transform_constraint_to_flipped_bone_with_driver(armature, bone, constraint_name, driver):
     transform_constraint = bone.constraints.new(type='TRANSFORM')
@@ -104,7 +104,7 @@ def add_copy_transforms_constraint_with_driver(armature, bone_name, target_bone_
         invert = driver.get("invert")
         add_driver_to_constraint_influence(armature, copy_transform_constraint, driver_property_name, invert=invert)
 
-def add_copy_rotation_constraint_with_driver(armature, bone_name, target_bone_name, constraint_name, driver, rotation_details = None):
+def add_copy_rotation_constraint_with_driver(armature, bone_name, target_bone_name, constraint_name, driver = None, rotation_details = None):
     bone = armature.pose.bones.get(bone_name)
     if not bone:
         return
@@ -432,6 +432,7 @@ def create_bone_collection(armature, name):
         return armature_data.collections.new(name)
     else:
         print(f"Collection with name {name} already exists.")
+        return armature_data.collections[name]
     
 def get_bone_collection(armature, name):
     armature_data = armature.data
@@ -482,6 +483,7 @@ def create_deform_bones_collection(armature):
     bpy.context.view_layer.objects.active = armature
 
     deform_bone_collection = create_bone_collection(armature, "DEFORM_BONES")
+
     bpy.ops.armature.select_all(action='SELECT')
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.mode_set(mode='EDIT')
@@ -599,13 +601,23 @@ def add_copy_rotation_constraint(armature, bone_constrain, bone_to_copy, axes=(1
             copy_rotation_constraint.target_space = space
             copy_rotation_constraint.owner_space = to_space
 
-def remove_constraint(armature, target_bone_name, constraint_type):
+def remove_constraint_by_type(armature, target_bone_name, constraint_type):
     bpy.ops.object.mode_set(mode='POSE')
     pose_bones = armature.pose.bones
     target_bone = pose_bones.get(target_bone_name)
     if target_bone:
         for constraint in target_bone.constraints:
             if constraint.type == constraint_type:
+                target_bone.constraints.remove(constraint)
+                break
+
+def remove_constraint_by_name(armature, target_bone_name, constraint_name):
+    bpy.ops.object.mode_set(mode='POSE')
+    pose_bones = armature.pose.bones
+    target_bone = pose_bones.get(target_bone_name)
+    if target_bone:
+        for constraint in target_bone.constraints:
+            if constraint.name == constraint_name:
                 target_bone.constraints.remove(constraint)
                 break
 
