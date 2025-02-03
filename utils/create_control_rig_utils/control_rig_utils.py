@@ -1,5 +1,5 @@
-import bpy
-from mathutils import Vector
+import bpy #type: ignore
+from mathutils import Vector #type: ignore
 from .. import remove_connected_relation
 
 ######################################## Unreal Specific Utils ##########################################################

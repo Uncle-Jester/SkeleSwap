@@ -1,4 +1,4 @@
-import bpy
+import bpy #type: ignore
 
 from.utils.create_control_rig_utils import create_custom_shape_mesh, add_custom_shape_for_bone, create_deform_bones_collection, add_ik_fk_switch_property, add_copy_transforms_constraints_to_deform_bones_for_drivers, create_driver_bones, duplicate_bone, clear_parent, connect_bone_tail_to_head, extrude_bone, parent_bone_keep_offset, add_IK_constraint, add_copy_location_constraint, add_damped_track_constraint, add_track_to_constraint, add_copy_rotation_constraint, remove_constraint_by_name, remove_constraint_by_type, move_constraint_to_top, move_edit_bone_by_vector, scale_edit_bone, create_bone_at_intersection, assign_bones_to_new_collection, set_bone_collection_visibility, get_bone_collection, add_driver_bone_constraints_to_collection_of_bones, apply_fk_transforms, apply_ik_transforms, add_copy_rotation_constraint_with_driver, add_copy_location_constraint_with_driver, add_copy_transforms_constraint_with_driver
 #TBD: Clean up this incredible mess
@@ -43,7 +43,7 @@ def generate_rig(armature, ik=True, fk=False, snap=False):
     add_copy_rotation_constraint(armature, "ik_hand_gun", "hand_r")
     
     if(ik and fk):
-        create_driver_bones(armature, "IK_DRIVER_BONES", "DRV_IK") # these were originally in the generate_ik and generate_fk rigs... but since they copied the copy transform constraints, as well it led to a feedback loop when the rig was generated
+        create_driver_bones(armature, "IK_DRIVER_BONES", "DRV_IK") # these were originally in the generate_ik and generate_fk rig functions... but since they copied the copy transform constraints as well, it led to a feedback loop when the rig was generated
         create_driver_bones(armature, "FK_DRIVER_BONES", "DRV_FK") # so they have to be created before any of the constraints get applied on them
         add_ik_fk_switch_property(armature, "IK_controls")
 

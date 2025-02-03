@@ -11,7 +11,7 @@
 ### **In-Built Skeleton Swap Support**
 
 - **MB Lab to Epic Skeleton**: Change the skeleton of an MB Lab skeletal mesh to the UE5 Epic skeleton.
-- **Mixamo to Epic Skeleton**: Change Mixamo skeletons to the UE5 Epic skeleton. (WIP)
+- **Mixamo to Epic Skeleton**: Change Mixamo skeletons to the UE5 Epic skeleton.
 
 ### **Automated Skeleton Swapping**
 
@@ -36,7 +36,9 @@ If your face rigs are the same accross multiple characters, and you want facial 
 ## Planned Features (In order of Priority)
 
 - **Generating Dynamic Control Rig (IK, FK) -> Already done for UE5 Skeleton**
-- **Supporting Multi-Mesh/Modular Skeletal Meshes**
+- **Supporting Multi-Mesh/Modular Skeletal Meshes (WIP)**
 - **Tool to copy a bone from one armature to the other (Logic is already done, just not included in the bone transforms list yet)**
-- **Facial Shapekey Creation from deformbone based face rigs**
-- **Dynamic LOD Creation for the Skeleton Swapped SKMs**
+- **Option to mirror, added transform items not just the rotation, to significantly speed up the process of creating custom transform maps**
+- **The ability to edit saved templates, bone mappings, and transform maps**
+- **Facial Shapekey Creation from deformbone based face rigs (Logic implemented, but I am heavily procastinating on rigging faces, and testing with them, so no guarantee it works)**
+- **Dynamic LOD Creation for the Skeleton Swapped SKMs (We will see if this ever get implemented... topology play a huge role in this, and I am not sure I want to add any retopology algortythms or logic to this addon, since it is primary about bones)**
