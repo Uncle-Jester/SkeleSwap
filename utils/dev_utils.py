@@ -63,3 +63,41 @@ def assign_bone_color_to_armature(armature_object, rgb_color):
         bone.bone_group = bone_group
 
     print(f"Assigned color {rgb_color} to all bones in {armature_object.name} with tweaks for selected and active.")
+
+def validate(inputs, validate_types=None, stack_location=None, custom_message=None, input_identifier_strings=None):
+    stack_location = stack_location if stack_location else 'unknown'
+    
+    if len(inputs) == 0:
+        raise ValueError(f"Please provide inputs to validate. Input validation failed at: {stack_location}")
+    
+    for index, input in enumerate(inputs):
+        input_id_string = ''
+        validate_type = ''
+
+        if input_identifier_strings:
+            input_id_string = input_identifier_strings[index] if index < len(input_identifier_strings) else ''
+        
+        if validate_types:
+            validate_type = validate_types[index] if index < len(validate_types) else None
+
+
+        if input:
+            if validate_types is not None:
+                if index < len(validate_types) and (validate_type is not None):
+                    actual_type = input.type if hasattr(input, "type") else type(input).__name__
+                    if actual_type != validate_type:
+                        if custom_message:
+                            raise ValueError(f"In {stack_location}: TypeError: {custom_message}")
+                        else:
+                            raise ValueError(f"In {stack_location}: Expected input for {input_id_string} {validate_type} to be of type: {validate_type}, instead got: {actual_type}")
+                    else:
+                        debug_print(f"Validate -> Type validation is Succesful. Proceeding")
+                        continue
+                else:
+                    debug_print(f"Validate -> Type validation is not needed. Proceeding")
+                    continue
+            else:
+                debug_print(f"Validate -> Type validation is not needed. Proceeding")
+                continue
+        else:
+            raise ValueError(f"In {stack_location}: No value provided for valudation. Expected value of {validate_type}, {input_id_string}.")
