@@ -72,7 +72,7 @@ def validate(inputs, validate_types=None, stack_location=None, custom_message=No
     
     for index, input in enumerate(inputs):
         input_id_string = ''
-        validate_type = ''
+        validate_type = None
 
         if input_identifier_strings:
             input_id_string = input_identifier_strings[index] if index < len(input_identifier_strings) else ''
@@ -100,4 +100,7 @@ def validate(inputs, validate_types=None, stack_location=None, custom_message=No
                 debug_print(f"Validate -> Type validation is not needed. Proceeding")
                 continue
         else:
-            raise ValueError(f"In {stack_location}: No value provided for valudation. Expected value of {validate_type}, {input_id_string}.")
+            if custom_message:
+                raise ValueError(f"In {stack_location}: ValueError: {custom_message}")
+            else:
+                raise ValueError(f"In {stack_location}: No value provided for valudation. Expected value of {validate_type}, {input_id_string}.")
