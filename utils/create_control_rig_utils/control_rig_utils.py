@@ -512,7 +512,7 @@ def add_IK_constraint(armature, target_bone_name, effector_bone_name, pole_targe
     effector_bone = pose_bones.get(effector_bone_name)
     pole_target = pose_bones.get(pole_target_name)
     bpy.ops.pose.select_all(action='DESELECT')
-    if target_bone and effector_bone and pole_target:
+    if target_bone and effector_bone:
         target_bone.bone.select = True
         effector_bone.bone.select = True
         if pole_target:

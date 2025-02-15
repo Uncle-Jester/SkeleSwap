@@ -18,7 +18,7 @@ def snap_to_FK(armature):
     print("IK bones successfully snapped to FK bones.")
 
 
-def generate_rig(armature, ik=True, fk=False, snap=False):
+def generate_rig(armature, ik=True, fk=False, snap=False, independent_spine=True):
     if not armature or armature.type != 'ARMATURE':
         print("Please select an armature object.")
         return
@@ -61,7 +61,7 @@ def generate_rig(armature, ik=True, fk=False, snap=False):
     if(ik):
         shape_mode = "IK" if ik and fk else None
         print(f"Generating IK rig. Shape mode: {shape_mode}")
-        generate_ik_rig(armature, shape_mode, snap_allowed)
+        generate_ik_rig(armature, shape_mode, snap_allowed, independent_spine)
     
 
     if ik:
@@ -163,7 +163,7 @@ def generate_fk_rig(armature, shape_mode = None, snap = False):
 
 
 
-def generate_ik_rig(armature, shape_mode, snap):
+def generate_ik_rig(armature, shape_mode, snap, independent_spine):
     driverSnapToIk = {"property_name": "IK_controls", "invert" : False} if snap else None
     driverSnapToFk = {"property_name": "IK_controls", "invert" : True} if snap else None
     add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, "IK_DRIVER_BONES", "DRV_IK", True, add_driver_to_copy_transform_influence=True if shape_mode is not None else False)
@@ -196,19 +196,18 @@ def generate_ik_rig(armature, shape_mode, snap):
 
     #Spine Controls
 
-    extrude_bone(armature, "DRV_IK_spine_01", "CTRL_spine_PV", (0, 20, 0))
+    extrude_bone(armature, "DRV_IK_spine_02", "CTRL_spine_PV", (0, 20, 0))
     clear_parent(armature, "CTRL_spine_PV")
     parent_bone_keep_offset(armature, "DRV_IK_spine_01", "CTRL_spine_PV")
 
     extrude_bone(armature, "DRV_IK_spine_01", "CTRL_center_of_gravity", (0, 20, 0))
-    parent_bone_keep_offset(armature, "CTRL_spine_PV", "CTRL_center_of_gravity") #previously child was DRV_IK_spine_01
     parent_bone_keep_offset(armature, "DRV_IK_pelvis", "CTRL_center_of_gravity")
 
     extrude_bone(armature, "DRV_IK_spine_04", "CTRL_spine", (0,20,0))
     clear_parent(armature, "CTRL_spine")
-    parent_bone_keep_offset(armature, "DRV_IK_spine_05", "CTRL_spine")
-    add_IK_constraint(armature, "DRV_IK_spine_04", "CTRL_spine", chain_length=1)
-    add_copy_location_constraint(armature, "DRV_IK_spine_05", "DRV_IK_spine_04", 1)
+    parent_bone_keep_offset(armature, "DRV_IK_spine_04", "CTRL_spine")
+    add_IK_constraint(armature, "DRV_IK_spine_03", "CTRL_spine", chain_length=1)
+    add_copy_location_constraint(armature, "DRV_IK_spine_04", "DRV_IK_spine_03", 1)
     parent_bone_keep_offset(armature, "CTRL_spine", "CTRL_spine_PV")
     
     # Head control
@@ -408,7 +407,7 @@ def generate_ik_rig(armature, shape_mode, snap):
     parent_bone_keep_offset(armature, "MCH_clavicle_target_l", "CTRL_base")
     parent_bone_keep_offset(armature, "MCH_clavicle_target_r", "CTRL_base")
     parent_bone_keep_offset(armature, "CTRL_center_of_gravity", "CTRL_base")
-    parent_bone_keep_offset(armature, "CTRL_spine", "CTRL_base")
+    parent_bone_keep_offset(armature, "CTRL_spine_PV", "CTRL_base")
     parent_bone_keep_offset(armature, "CTRL_head", "CTRL_base")
     parent_bone_keep_offset(armature, "CTRL_hand_l", "CTRL_base")
     parent_bone_keep_offset(armature, "CTRL_hand_r", "CTRL_base")
@@ -436,18 +435,22 @@ def generate_ik_rig(armature, shape_mode, snap):
 
     add_custom_shape_for_bone(armature, "DRV_IK_neck_01", "sphere", "04", wireframe=True, scale=[ 2,2,2], mode=shape_mode)
     add_custom_shape_for_bone(armature, "DRV_IK_neck_02", "sphere", "04", wireframe=True, scale=[ 2,2,2], mode=shape_mode)
-    add_custom_shape_for_bone(armature, "CTRL_spine", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode=shape_mode)
-    add_custom_shape_for_bone(armature, "CTRL_spine_PV", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode=shape_mode)
-    # add_custom_shape_for_bone(armature, "DRV_IK_spine_01", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode=shape_mode)
-    # add_custom_shape_for_bone(armature, "DRV_IK_spine_02", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode=shape_mode)
-    # add_custom_shape_for_bone(armature, "DRV_IK_spine_03", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode=shape_mode)
-    # add_custom_shape_for_bone(armature, "DRV_IK_spine_04", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode=shape_mode)
-    # add_custom_shape_for_bone(armature, "DRV_IK_spine_05", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode=shape_mode)
+    
+    if independent_spine:
+        add_custom_shape_for_bone(armature, "CTRL_spine", "sphere", "06", wireframe=True, scale=[ 3,3,3], mode=shape_mode)
+        add_custom_shape_for_bone(armature, "CTRL_spine_PV", "sphere", "09", wireframe=True, scale=[ 3,3,3], mode=shape_mode)
+    else:
+        add_custom_shape_for_bone(armature, "DRV_IK_spine_01", "sphere", "03", wireframe=True, scale=[2,2,2], mode=shape_mode)
+        add_custom_shape_for_bone(armature, "DRV_IK_spine_02", "sphere", "03", wireframe=True, scale=[2,2,2], mode=shape_mode)
+        add_custom_shape_for_bone(armature, "DRV_IK_spine_03", "sphere", "03", wireframe=True, scale=[2,2,2], mode=shape_mode)
+        add_custom_shape_for_bone(armature, "DRV_IK_spine_04", "sphere", "03", wireframe=True, scale=[2,2,2], mode=shape_mode)
+        add_custom_shape_for_bone(armature, "DRV_IK_spine_05", "sphere", "03", wireframe=True, scale=[3,3,3], mode=shape_mode)
 
-    add_custom_shape_for_bone(armature, "DRV_IK_ball_r", "circle", "02", wireframe=True, scale=[5,10,0], translation=[-1.5, -12, -1], rotation=[0,90,0], mode=shape_mode)
-    add_custom_shape_for_bone(armature, "DRV_IK_ball_l", "circle", "02", wireframe=True, scale=[5,10,0], translation=[-1.5, -12, -1], rotation=[0,90,0], mode=shape_mode)
-    add_custom_shape_for_bone(armature, "CTRL_PV_ball_r", "circle", "02", wireframe=True, scale=[5,5,5], translation=[0, -1.5, 0], rotation=[90,0,0], mode=shape_mode)
-    add_custom_shape_for_bone(armature, "CTRL_PV_ball_l", "circle", "02", wireframe=True, scale=[5,5,5], translation=[0, -1.5, 0], rotation=[90,0,0], mode=shape_mode)
+
+    add_custom_shape_for_bone(armature, "DRV_IK_ball_r", "circle", "02", wireframe=True, scale=[5,5,0], translation=[0, 3, 1], rotation=[-2,93,0], mode=shape_mode)
+    add_custom_shape_for_bone(armature, "DRV_IK_ball_l", "circle", "02", wireframe=True, scale=[5,5,0], translation=[0, 3, 1], rotation=[-2,93,0], mode=shape_mode)
+    add_custom_shape_for_bone(armature, "CTRL_PV_ball_r", "circle", "02", wireframe=True, scale=[10,5,0], translation=[-12, 0, 0], rotation=[90,0,0], mode=shape_mode)
+    add_custom_shape_for_bone(armature, "CTRL_PV_ball_l", "circle", "02", wireframe=True, scale=[10,5,0], translation=[-12, 0, 0], rotation=[90,0,0], mode=shape_mode)
 
     add_custom_shape_for_bone(armature, "DRV_IK_thumb_02_l", "sphere", "04", wireframe=True, scale=[1,1,1], mode=shape_mode)
     add_custom_shape_for_bone(armature, "DRV_IK_index_01_l", "sphere", "04", wireframe=True, scale=[1,1,1], mode=shape_mode)
@@ -468,16 +471,22 @@ def generate_ik_rig(armature, shape_mode, snap):
     add_custom_shape_for_bone(armature, "DRV_IK_clavicle_l", "curled_plane", "02", wireframe=True, scale=[5,10,10], translation=[0, 10, 8.5], rotation=[0,15,90], mode=shape_mode)
     add_custom_shape_for_bone(armature, "DRV_IK_clavicle_r", "curled_plane", "02", wireframe=True, scale=[5,10,10], translation=[0, 10, 8.5], rotation=[0,15,90], mode=shape_mode)
 
+    selected_spine_option = []
+
+    if(independent_spine):
+        selected_spine_option = ["CTRL_spine","CTRL_spine_PV"]
+    else:
+        selected_spine_option = ["DRV_IK_spine_01", "DRV_IK_spine_02", "DRV_IK_spine_03", "DRV_IK_spine_04", "DRV_IK_spine_05"]
 
 
-    assign_bones_to_new_collection(armature, ["PT_knee_l","PT_knee_r","PT_elbow_l","PT_elbow_r","CTRL_head", "CTRL_PV_ball_l", "CTRL_PV_ball_r", "CTRL_center_of_gravity", "CTRL_hand_l", "CTRL_hand_r"],"IK_CTRL_BONES", False)
     assign_bones_to_new_collection(armature, ["MCH_head", "MCH_clavicle_l", "MCH_clavicle_target_l", "MCH_clavicle_r", "MCH_clavicle_target_r"], "MCH_BONES", True)
-    assign_bones_to_new_collection(armature, [ "CTRL_base", "CTRL_head", "DRV_IK_neck_01", "DRV_IK_neck_02",
-                                              "CTRL_spine",
-                                              "CTRL_spine_PV",
-                                              #"DRV_IK_spine_01", "DRV_IK_spine_02", "DRV_IK_spine_03", "DRV_IK_spine_04", "DRV_IK_spine_05",
-                                              "CTRL_hand_l", "CTRL_hand_r", "PT_elbow_l", "PT_elbow_r", "DRV_IK_thumb_02_l", "DRV_IK_index_01_l", "DRV_IK_middle_01_l", "DRV_IK_ring_01_l", "DRV_IK_pinky_01_l", "DRV_IK_thumb_02_r", "DRV_IK_index_01_r", "DRV_IK_middle_01_r", "DRV_IK_ring_01_r", "DRV_IK_pinky_01_r", "CTRL_center_of_gravity", "PT_knee_l", "PT_knee_r", "CTRL_PV_ball_l", "CTRL_PV_ball_r", "DRV_IK_ball_r", "DRV_IK_ball_l", "DRV_IK_clavicle_l", "DRV_IK_clavicle_r"
-    ], "CONTROL_RIG", False)
+    assign_bones_to_new_collection(armature, [ "CTRL_base", "CTRL_center_of_gravity", "CTRL_head", "DRV_IK_neck_01", "DRV_IK_neck_02", *selected_spine_option,
+                                              "CTRL_hand_l", "CTRL_hand_r", "PT_elbow_l", "PT_elbow_r",
+                                              "DRV_IK_thumb_02_l", "DRV_IK_index_01_l", "DRV_IK_middle_01_l", "DRV_IK_ring_01_l", "DRV_IK_pinky_01_l",
+                                              "DRV_IK_thumb_02_r", "DRV_IK_index_01_r", "DRV_IK_middle_01_r", "DRV_IK_ring_01_r", "DRV_IK_pinky_01_r",
+                                              "PT_knee_l", "PT_knee_r", "CTRL_PV_ball_l", "CTRL_PV_ball_r", "DRV_IK_ball_r", "DRV_IK_ball_l", "DRV_IK_clavicle_l", "DRV_IK_clavicle_r"
+    ], "CONTROL_RIG", True)
+    assign_bones_to_new_collection(armature, ["PT_knee_l","PT_knee_r","PT_elbow_l","PT_elbow_r","CTRL_head", "CTRL_PV_ball_l", "CTRL_PV_ball_r", "CTRL_center_of_gravity","CTRL_spine","CTRL_spine_PV", "CTRL_hand_l", "CTRL_hand_r"],"IK_CTRL_BONES", False)
 
     set_bone_collection_visibility(armature, "MCH_BONES", False)
 
@@ -507,6 +516,12 @@ class IK_FK_Properties(bpy.types.PropertyGroup):
         description="Boolean to determine whether to have a IK/FK switch",
         default=True
     ) # type: ignore
+
+    add_spine_ctrls: bpy.props.BoolProperty(
+        name="add_spine_ctrls",
+        description="Adds independent spine controls to the IK control rig",
+        default=True
+    ) # type: ignore
     
 
 class OBJECT_PT_control_rig_panel(bpy.types.Panel):
@@ -524,9 +539,12 @@ class OBJECT_PT_control_rig_panel(bpy.types.Panel):
         row = layout.row()
         row.prop(panel_props, "generate_ik", text="Generate IK")
         row.prop(panel_props, "generate_fk", text="Generate FK")
-        if panel_props.generate_fk and panel_props.generate_ik:
+        
+        if panel_props.generate_ik:
             row = layout.row()
-            row.prop(panel_props, "add_ik_fk_snap", text="Add IK/FK Snap")
+            row.prop(panel_props, 'add_spine_ctrls', text="Add independent spine IK controls to the Control Rig")
+            if panel_props.generate_fk and panel_props.generate_ik:
+                row.prop(panel_props, "add_ik_fk_snap", text="Add IK/FK Snap")
             
 
         row = layout.row()
@@ -586,7 +604,7 @@ class OBJECT_OT_generate_rig(bpy.types.Operator):
         armature = context.scene.target_armature     
         scene = context.scene
         panel_props = scene.ik_fk_panel_props
-        generate_rig(armature, panel_props.generate_ik, panel_props.generate_fk, panel_props.add_ik_fk_snap)
+        generate_rig(armature, panel_props.generate_ik, panel_props.generate_fk, panel_props.add_ik_fk_snap, panel_props.add_spine_ctrls)
         return {'FINISHED'}
 
 
