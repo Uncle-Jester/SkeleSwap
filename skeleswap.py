@@ -125,6 +125,8 @@ class OBJECT_PT_facial_operators_panel(bpy.types.Panel):
                 row = box.row(align=True)
                 row.prop(skeleswap_props, "shapekey_animation_blend_path", text="")
                 row.operator("object.open_blend_file_browser", text="Browse .blend file", icon='FILEBROWSER')
+                row = box.row(align=True)
+                row.prop(skeleswap_props, "shapekey_action_name", text="Action Name")
             
             
             box.operator("object.link_blendshapes_animation", text="Link facial animation")
@@ -452,7 +454,7 @@ class OBJECT_OT_link_blendshapes_animation(bpy.types.Operator):
         if not action_name:
             self.report({'WARNING'}, f"Please fill in the Action Name input")
             return {'CANCELLED'}
-        if not face_rig_armature:
+        if has_separate_face_rig and not face_rig_armature:
             debug_print("MainPanel-LinkBlendShapesAnimations-Execute: No Face Rig Armature Found")
             self.report({'WARNING'}, f"No face rig found. Try selecting it in the viewport and try again")
             return {'CANCELLED'}

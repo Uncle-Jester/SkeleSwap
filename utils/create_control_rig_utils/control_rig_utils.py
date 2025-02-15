@@ -504,7 +504,7 @@ def set_bone_collection_visibility(armature, collection_name, is_visible):
 
 ######################################## Constraint Utils ###############################################################
 
-def add_IK_constraint(armature, target_bone_name, effector_bone_name, pole_target_name, chain_length=2, pole_angle=0):
+def add_IK_constraint(armature, target_bone_name, effector_bone_name, pole_target_name="", chain_length=2, pole_angle=0):
     bpy.ops.object.mode_set(mode='POSE')
     pole_angle = pole_angle * 0.0174533
     pose_bones = armature.pose.bones
@@ -515,17 +515,19 @@ def add_IK_constraint(armature, target_bone_name, effector_bone_name, pole_targe
     if target_bone and effector_bone and pole_target:
         target_bone.bone.select = True
         effector_bone.bone.select = True
-        pole_target.bone.select = True
+        if pole_target:
+            pole_target.bone.select = True
         armature.data.bones.active = target_bone.bone
         bpy.ops.pose.constraint_add(type='IK')
         ik_constraint = target_bone.constraints.get("IK")
         if ik_constraint:
             ik_constraint.target = armature
             ik_constraint.subtarget = effector_bone_name
-            ik_constraint.pole_target = armature
-            ik_constraint.pole_subtarget = pole_target_name
-            ik_constraint.pole_angle = pole_angle
             ik_constraint.chain_count = chain_length
+            if pole_target:
+                ik_constraint.pole_target = armature
+                ik_constraint.pole_subtarget = pole_target_name
+                ik_constraint.pole_angle = pole_angle
 
 def add_copy_location_constraint(armature, target_bone_name, source_bone_name, head_tail=1, target_space='WORLD', owner_space='WORLD', influence=1, driver=None):
     bpy.ops.object.mode_set(mode='POSE')
