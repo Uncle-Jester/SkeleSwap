@@ -2,8 +2,8 @@
     "MB to Epic Skeleton": 
         {
             "option_name": "MB to Epic Skeleton",
-            "bone_mapping": "epic_to_MB_new_test",
-            "transform_map": "epic_to_MB_new_test",
+            "bone_mapping": "epic_to_MB",
+            "transform_map": "epic_to_MB",
             "target_is_epic_skeleton": true,
             "has_facial_animations": true,
             "has_separate_face_rig": true
@@ -16,15 +16,5 @@
             "target_is_epic_skeleton": true,
             "has_facial_animations": false,
             "has_separate_face_rig": false
-        },
-    "MB to Epic Skeleton New Test":
-        {
-            "option_name": "MB to Epic TEST",
-            "bone_mapping": "epic_to_MB_new_test",
-            "transform_map": "epic_to_MB_new_test",
-            "target_is_epic_skeleton": true,
-            "has_facial_animations": true,
-            "has_separate_face_rig": true
         }
-    
 }

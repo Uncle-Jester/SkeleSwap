@@ -75,14 +75,17 @@ def generate_rig(armature, ik=True, fk=False, snap=False, independent_spine=True
     bpy.ops.object.mode_set(mode='POSE')
 
 def generate_fk_rig(armature, shape_mode = None, snap = False):
-    driverSnapToFk = {"property_name": "IK_controls", "invert" : True} if snap else None
+    #driverSnapToFk = {"property_name": "IK_controls", "invert" : True} if snap else None
+    driverSnapToFk = {"property_name": "IK_controls", "invert" : True}
     add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, "FK_DRIVER_BONES", "DRV_FK", True, add_driver_to_copy_transform_influence=True if shape_mode is not None else False)
     
     remove_constraint_by_name(armature, "ball_l", "FK_Copy Transforms -> DRV_FK_ball_l")
     add_copy_rotation_constraint_with_driver(armature, "ball_l", "DRV_FK_ball_l", "Copy FK Rotation -> DRV_FK_ball_l", driver=driverSnapToFk)
     remove_constraint_by_name(armature, "ball_r", "FK_Copy Transforms -> DRV_FK_ball_r")
     add_copy_rotation_constraint_with_driver(armature, "ball_r", "DRV_FK_ball_r", "Copy FK Rotation -> DRV_FK_ball_r", driver=driverSnapToFk)
+    move_constraint_to_top(armature, "ball_r",  "Copy FK Rotation -> DRV_FK_ball_r")
 
+    
 
     add_custom_shape_for_bone(armature, "DRV_FK_thumb_02_r", "sphere", "07", wireframe=True, scale=[1,1,1], mode=shape_mode)
     add_custom_shape_for_bone(armature, "DRV_FK_index_01_r", "sphere", "07", wireframe=True, scale=[1,1,1], mode=shape_mode)
@@ -166,7 +169,7 @@ def generate_fk_rig(armature, shape_mode = None, snap = False):
 def generate_ik_rig(armature, shape_mode, snap, independent_spine):
     driverSnapToIk = {"property_name": "IK_controls", "invert" : False} if snap else None
     driverSnapToFk = {"property_name": "IK_controls", "invert" : True} if snap else None
-    add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, "IK_DRIVER_BONES", "DRV_IK", True, add_driver_to_copy_transform_influence=True if shape_mode is not None else False)
+    add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, "IK_DRIVER_BONES", "DRV_IK", True, add_driver_to_copy_transform_influence=(True if shape_mode is not None else False))
 
 
     # Base
@@ -357,6 +360,14 @@ def generate_ik_rig(armature, shape_mode, snap, independent_spine):
         duplicate_bone(armature, "CTRL_hand_r", "SNAP_CTRL_hand_r")
         clear_parent(armature, "SNAP_CTRL_hand_r")
         parent_bone_keep_offset(armature, "SNAP_CTRL_hand_r", "DRV_FK_hand_r")
+        
+        duplicate_bone(armature, "foot_l_CTRL", "SNAP_foot_l_CTRL")
+        clear_parent(armature, "SNAP_foot_l_CTRL")
+        parent_bone_keep_offset(armature, "SNAP_foot_l_CTRL", "DRV_FK_foot_l")
+
+        duplicate_bone(armature, "foot_r_CTRL", "SNAP_foot_r_CTRL")
+        clear_parent(armature, "SNAP_foot_r_CTRL")
+        parent_bone_keep_offset(armature, "SNAP_foot_r_CTRL", "DRV_FK_foot_r")
 
         duplicate_bone(armature, "CTRL_PV_ball_l", "SNAP_CTRL_PV_ball_l")
         clear_parent(armature, "SNAP_CTRL_PV_ball_l")
@@ -377,7 +388,7 @@ def generate_ik_rig(armature, shape_mode, snap, independent_spine):
 
         ################################ Create faux ctrl bones ##############################
 
-        assign_bones_to_new_collection(armature, ["SNAP_PT_knee_l","SNAP_PT_knee_r","SNAP_PT_elbow_l","SNAP_PT_elbow_r","SNAP_CTRL_head", "SNAP_CTRL_PV_ball_l", "SNAP_CTRL_PV_ball_r", "SNAP_CTRL_hip", "SNAP_CTRL_hand_l", "SNAP_CTRL_hand_r", "SNAP_CTRL_base"],"SNAP_DRIVER_BONES", True)
+        assign_bones_to_new_collection(armature, ["SNAP_PT_knee_l","SNAP_PT_knee_r","SNAP_PT_elbow_l","SNAP_PT_elbow_r","SNAP_CTRL_head", "SNAP_CTRL_PV_ball_l", "SNAP_CTRL_PV_ball_r", "SNAP_CTRL_hip", "SNAP_CTRL_hand_l", "SNAP_CTRL_hand_r", "SNAP_CTRL_base", "SNAP_foot_l_CTRL", "SNAP_foot_r_CTRL"],"SNAP_DRIVER_BONES", True)
 
 
         ################################ Add copy transform with driver to the faux pole target bones ##############################
@@ -452,8 +463,8 @@ def generate_ik_rig(armature, shape_mode, snap, independent_spine):
 
     add_custom_shape_for_bone(armature, "DRV_IK_ball_r", "circle", "02", wireframe=True, scale=[5,5,0], translation=[0, 3, 1], rotation=[-2,93,0], mode=shape_mode)
     add_custom_shape_for_bone(armature, "DRV_IK_ball_l", "circle", "02", wireframe=True, scale=[5,5,0], translation=[0, 3, 1], rotation=[-2,93,0], mode=shape_mode)
-    add_custom_shape_for_bone(armature, "CTRL_PV_ball_r", "circle", "02", wireframe=True, scale=[10,5,0], translation=[-12, 0, 0], rotation=[90,-60,0], mode=shape_mode)
-    add_custom_shape_for_bone(armature, "CTRL_PV_ball_l", "circle", "02", wireframe=True, scale=[10,5,0], translation=[6, 0, 10], rotation=[90,0,0], mode=shape_mode)
+    add_custom_shape_for_bone(armature, "CTRL_PV_ball_r", "circle", "02", wireframe=True, scale=[10,5,0], translation=[6, 0, 10], rotation=[90,-60,0], mode=shape_mode)
+    add_custom_shape_for_bone(armature, "CTRL_PV_ball_l", "circle", "02", wireframe=True, scale=[10,5,0], translation=[-12, 0, 0], rotation=[90,0,0], mode=shape_mode)
 
     add_custom_shape_for_bone(armature, "DRV_IK_thumb_02_l", "sphere", "04", wireframe=True, scale=[1,1,1], mode=shape_mode)
     add_custom_shape_for_bone(armature, "DRV_IK_index_01_l", "sphere", "04", wireframe=True, scale=[1,1,1], mode=shape_mode)
