@@ -11,37 +11,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Create addon zip
+      - name: Extract Version from `__init__.py`
+        id: get_version
         run: |
-          mkdir -p addon
-          cp -r your-addon-folder/* addon/
-          rm -rf addon/README.md addon/doc
-          zip -r SkeleSwap.zip addon
+          VERSION=$(grep -oP "(?<=^bl_info = \{.*'version': \()(\d+, \d+, \d+)(?=\)\})" SkeleSwap/__init__.py | tr -d ', ' | tr ' ' '.')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Version extracted: $VERSION"
 
-      - name: Upload artifact
+      - name: Prepare Addon Files
+        run: |
+          mkdir -p build/SkeleSwap
+          cp -r * build/SkeleSwap
+          rm -rf build/SkeleSwap/docs  # Remove docs folder
+          find build/SkeleSwap -name "README.md" -delete  # Remove all README.md files in subdirectories
+          find build/SkeleSwap -name "*.blend1" -delete  # Remove unnecessary .blend1 backup files
+
+      - name: Create Zip Archive (Unstable for main, Stable for release)
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            ZIP_NAME="SkeleSwap-${VERSION}_unstable.zip"
+          else
+            ZIP_NAME="SkeleSwap-${VERSION}.zip"
+          fi
+          cd build
+          zip -r $ZIP_NAME SkeleSwap
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+          echo "Created zip: $ZIP_NAME"
+
+      - name: Upload Artifact (Keep Available in Repo)
         uses: actions/upload-artifact@v3
         with:
-          name: SkeleSwap
-          path: SkeleSwap.zip
+          name: ${{ env.ZIP_NAME }}
+          path: build/${{ env.ZIP_NAME }}
 
-  release:
-    if: github.ref == 'refs/heads/release'
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v3
+      - name: Create GitHub Release (Only for Release Branch)
+        if: github.ref == 'refs/heads/release'
+        uses: softprops/action-gh-release@v1
         with:
-          name: SkeleSwap
-
-      - name: Create GitHub release
-        uses: actions/create-release@v1
-        with:
-          tag_name: v${{ github.run_number }}
-          release_name: "SkeleSwap v${{ github.run_number }}"
-          draft: false
-          prerelease: false
-          files: SkeleSwap.zip
+          files: build/${{ env.ZIP_NAME }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v${{ env.VERSION }}
+          name: "SkeleSwap v${{ env.VERSION }}"
+          body: "New stable release of SkeleSwap v${{ env.VERSION }}."
