@@ -31,6 +31,11 @@ class SkeleSwapProperties(bpy.types.PropertyGroup):
     has_separate_face_rig: bpy.props.BoolProperty(name="Has Separate Face Rig", default=False) # type: ignore
     is_mb_to_epic: bpy.props.BoolProperty(name="Has Facial Animations", default=True) # type: ignore
     scale_amount: bpy.props.IntProperty(name="Scale Amount",default=100) # type: ignore
+    
+    ####### Weight transfer Advanced Settings
+    transfer_unmapped_weights: bpy.props.BoolProperty(name="Tranafer Unmapped Weights", default=True) # type: ignore
+    transfer_spine_weights: bpy.props.BoolProperty(name="Transfer Spine Weights", default=True) # type: ignore
+
     lod_count: bpy.props.IntProperty(
     name="LOD Count",
     description="Number of LODs to create",
@@ -87,6 +92,10 @@ class OBJECT_PT_skeleswap_main_panel(bpy.types.Panel):
             row = layout.row()
             row.operator("object.reparent_breast_bones", text="Re-parent Breast Bones")
 
+        row = layout.row()
+        row.prop(skeleswap_props, "transfer_unmapped_weights", text="Transfer Unmapped Bone Weights")
+        if scene.target_is_epic_skeleton:
+            row.prop(skeleswap_props, "transfer_spine_weights", text="Transfer Spine Weights")
         row = layout.row()
         row.operator("object.replace_skeleton", text="Replace Skeleton")
 
@@ -608,14 +617,17 @@ class OBJECT_OT_replace_skeleton(bpy.types.Operator):
             self.report({'WARNING'}, f"No Source Mesh")
             return {'CANCELLED'}
 
-        unmapped_bones = []
-        for bone in target_armature.pose.bones:
-            target_bone = BONE_MAPPING.get(bone.name)
-            if not target_bone:
-                unmapped_bones.append(bone.name)
+        bone_weights_to_transfer = []
+        if skeleswap_props.transfer_unmapped_weights:
+            for bone in target_armature.pose.bones:
+                target_bone = BONE_MAPPING.get(bone.name)
+                if not target_bone:
+                    bone_weights_to_transfer.append(bone.name)
 
         if context.scene.target_is_epic_skeleton:
-            unmapped_bones.extend(["spine_01", "spine_02", "spine_03", "spine_04", "spine_05"])
+            spine_bones = ["spine_01", "spine_02", "spine_03", "spine_04", "spine_05"]
+            if skeleswap_props.transfer_spine_weights:
+                bone_weights_to_transfer.extend(spine_bones)
         if source_mesh and target_mesh:
             try:
                 if skeleswap_props.has_facial_animations:
@@ -624,7 +636,8 @@ class OBJECT_OT_replace_skeleton(bpy.types.Operator):
                     delete_all_shapekeys(source_mesh)
                     apply_armature(source_mesh, source_armature)
                     apply_pose_as_rest_pose(target_armature)
-                    transfer_weights_for_specific_bones(unmapped_bones, source_mesh, target_mesh)
+                    if len(bone_weights_to_transfer):
+                        transfer_weights_for_specific_bones(bone_weights_to_transfer, source_mesh, target_mesh)
                     delete_armature(source_armature)
                     parent_armature(target_mesh, target_armature)
                     parent_armature(source_mesh, target_armature)
@@ -639,7 +652,8 @@ class OBJECT_OT_replace_skeleton(bpy.types.Operator):
                     delete_armature(source_armature)
                     parent_armature(target_mesh, target_armature)
                     parent_armature(source_mesh, target_armature)
-                    transfer_weights_for_specific_bones(unmapped_bones, source_mesh, target_mesh)
+                    if len(bone_weights_to_transfer):
+                        transfer_weights_for_specific_bones(bone_weights_to_transfer, source_mesh, target_mesh)
                     delete_mesh(target_mesh)
             except Exception as e:
                 self.report({'ERROR'}, f"Couldn't replace skeleton. Error: {e}")

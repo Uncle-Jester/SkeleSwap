@@ -84,6 +84,9 @@ def delete_armature(armature):
             raise ValueError(f"In ArmatureUtils-DeleteArmature: Input is type: {armature.type}. Excpected type ARMATURE")
         raise ValueError(f"In ArmatureUtils-DeleteArmature: No Armature Provided")
     try:
+        bpy.context.view_layer.objects.active = armature
+        if bpy.context.object and bpy.context.object.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.select_all(action='DESELECT')
         armature.select_set(True)
         bpy.ops.object.delete()

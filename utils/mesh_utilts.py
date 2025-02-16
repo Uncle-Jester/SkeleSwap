@@ -25,7 +25,9 @@ def delete_mesh(mesh_to_delete):
         else:
             raise ValueError(f"In MeshUtils-DeleteMesh: Mesh to delete was not provided")
     
-    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.context.view_layer.objects.active = mesh_to_delete
+    if bpy.context.object and bpy.context.object.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
     try:
         bpy.ops.object.select_all(action='DESELECT')
         mesh_to_delete.select_set(True)
@@ -110,7 +112,7 @@ def add_decimate_modifier(mesh_object, decimate_type, decimate_amount):
             modifier.decimate_type = 'DISSOLVE'
             modifier.ratio = decimate_amount
 
-def transfer_weights(base_mesh, target_mesh):
+def transfer_weights(base_mesh, target_mesh): # This is used for the LOD creation logic... which is terrrible.. dont use...
     if base_mesh and target_mesh and base_mesh.data and target_mesh.data:
         for vgroup in base_mesh.vertex_groups:
             target_vgroup = target_mesh.vertex_groups.new(name=vgroup.name)
@@ -120,39 +122,31 @@ def transfer_weights(base_mesh, target_mesh):
                         target_vgroup.add([vert.index], group.weight, 'REPLACE')
 
 
-def transfer_weights_for_specific_bones(bone_names, source_mesh, target_mesh):
-    bpy.ops.object.mode_set(mode='OBJECT')
-    bpy.context.view_layer.objects.active = source_mesh
-    bpy.ops.object.select_all(action='DESELECT')
-    target_mesh.select_set(True)
-    source_mesh.select_set(True)
 
-    bpy.ops.object.mode_set(mode='WEIGHT_PAINT')
+
+def transfer_weights_for_specific_bones(bone_names, target_mesh, base_mesh):
+    if bpy.context.object.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
+    
+    bpy.ops.object.select_all(action='DESELECT')
+    base_mesh.select_set(True)
+    target_mesh.select_set(True)
+    bpy.context.view_layer.objects.active = base_mesh
 
     for bone_name in bone_names:
-        if bone_name not in source_mesh.vertex_groups and target_mesh.vertex_groups.get(bone_name):
-            debug_print(f"creating vertex group: {bone_name}")
-            source_mesh.vertex_groups.new(name=bone_name)
+        if bone_name not in target_mesh.vertex_groups:
+            target_mesh.vertex_groups.new(name=bone_name)
+    
+    for bone_name in bone_names:
+        if bone_name in base_mesh.vertex_groups:
+            target_mesh.vertex_groups.active = target_mesh.vertex_groups[bone_name]
 
-        bpy.context.view_layer.objects.active = target_mesh
-        if target_mesh.vertex_groups.get(bone_name):
-            bpy.context.object.vertex_groups.active = target_mesh.vertex_groups[bone_name]
-       
-        else:
-            continue
-        
-        bpy.ops.object.data_transfer(
-            use_create=True,
-            data_type='VGROUP_WEIGHTS',
-            vert_mapping='NEAREST',
-            layers_select_src='ALL',
-            layers_select_dst='NAME',
-            mix_mode='REPLACE'
-        )
-        
+            bpy.ops.object.data_transfer(
+                data_type='VGROUP_WEIGHTS',
+                vert_mapping='NEAREST',
+                layers_select_src= bone_name,
+                layers_select_dst= 'ACTIVE',
+                mix_mode='REPLACE'
+            )
+
     bpy.ops.object.mode_set(mode='OBJECT')
-    bpy.ops.object.select_all(action='DESELECT')
-    target_mesh.select_set(True)
-    source_mesh.select_set(True)
-
-    debug_print("Weight transfer complete.")
