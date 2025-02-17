@@ -449,6 +449,8 @@ class OBJECT_OT_link_blendshapes_animation(bpy.types.Operator):
                     self.report({'WARNING'}, f"No face rig found. Try selecting it in the viewport and try again")
                     debug_print('No separate face rig found')
                     return {"CANCELLED"}
+        elif not is_mb_to_epic and not has_separate_face_rig:
+            face_rig_armature = context.scene.source_armature
         
         if is_mb_to_epic:
             filepath = os.path.join(imports_dir, "ARKIT_Blendshape_Animations_For_MB_Lab_FaceRig.blend")
