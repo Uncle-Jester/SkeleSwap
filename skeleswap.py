@@ -154,6 +154,7 @@ def rename_vertex_groups(armature, bone_mapping):
 
 def get_template_config_options():
     json_file_path = get_current_json_data_file_path("template_configs")
+    debug_print(f"MainPanel-GetTemplateConfigOptions: Getting options from filepath: {json_file_path}")
     if os.path.exists(json_file_path):
         with open(json_file_path, 'r') as json_file:
             try:

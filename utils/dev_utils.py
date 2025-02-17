@@ -36,7 +36,7 @@ def get_json_property(file_path, property):
 
 
 def get_current_json_data_file_path(json_file_name):
-    persistent_data_dir = bpy.utils.user_resource('SCRIPTS', "addon_data/SkeleSwap")
+    persistent_data_dir = bpy.utils.user_resource('SCRIPTS', path="addon_data/SkeleSwap")
     persisted_json_file_path = os.path.join(persistent_data_dir, f"{json_file_name}.json")
     if not os.path.exists(persisted_json_file_path):
         addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -46,30 +46,36 @@ def get_current_json_data_file_path(json_file_name):
 
 
 
-def save_to_persistent_data_store_json_property(json_file_name, property_name, json):
-    persistent_data_dir = bpy.utils.user_resource('SCRIPTS', "addon_data/SkeleSwap")    
-    os.makedirs(persistent_data_dir, exist_ok=True)
-    
-    json_file_path = os.path.join(persistent_data_dir, f"{json_file_name}.json")
+def save_to_persistent_data_store_json_property(json_file_name, property_name, jsonData):
+    persistent_data_dir = bpy.utils.user_resource('SCRIPTS', path="addon_data/SkeleSwap")
+    try:    
+        debug_print(f"DevUtils-SaveToPersistentStoreJsonProp: Checking persistent file directory, creating if doesnt exist")
+        os.makedirs(persistent_data_dir, exist_ok=True)
+    except:
+        debug_print(f"DevUtils-SaveToPersistentStoreJsonProp: Failed to create file directory")
 
+    json_file_path = os.path.join(persistent_data_dir, f"{json_file_name}.json")
+    debug_print(f"DevUtils-SaveToPersistentStoreJsonProp: File path: {json_file_path}")
     if not os.path.exists(json_file_path):
+        debug_print(f"DevUtils-SaveToPersistentStoreJsonProp: File path doesnt exist. Creating.")
         addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
         original_json = os.path.join(addon_dir, "utils", "data", f"{json_file_name}.json")
         if os.path.exists(original_json):
+            debug_print(f"DevUtils-SaveToPersistentStoreJsonProp: Copying original json to the new path.")
             shutil.copy(original_json, json_file_path)
+        debug_print(f"DevUtils-SaveToPersistentStoreJsonProp: Created Filepath for persistent storage of json files")
     try:
         if os.path.exists(json_file_path):
+            debug_print(f"DevUtils-SaveToPersistentStoreJsonProp: File path exists. Attempting to save and create")
             with open(json_file_path, 'r+') as json_file:
                 data = json.load(json_file)
-                data[property_name] = json
+                data[property_name] = jsonData
                 json_file.seek(0)
                 json.dump(data, json_file, indent=4)
                 json_file.truncate()
-                json_file.flush()
-                os.fsync(json_file.fileno())
         else:
             with open(json_file_path, 'w') as json_file:
-                json.dump({property_name: json}, json_file, indent=4)
+                json.dump({property_name: jsonData}, json_file, indent=4)
         
     except Exception as e:
         print(f"An error occurred while reading the json file. Error: {e}")

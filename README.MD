@@ -35,7 +35,7 @@ If your face rigs are the same accross multiple characters, and you want facial 
 
 ## Planned Features (In order of Priority)
 
-- **Generating Dynamic Control Rig (IK, FK) -> _*Already done for UE5 Skeleton, and I have some ideas how to make it work for other armatures...but its a lot of work I am not keen on doing atm, but plan to get around to it*_**
+- **Generating Dynamic Control Rig (IK, FK) -> _*Already done for UE5 Skeleton, and I have some ideas how to make it work for other armatures...but its a lot of work I am not keen on doing atm, but plan to get around to it... ...eventually*_**
 - **Persist bone mappings/transform maps/templates even after quitting blender. *~~*Blender seems to instanciate the internal json files into its local state, so when restarting blender, all custom json data (e.g: user created bone/transform/template maps get removed), so users currently have to export the jsons to prevent loss of data, then import them when they want to reuse it. (WIP)~~_ -> _implemented_***
 - **~~Supporting Multi-Mesh/Modular Skeletal Meshes (_WIP_)~~ _*Implemented, but may have some performance overhead... open to suggestions*_**
 - **~~Tool to copy a bone from one armature to the other~~ _~~(Logic is already done, just not included in the bone transforms list yet)~~ -> *implemented*_**

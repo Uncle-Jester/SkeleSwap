@@ -118,24 +118,8 @@ class OBJECT_OT_save_template(bpy.types.Operator):
         template = create_template_json(create_template_properties)
 
         try:
-            save_to_persistent_data_store_json_property("template_configs", property_name, template)
-            """ if os.path.exists(json_file_path):
-                with open(json_file_path, 'r+') as json_file:
-                    template = create_template_json(create_template_properties)
-                    data = json.load(json_file)
-                    data[property_name] = template
-                    json_file.seek(0)
-                    json.dump(data, json_file, indent=4)
-                    json_file.truncate()
-                    json_file.flush() ## Remove if persistence doesnt work
-                    os.fsync(json_file.fileno()) ## Remove if persistence doesnt work
-            else:
-                with open(json_file_path, 'w') as json_file:
-                    data = {property_name: template}
-                    json.dump(data, json_file, indent=4)
-                    json_file.flush() ## Remove if persistence doesnt work
-                    os.fsync(json_file.fileno()) ## Remove if persistence doesnt work """
-            
+            debug_print(f"CreateTemplate-SaveTemplate: Attempting to save new temolate, {template}, in the template json, under property: {property_name}")
+            save_to_persistent_data_store_json_property("template_configs", property_name, template)       
             self.report({'INFO'}, f"Template saved to {json_file_path} under '{property_name}'")
         except Exception as e:
             self.report({'ERROR'}, f"Failed to save bone mapping: {e}")

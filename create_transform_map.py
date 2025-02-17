@@ -9,7 +9,7 @@ from .utils import debug_print, get_current_json_data_file_path, save_to_persist
 
 class CreateTransformProperties(bpy.types.PropertyGroup):
     create_transform_foot_z_location: bpy.props.StringProperty(name="Foot Z Location", default="")  # type: ignore
-    load_transform_map_wo_applying: bpy.props.BoolProperty(name="Load Transform Map Without Applying", default=True)  # type: ignore
+    apply_on_load: bpy.props.BoolProperty(name="Load Transform Map Without Applying", default=False)  # type: ignore
     new_bone_name: bpy.props.StringProperty(name="Name of the new Bone", default="") # type: ignore
 
     def set_data(self, value):
@@ -96,7 +96,7 @@ class BoneTransformPanel(bpy.types.Panel):
         row.operator("object.export_bone_transform", text="Export JSON")
         row.operator("object.save_bone_transform", text="Save Bove Transforms")
         row = layout.row()
-        row.prop(create_transform_props, text="Load Without Applying Transforms")
+        row.prop(create_transform_props,"apply_on_load", text="Apply Transforms on Load")
         row.operator("object.load_bone_transform", text="Load Bone Transforms")
 
 class Transform_item(bpy.types.PropertyGroup):
@@ -108,8 +108,10 @@ class Transform_item(bpy.types.PropertyGroup):
 
 
     def set_data(self, data, data_type="revert_data"):
-        if not data or data.items():
-            self.revert_data
+        debug_print(f"CreateTransformMap-TransformItem-SetData: data to set: {data_type} -- data: {data}")
+        if not data:
+            self[data_type] = {}
+            return
         for key, value in data.items():
             if isinstance(value, bpy.types.Object):
                 data[key] = {"name": value.name, "type": value.type}
@@ -123,7 +125,11 @@ class Transform_item(bpy.types.PropertyGroup):
         self[data_type] = json.dumps(data)
 
     def get_data(self, data_type="revert_data"):
+        if not self.get(data_type):
+            return {}
         data = json.loads(self[data_type])
+        if not data or not data.items():
+            return self.revert_data
         for key, value in data.items():
             if isinstance(value, dict) and "name" in value and "type" in value:
                 obj_name = value["name"]
@@ -158,6 +164,7 @@ def add_transform(context, target_bone_name, source_bone_name, axis, transform_v
 
     foot_z_no_template = scene.create_transform_props.get_data()
     new_transform = None
+    debug_print(f"In CreateTransformMap -> AddTransform(Func): Apply Transform: {apply_transform}")
     if transform_type == 'rotate_bone':
         revert_data = None
         if(apply_transform):
@@ -643,28 +650,7 @@ class OBJECT_OT_save_bone_transform(bpy.types.Operator):
         bone_transforms_json = create_bone_transform_json(scene)
         property_name = context.scene.input_text or "default_property"
 
-        try:
-            save_to_persistent_data_store_json_property("bone_transforms", property_name, bone_transforms_json)
-            """ if os.path.exists(json_file_path):
-                with open(json_file_path, 'r+') as json_file:
-                    data = json.load(json_file)
-                    data[property_name] = bone_transform
-                    json_file.seek(0)
-                    json.dump(data, json_file, indent=4)
-                    json_file.truncate()
-                    json_file.flush() ## Remove if persistence doesnt work
-                    os.fsync(json_file.fileno()) ## Remove if persistence doesnt work
-            else:
-                with open(json_file_path, 'w') as json_file:
-                    data = {property_name: bone_transform}
-                    json.dump(data, json_file, indent=4)
-                    json_file.flush() ## Remove if persistence doesnt work
-                    os.fsync(json_file.fileno()) ## Remove if persistence doesnt work """
-            
-            self.report({'INFO'}, f"Bone transform saved under '{property_name}'")
-        except Exception as e:
-            self.report({'ERROR'}, f"Failed to save bone transform: {e}")
-
+        save_to_persistent_data_store_json_property("bone_transforms", property_name, bone_transforms_json)
         return {'FINISHED'}
 
 
@@ -677,13 +663,14 @@ class OBJECT_OT_load_bone_transform(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         create_transform_props = scene.create_transform_props
-        apply_transform =  create_transform_props.load_transform_map_wo_applying
+        apply_transform =  create_transform_props.apply_on_load
         try:
             with open(self.filepath, 'r') as json_file:
                 json_object = json.load(json_file)
                 bone_transforms = json_object["transforms"]
 
             scene.transform_list.clear()
+            debug_print(f"CreateTransformMap-LoadBoneTransformMap: Loading all Transforms. Apply on Load: {apply_transform}")
             for transform_data in bone_transforms:
                 target_bone_name = transform_data.get("target_bone_name")
                 source_bone_name = transform_data.get("source_bone_name")
@@ -700,7 +687,7 @@ class OBJECT_OT_load_bone_transform(bpy.types.Operator):
 
             self.report({'INFO'}, f"Bone transform loaded from {self.filepath}")
         except Exception as e:
-            self.report({'ERROR'}, f"Failed to load bone transform: {e}")
+            self.report({'ERROR'}, f"Failed to load bone transforms: {e}")
 
         return {'FINISHED'}
 

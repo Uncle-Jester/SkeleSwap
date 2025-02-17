@@ -3,7 +3,7 @@ import json
 import os
 
 from .utils.bone_mapping_utils import map_bone_lists
-from utils import save_to_persistent_data_store_json_property
+from .utils import save_to_persistent_data_store_json_property
 
 def update_source_armature(self, context):
     armature = bpy.context.scene.source_armature
@@ -255,28 +255,11 @@ class OBJECT_OT_save_bone_mapping(bpy.types.Operator):
         addon_dir = os.path.dirname(os.path.realpath(__file__))
         utils_dir = os.path.join(addon_dir, "utils")
         data_dir = os.path.join(utils_dir, "data")
-        #json_file_path = os.path.join(data_dir, "bone_mappings.json")
         property_name = context.scene.input_text or "default_property"
 
         try:
-            save_to_persistent_data_store_json_property("bone_mappings", property_name, bone_mapping_json)
-            """ if os.path.exists(json_file_path):
-                with open(json_file_path, 'r+') as json_file:
-                    data = json.load(json_file)
-                    data[property_name] = bone_mapping
-                    json_file.seek(0)
-                    json.dump(data, json_file, indent=4)
-                    json_file.truncate()
-                    json_file.flush() ## Remove if persistence doesnt work
-                    os.fsync(json_file.fileno()) ## Remove if persistence doesnt work
-            else:
-                with open(json_file_path, 'w') as json_file:
-                    data = {property_name: bone_mapping}
-                    json.dump(data, json_file, indent=4)
-                    json_file.flush() ## Remove if persistence doesnt work
-                    os.fsync(json_file.fileno()) ## Remove if persistence doesnt work
-            
-            self.report({'INFO'}, f"Bone mapping saved to {json_file_path} under '{property_name}'") """
+            save_to_persistent_data_store_json_property("bone_mappings", property_name, bone_mapping_json)    
+            self.report({'INFO'}, f"Bone mapping saved to under '{property_name}'")
         except Exception as e:
             self.report({'ERROR'}, f"Failed to save bone mapping: {e}")
             return {'CANCELLED'}
