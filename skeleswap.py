@@ -5,7 +5,7 @@ import json
 from .utils import match_pose_bone_head_pos, match_edit_bone_pos, get_foot_z_location, add_copy_location_constraint, add_copy_rotation_constraint, apply_bone_constraints, copy_bone_between_skeletons, rename_bone # bone transform utils imports
 from .utils import link_animation, set_frame_to, convert_animation_to_shapekeys # facial animation utils imports
 from .utils import get_json_property, debug_print
-from .utils import duplicate_mesh, delete_mesh, copy_shapekeys, delete_all_shapekeys, create_basis_shape_key, rename_mesh, add_decimate_modifier, transfer_weights, transfer_weights_for_specific_bones # mesh utils imports
+from .utils import duplicate_mesh, delete_mesh, copy_shapekeys, delete_all_shapekeys, create_basis_shape_key, rename_mesh, add_decimate_modifier, transfer_weights, transfer_weights_for_specific_bones, get_all_meshes_of_armature, duplicate_a_list_of_meshes, delete_a_list_of_meshes # mesh utils imports
 from .utils import delete_armature, parent_armature, scale_selected_armature_with_child_meshes, apply_armature, apply_pose_as_rest_pose
 from .utils import delete_collection
 
@@ -36,13 +36,13 @@ class SkeleSwapProperties(bpy.types.PropertyGroup):
     transfer_unmapped_weights: bpy.props.BoolProperty(name="Tranafer Unmapped Weights", default=True) # type: ignore
     transfer_spine_weights: bpy.props.BoolProperty(name="Transfer Spine Weights", default=True) # type: ignore
 
-    lod_count: bpy.props.IntProperty(
+    """ lod_count: bpy.props.IntProperty(
     name="LOD Count",
     description="Number of LODs to create",
     default=3,
     min=1,
     max=5
-    ) # type: ignore
+    ) # type: ignore """
 
 class OBJECT_PT_skeleswap_main_panel(bpy.types.Panel):
     bl_label = "Align Skeleton"
@@ -103,11 +103,11 @@ class OBJECT_PT_skeleswap_main_panel(bpy.types.Panel):
             row = layout.row()
             row.operator("object.fix_hand_ik_bones", text="Fix Hand IK constraints")
 
-        row = layout.row(align=True)
+        """ row = layout.row(align=True)
         sub_row = row.row(align=True)
         sub_row.prop(skeleswap_props, "lod_count", text="Number of LODs")
         layout.separator()
-        sub_row.operator("object.create_lods", text="Create LODS")
+        sub_row.operator("object.create_lods", text="Create LODS") """
         layout.separator()
         layout.separator()
         if scene.target_is_epic_skeleton:
@@ -481,28 +481,33 @@ class OBJECT_OT_create_ar_kit_shape_keys(bpy.types.Operator):
     bl_description = "Creates the shapekeys needed for ARKIT based on the blendshapes animation"
 
     def execute(self, context):
+        source_armature = context.scene.source_armature
         try:
             set_frame_to(1)
             file_path = os.path.join(data_dir, "blendshapes.json")
             shapekey_names = get_json_property(file_path, "blendshape_names")
-            base_mesh = context.object
+            
+            source_mesh_list = get_all_meshes_of_armature(source_armature)
+            duplicated_mesh_list = duplicate_a_list_of_meshes(source_mesh_list)
+            
+            for index, duplicated_mesh in enumerate(duplicated_mesh_list):
+                delete_all_shapekeys(duplicated_mesh)
+                apply_armature(duplicated_mesh, source_armature)
+                create_basis_shape_key(duplicated_mesh)
 
-            duplicated_mesh = duplicate_mesh(base_mesh)
-            armature = duplicated_mesh.parent
-            delete_all_shapekeys(duplicated_mesh)
-            apply_armature(duplicated_mesh, armature)
-            create_basis_shape_key(duplicated_mesh)
-
-            bpy.ops.object.select_all(action='DESELECT')
-            base_mesh.select_set(True)
-            duplicated_mesh.select_set(True)
-            bpy.context.view_layer.objects.active = duplicated_mesh
-
-            convert_animation_to_shapekeys(duplicated_mesh, shapekey_names)
-            copy_shapekeys(duplicated_mesh, base_mesh)
-            delete_mesh(duplicated_mesh)
-            set_frame_to(1)
+                bpy.ops.object.select_all(action='DESELECT')
+                source_mesh_list[index].select_set(True)
+                duplicated_mesh.select_set(True)
+                bpy.context.view_layer.objects.active = duplicated_mesh
+                convert_animation_to_shapekeys(duplicated_mesh, shapekey_names)
+                copy_shapekeys(duplicated_mesh, source_mesh_list[index])
+                set_frame_to(1)
+                source_mesh_list[index].select_set(False)
+                duplicated_mesh.select_set(False)
+            
+            delete_a_list_of_meshes(duplicated_mesh_list)
             bpy.ops.object.mode_set(mode='OBJECT')
+        
         except Exception as e:
             self.report({'ERROR'}, f"Failed to create shapekeys. Error:{e}")
             return {'CANCELLED'}
@@ -607,13 +612,13 @@ class OBJECT_OT_replace_skeleton(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-        source_mesh = [child for child in source_armature.children if child.type == 'MESH'][0] # TBD error handling
-        target_mesh = [child for child in target_armature.children if child.type == 'MESH'][0]
+        source_mesh_list = get_all_meshes_of_armature(source_armature)
+        target_mesh_list = get_all_meshes_of_armature(target_armature)
 
-        if not target_mesh:
+        if not target_mesh_list:
             self.report({'WARNING'}, f"No Target Mesh")
             return {'CANCELLED'}
-        if not source_mesh:
+        if not source_mesh_list:
             self.report({'WARNING'}, f"No Source Mesh")
             return {'CANCELLED'}
 
@@ -628,33 +633,62 @@ class OBJECT_OT_replace_skeleton(bpy.types.Operator):
             spine_bones = ["spine_01", "spine_02", "spine_03", "spine_04", "spine_05"]
             if skeleswap_props.transfer_spine_weights:
                 bone_weights_to_transfer.extend(spine_bones)
-        if source_mesh and target_mesh:
+        if source_mesh_list and target_mesh_list:
             try:
                 if skeleswap_props.has_facial_animations:
-                    duplicated_mesh = duplicate_mesh(source_mesh)
-                    apply_armature(target_mesh, target_armature)
-                    delete_all_shapekeys(source_mesh)
-                    apply_armature(source_mesh, source_armature)
+                    duplicated_mesh_list = duplicate_a_list_of_meshes(source_mesh_list)
+                    
+                    for target_mesh in target_mesh_list:
+                        apply_armature(target_mesh, target_armature)
+                    
+                    for source_mesh in source_mesh_list:
+                        delete_all_shapekeys(source_mesh)
+                        apply_armature(source_mesh, source_armature)
+                    
                     apply_pose_as_rest_pose(target_armature)
+                    
                     if len(bone_weights_to_transfer):
-                        transfer_weights_for_specific_bones(bone_weights_to_transfer, source_mesh, target_mesh)
+                        for target_mesh in target_mesh_list:
+                            for source_mesh in source_mesh_list:
+                                transfer_weights_for_specific_bones(bone_weights_to_transfer, source_mesh, target_mesh)
+                    
                     delete_armature(source_armature)
-                    parent_armature(target_mesh, target_armature)
-                    parent_armature(source_mesh, target_armature)
-                    copy_shapekeys(duplicated_mesh, source_mesh)
-                    delete_mesh(duplicated_mesh)
-                    delete_mesh(target_mesh)
+                    
+                    for target_mesh in target_mesh_list:
+                        parent_armature(target_mesh, target_armature)
+                    
+                    for source_mesh in source_mesh_list:
+                        parent_armature(source_mesh, target_armature)
+                    
+                    for index, duplicated_mesh in enumerate(duplicated_mesh_list):
+                        copy_shapekeys(duplicated_mesh, source_mesh_list[index])
+                    
+                    delete_a_list_of_meshes(duplicated_mesh_list)    
+                    delete_a_list_of_meshes(target_mesh_list)
                 else:
-                    apply_armature(target_mesh, target_armature)
+                    for target_mesh in target_mesh_list:
+                        apply_armature(target_mesh, target_armature)
                     apply_pose_as_rest_pose(target_armature)
-                    delete_all_shapekeys(source_mesh)
-                    apply_armature(source_mesh, source_armature)
+                    
+                    for source_mesh in source_mesh_list:
+                        delete_all_shapekeys(source_mesh)
+                        apply_armature(source_mesh, source_armature)
+                    
                     delete_armature(source_armature)
-                    parent_armature(target_mesh, target_armature)
-                    parent_armature(source_mesh, target_armature)
+                    
+                    for target_mesh in target_mesh_list:
+                        parent_armature(target_mesh, target_armature)
+                    
+                    for source_mesh in source_mesh_list:
+                        parent_armature(source_mesh, target_armature)
+                    
                     if len(bone_weights_to_transfer):
-                        transfer_weights_for_specific_bones(bone_weights_to_transfer, source_mesh, target_mesh)
-                    delete_mesh(target_mesh)
+                        for target_mesh in target_mesh_list:
+                            for source_mesh in source_mesh_list:
+                                transfer_weights_for_specific_bones(bone_weights_to_transfer, source_mesh, target_mesh)
+                    
+                    delete_a_list_of_meshes(target_mesh_list)
+            
             except Exception as e:
                 self.report({'ERROR'}, f"Couldn't replace skeleton. Error: {e}")
                 debug_print(f"Couldn't replace skeleton. Error: {e}")
@@ -691,7 +725,7 @@ class OBJECT_OT_fix_hand_ik_bones(bpy.types.Operator):
                 return {"CANCELLED"}
         return {'FINISHED'}
 
-class OBJECT_OT_create_lods(bpy.types.Operator):
+""" class OBJECT_OT_create_lods(bpy.types.Operator):
     bl_idname = "object.create_lods"
     bl_label = "Create LODs"
     bl_description = "Creates between 1 and 5 LODs, based on the number input"
@@ -722,11 +756,8 @@ class OBJECT_OT_create_lods(bpy.types.Operator):
             transfer_weights(mesh, current_lod)
 
         self.report({'INFO'}, f"{user_input} LOD(s) created successfully.")
-        return {'FINISHED'}
+        return {'FINISHED'} """
     
-
-# ________________________________________________________
-
 class OBJECT_OT_export_character_as_FBX(bpy.types.Operator):
     bl_idname = "object.export_character_as_fbx"
     bl_label = "Export Character as FBX"
@@ -787,7 +818,7 @@ def register():
     bpy.utils.register_class(OBJECT_OT_remove_face_rig)
     bpy.utils.register_class(OBJECT_OT_replace_skeleton)
     bpy.utils.register_class(OBJECT_OT_fix_hand_ik_bones)
-    bpy.utils.register_class(OBJECT_OT_create_lods)
+    #bpy.utils.register_class(OBJECT_OT_create_lods)
     bpy.utils.register_class(OBJECT_OT_select_template_config)
     bpy.utils.register_class(OBJECT_OT_export_character_as_FBX)
     bpy.utils.register_class(OBJECT_PT_facial_operators_panel)
@@ -821,7 +852,7 @@ def unregister():
     bpy.utils.unregister_class(OBJECT_OT_remove_face_rig)
     bpy.utils.unregister_class(OBJECT_OT_replace_skeleton)
     bpy.utils.unregister_class(OBJECT_OT_fix_hand_ik_bones)
-    bpy.utils.unregister_class(OBJECT_OT_create_lods)
+    #bpy.utils.unregister_class(OBJECT_OT_create_lods)
     bpy.utils.unregister_class(OBJECT_OT_select_template_config)
     bpy.utils.unregister_class(SkeleSwapProperties)
     bpy.utils.unregister_class(OBJECT_OT_export_character_as_FBX)

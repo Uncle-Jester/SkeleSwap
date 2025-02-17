@@ -29,16 +29,17 @@ The built-in tool lets you easily match bone positions and orientations, ensurin
 
 Once you have created your template for your custom needs, you can export the bone mapping, and transform list. Allowing others to set up their template in a few clicks, letting multiple people reuse it, saving time and helping consistency
 
-### **Facial ARKit52 Shapekey Creation (Currently only works for Separate Face rigs, that drive shapekeys. WIP)**
+### **Facial ARKit52 Shapekey Creation ~~(Currently only works for Separate Face rigs, that drive shapekeys. WIP)~~**
 
 If your face rigs are the same accross multiple characters, and you want facial motion track using ARKIT52, but you dont want to create the animations over and over again. You can create it once, save it in a blend file, the addon can get the animation from the blend file, and create the shapekeys based on that animation. (works best if the face rig is a separate armature. If it is part of the main armature, that is still a work in progress)
 
 ## Planned Features (In order of Priority)
 
-- **Generating Dynamic Control Rig (IK, FK) -> _Already done for UE5 Skeleton_**
-- **Supporting Multi-Mesh/Modular Skeletal Meshes (_WIP_)**
+- **Generating Dynamic Control Rig (IK, FK) -> _Already done for UE5 Skeleton, and I have some ideas how to make it work for other armatures...but its a lot of work I am not keen on doing atm, but plan to get around to it_**
+- **Persist bone mappings/transform maps/templates even after quitting blender. _Blender seems to instanciate the internal json files into its local state, so when restarting blender, all custom json data (e.g: user created bone/transform/template maps get removed), so users currently have to export the jsons to prevent loss of data, then import them when they want to reuse it._ (WIP)**
+- **~~Supporting Multi-Mesh/Modular Skeletal Meshes (_WIP_)~~ _Done but may have some performance overhead... open to suggestions_**
 - **Tool to copy a bone from one armature to the other (_Logic is already done, just not included in the bone transforms list yet_)**
 - **Option to mirror, added transform items not just the rotation, to significantly speed up the process of creating custom transform maps**
-- **The ability to edit saved templates, bone mappings, and transform maps**
-- **Facial Shapekey Creation from deformbone based face rigs (_Logic implemented, but I am heavily procastinating on rigging faces, and testing with them, so no guarantee it works_)**
-- **Dynamic LOD Creation for the Skeleton Swapped SKMs (_We will see if this ever get implemented... topology play a huge role in this, and I am not sure I want to add any retopology algortythms or logic to this addon, since it is primary about bones_)**
+- **The ability to edit saved templates, bone mappings, and transform maps. _Not that huge of an effort to do it, but i wont start working on it until i see there is actual demand for it_**
+- **Facial Shapekey Creation from deformbone based face rigs (~~Logic implemented, but I am heavily procastinating on rigging faces, and testing with them, so no guarantee it works~~) -> _It works, but there are obvious problems, since if the two face rigs are not exactly the same, they will not necessarily look good. (it may be obvious to some, but I still mention it, so noone gets surprised)_**
+- **Dynamic LOD Creation for the Skeleton Swapped SKMs (_We will see if this ever gets implemented... topology plays a huge role in this, and I am not sure I want to add any retopology algortythms or logic to this addon, since it is primarily about bones_)**

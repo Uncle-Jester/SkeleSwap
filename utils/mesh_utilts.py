@@ -1,5 +1,33 @@
 import bpy # type: ignore
-from .dev_utils import debug_print
+from .dev_utils import debug_print, validate
+
+def get_all_meshes_of_armature(armature):
+    validate([armature], ['ARMATURE'], stack_location="MeshUtils-GetAllMeshesOfArmature")
+    meshes = [child for child in armature.children if child.type == 'MESH']
+    if len(meshes):
+        return meshes
+    else:
+        raise RuntimeError(f"In MeshUtils-GetAllMeshesOfArmature: The provided armature, {armature.name} has no meshes parented to it")
+
+def delete_a_list_of_meshes(mesh_list):
+    if mesh_list:
+        validate(mesh_list, stack_location="MeshUtils-DeleteAListOfMeshes")
+        for mesh in mesh_list:
+            validate([mesh], ['MESH'], stack_location="MeshUtils-DeleteAListOfMeshes")
+            delete_mesh(mesh)
+    else:
+        raise RuntimeError(f"In MeshUtils-DeleteAListOfMeshes: No Mesh List provided to delete")
+
+def duplicate_a_list_of_meshes(mesh_list):
+    duplicated_mesh_list = []
+    if mesh_list:
+        validate(mesh_list, stack_location="MeshUtils-DuplicateAListOfMeshes")
+        for mesh in mesh_list:
+            validate([mesh], ['MESH'], stack_location="MeshUtils-DuplicateAListOfMeshes")
+            duplicated_mesh_list.append(duplicate_mesh(mesh))
+        return duplicated_mesh_list
+    else:
+        raise RuntimeError(f"In MeshUtils-DuplicateAListOfMeshes: No Mesh List provided to delete")
 
 def duplicate_mesh(mesh_to_duplicate):
     if not mesh_to_duplicate or mesh_to_duplicate.type != 'MESH':
@@ -7,12 +35,16 @@ def duplicate_mesh(mesh_to_duplicate):
             raise ValueError(f"In MeshUtils-DuplicateMesh: Provided object is not a valid mesh. Expected {mesh_to_duplicate} to be of type 'MESH', instead got {mesh_to_duplicate.type}")
         else:
             raise ValueError(f"In MeshUtils-DuplicateMesh: Mesh to duplicate was not provided")
-    try:
+    try:        
+        bpy.context.view_layer.objects.active = mesh_to_duplicate
+        if bpy.context.object and bpy.context.object.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.select_all(action='DESELECT')
         mesh_to_duplicate.select_set(True)
         bpy.context.view_layer.objects.active = mesh_to_duplicate
 
         bpy.ops.object.duplicate()
+        mesh_to_duplicate.select_set(False)
         duplicated_mesh = bpy.context.object
         return duplicated_mesh
     except Exception as e:
