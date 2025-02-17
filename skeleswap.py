@@ -4,7 +4,7 @@ import json
 
 from .utils import match_pose_bone_head_pos, match_edit_bone_pos, get_foot_z_location, add_copy_location_constraint, add_copy_rotation_constraint, apply_bone_constraints, copy_edit_bone_between_skeletons, rename_bone # bone transform utils imports
 from .utils import link_animation, set_frame_to, convert_animation_to_shapekeys # facial animation utils imports
-from .utils import get_json_property, debug_print
+from .utils import get_json_property, debug_print, get_current_json_data_file_path
 from .utils import duplicate_mesh, delete_mesh, copy_shapekeys, delete_all_shapekeys, create_basis_shape_key, rename_mesh, add_decimate_modifier, transfer_weights, transfer_weights_for_specific_bones, get_all_meshes_of_armature, duplicate_a_list_of_meshes, delete_a_list_of_meshes # mesh utils imports
 from .utils import delete_armature, parent_armature, scale_selected_armature_with_child_meshes, apply_armature, apply_pose_as_rest_pose
 from .utils import delete_collection
@@ -153,7 +153,7 @@ def rename_vertex_groups(armature, bone_mapping):
                     obj.vertex_groups[source_bone].name = target_bone
 
 def get_template_config_options():
-    json_file_path = os.path.join(data_dir, "template_configs.json")
+    json_file_path = get_current_json_data_file_path("template_configs")
     if os.path.exists(json_file_path):
         with open(json_file_path, 'r') as json_file:
             try:
@@ -174,8 +174,10 @@ def get_template_config_contents(scene):
         bone_transform_property_name = template_data.get("transform_map")
         if bone_mapping_property_name and bone_transform_property_name:
             debug_print(f"MainPanel-GetTemplateConfigContents: bone_mapping: {bone_mapping_property_name}, transform_map: {bone_transform_property_name}")
-            template_data["bone_mapping"] = get_json_property(os.path.join(data_dir, "bone_mappings.json"), bone_mapping_property_name)
-            template_data["transform_map"] = get_json_property(os.path.join(data_dir, "bone_transforms.json"), bone_transform_property_name)
+            bone_mapping_filepath = get_current_json_data_file_path("bone_mapping")
+            transform_map_filepath = get_current_json_data_file_path("bone_transforms")
+            template_data["bone_mapping"] = get_json_property(bone_mapping_filepath, bone_mapping_property_name)
+            template_data["transform_map"] = get_json_property(transform_map_filepath, bone_transform_property_name)
             return template_data
     else:
         return {}
@@ -218,7 +220,7 @@ class OBJECT_OT_select_template_config(bpy.types.Operator):
 
     def execute(self, context):
         selected_template_name = context.scene.selected_template_config
-        json_file_path = os.path.join(data_dir, "template_configs.json")
+        json_file_path = get_current_json_data_file_path("template_configs")
         debug_print(f"MainPanel-SelectTemplateConfig-Execute: Template Selected: {selected_template_name}")
         if os.path.exists(json_file_path):
             with open(json_file_path, 'r') as json_file:

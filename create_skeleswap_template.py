@@ -2,14 +2,14 @@ import bpy # type: ignore
 import os
 import json
 
-from .utils import debug_print
+from .utils import debug_print, save_to_persistent_data_store_json_property, get_current_json_data_file_path
 
 addon_dir = os.path.dirname(os.path.realpath(__file__))
 utils_dir = os.path.join(addon_dir, "utils")
 data_dir = os.path.join(utils_dir, "data")
 
 def get_bone_mapping_options():
-    json_file_path = os.path.join(data_dir, "bone_mappings.json")
+    json_file_path = get_current_json_data_file_path("bone_mappings")
 
     if os.path.exists(json_file_path):
         with open(json_file_path, 'r') as json_file:
@@ -21,7 +21,7 @@ def get_bone_mapping_options():
     return []
 
 def get_transform_map_options():
-    json_file_path = os.path.join(data_dir, "bone_transforms.json")
+    json_file_path = get_current_json_data_file_path("bone_mappings")
     if os.path.exists(json_file_path):
         with open(json_file_path, 'r') as json_file:
             try:
@@ -115,9 +115,11 @@ class OBJECT_OT_save_template(bpy.types.Operator):
         create_template_properties = scene.create_template_properties
         json_file_path = os.path.join(data_dir, "template_configs.json")
         property_name = create_template_properties.template_name or "My Template"
+        template = create_template_json(create_template_properties)
 
         try:
-            if os.path.exists(json_file_path):
+            save_to_persistent_data_store_json_property("template_configs", property_name, template)
+            """ if os.path.exists(json_file_path):
                 with open(json_file_path, 'r+') as json_file:
                     template = create_template_json(create_template_properties)
                     data = json.load(json_file)
@@ -125,10 +127,14 @@ class OBJECT_OT_save_template(bpy.types.Operator):
                     json_file.seek(0)
                     json.dump(data, json_file, indent=4)
                     json_file.truncate()
+                    json_file.flush() ## Remove if persistence doesnt work
+                    os.fsync(json_file.fileno()) ## Remove if persistence doesnt work
             else:
                 with open(json_file_path, 'w') as json_file:
                     data = {property_name: template}
                     json.dump(data, json_file, indent=4)
+                    json_file.flush() ## Remove if persistence doesnt work
+                    os.fsync(json_file.fileno()) ## Remove if persistence doesnt work """
             
             self.report({'INFO'}, f"Template saved to {json_file_path} under '{property_name}'")
         except Exception as e:

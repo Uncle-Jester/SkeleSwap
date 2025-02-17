@@ -1,5 +1,7 @@
 import bpy # type: ignore
 import json
+import os
+import shutil
 
 def get_debug_print_status():
     if hasattr(bpy.context.scene, "enable_debug_print"):
@@ -31,7 +33,49 @@ def get_json_property(file_path, property):
     except Exception as e:
         print(f"An error occurred while reading the json file. Error: {e}")
         return {'CANCELLED'}
+
+
+def get_current_json_data_file_path(json_file_name):
+    persistent_data_dir = bpy.utils.user_resource('SCRIPTS', "addon_data/SkeleSwap")
+    persisted_json_file_path = os.path.join(persistent_data_dir, f"{json_file_name}.json")
+    if not os.path.exists(persisted_json_file_path):
+        addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        return os.path.join(addon_dir, "utils", "data", f"{json_file_name}.json")
+    else:
+        return persisted_json_file_path
+
+
+
+def save_to_persistent_data_store_json_property(json_file_name, property_name, json):
+    persistent_data_dir = bpy.utils.user_resource('SCRIPTS', "addon_data/SkeleSwap")    
+    os.makedirs(persistent_data_dir, exist_ok=True)
     
+    json_file_path = os.path.join(persistent_data_dir, f"{json_file_name}.json")
+
+    if not os.path.exists(json_file_path):
+        addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        original_json = os.path.join(addon_dir, "utils", "data", f"{json_file_name}.json")
+        if os.path.exists(original_json):
+            shutil.copy(original_json, json_file_path)
+    try:
+        if os.path.exists(json_file_path):
+            with open(json_file_path, 'r+') as json_file:
+                data = json.load(json_file)
+                data[property_name] = json
+                json_file.seek(0)
+                json.dump(data, json_file, indent=4)
+                json_file.truncate()
+                json_file.flush()
+                os.fsync(json_file.fileno())
+        else:
+            with open(json_file_path, 'w') as json_file:
+                json.dump({property_name: json}, json_file, indent=4)
+        
+    except Exception as e:
+        print(f"An error occurred while reading the json file. Error: {e}")
+        return {'CANCELLED'}
+
+
 def assign_bone_color_to_armature(armature_object, rgb_color):
     if armature_object.type != 'ARMATURE':
         print("The provided object is not an armature!")

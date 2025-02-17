@@ -5,7 +5,7 @@ import os
 
 from .utils import rotate_bone, match_pose_bone_head_pos, match_edit_bone_pos, chain_pose_bone_position, scale_pose_bone, match_pose_bone_orientation, get_foot_z_location, move_pose_bone, orient_bone, move_edit_bone, assign_bone_color_to_armature, match_edit_bone_z_location, match_edit_bone_chain_scale, scale_edit_bone_chain, copy_bone_between_armatures, delete_edit_bone
 from .utils import is_flipped_unreal_bone
-from .utils import debug_print
+from .utils import debug_print, get_current_json_data_file_path, save_to_persistent_data_store_json_property
 
 class CreateTransformProperties(bpy.types.PropertyGroup):
     create_transform_foot_z_location: bpy.props.StringProperty(name="Foot Z Location", default="")  # type: ignore
@@ -519,11 +519,7 @@ def update_target_armature(self, context):
         bpy.context.scene.target_armature = None
 
 def get_bone_mapping_options():
-    addon_dir = os.path.dirname(os.path.realpath(__file__))
-    utils_dir = os.path.join(addon_dir, "utils")
-    data_dir = os.path.join(utils_dir, "data")
-    json_file_path = os.path.join(data_dir, "bone_mappings.json")
-
+    json_file_path = get_current_json_data_file_path("bone_mappings")
     if os.path.exists(json_file_path):
         with open(json_file_path, 'r') as json_file:
             try:
@@ -560,10 +556,7 @@ class OBJECT_OT_select_bone_mapping(bpy.types.Operator):
         selected_mapping_name = context.scene.selected_bone_mapping
         debug_print(f"CreateTransformMap-SelectBoneMapping-Execute: Selected bone mapping name: {selected_mapping_name}")
 
-        addon_dir = os.path.dirname(os.path.realpath(__file__))
-        utils_dir = os.path.join(addon_dir, "utils")
-        data_dir = os.path.join(utils_dir, "data")
-        json_file_path = os.path.join(data_dir, "bone_mappings.json")
+        json_file_path = get_current_json_data_file_path("bone_mappings")
         if os.path.exists(json_file_path):
             with open(json_file_path, 'r') as json_file:
                 try:
@@ -647,26 +640,26 @@ class OBJECT_OT_save_bone_transform(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        bone_transform = create_bone_transform_json(scene)
-
-        addon_dir = os.path.dirname(os.path.realpath(__file__))
-        utils_dir = os.path.join(addon_dir, "utils")
-        data_dir = os.path.join(utils_dir, "data")
-        json_file_path = os.path.join(data_dir, "bone_transforms.json")
+        bone_transforms_json = create_bone_transform_json(scene)
         property_name = context.scene.input_text or "default_property"
 
         try:
-            if os.path.exists(json_file_path):
+            save_to_persistent_data_store_json_property("bone_transforms", property_name, bone_transforms_json)
+            """ if os.path.exists(json_file_path):
                 with open(json_file_path, 'r+') as json_file:
                     data = json.load(json_file)
                     data[property_name] = bone_transform
                     json_file.seek(0)
                     json.dump(data, json_file, indent=4)
                     json_file.truncate()
+                    json_file.flush() ## Remove if persistence doesnt work
+                    os.fsync(json_file.fileno()) ## Remove if persistence doesnt work
             else:
                 with open(json_file_path, 'w') as json_file:
                     data = {property_name: bone_transform}
                     json.dump(data, json_file, indent=4)
+                    json_file.flush() ## Remove if persistence doesnt work
+                    os.fsync(json_file.fileno()) ## Remove if persistence doesnt work """
             
             self.report({'INFO'}, f"Bone transform saved under '{property_name}'")
         except Exception as e:
