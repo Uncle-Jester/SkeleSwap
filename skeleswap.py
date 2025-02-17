@@ -2,7 +2,7 @@ import bpy # type: ignore
 import os
 import json
 
-from .utils import match_pose_bone_head_pos, match_edit_bone_pos, get_foot_z_location, add_copy_location_constraint, add_copy_rotation_constraint, apply_bone_constraints, copy_bone_between_skeletons, rename_bone # bone transform utils imports
+from .utils import match_pose_bone_head_pos, match_edit_bone_pos, get_foot_z_location, add_copy_location_constraint, add_copy_rotation_constraint, apply_bone_constraints, copy_edit_bone_between_skeletons, rename_bone # bone transform utils imports
 from .utils import link_animation, set_frame_to, convert_animation_to_shapekeys # facial animation utils imports
 from .utils import get_json_property, debug_print
 from .utils import duplicate_mesh, delete_mesh, copy_shapekeys, delete_all_shapekeys, create_basis_shape_key, rename_mesh, add_decimate_modifier, transfer_weights, transfer_weights_for_specific_bones, get_all_meshes_of_armature, duplicate_a_list_of_meshes, delete_a_list_of_meshes # mesh utils imports
@@ -569,9 +569,9 @@ class OBJECT_OT_reparent_breast_bones(bpy.types.Operator):
             self.report({'WARNING'}, "Bone mapping in the template is invalid. Make sure the template is set up properly")
             return {'CANCELLED'}
         try:
-            copy_bone_between_skeletons(source_armature, target_armature, 'breast_L', 'spine_05') # TBD: Create Operator, that allows for copying bones over to the armature. Select new parent bone on target armature, select the bone to copy, rename the bone according to the vertex group
+            copy_edit_bone_between_skeletons(source_armature, target_armature, 'breast_L', 'spine_05')
             rename_bone(target_armature, 'breast_L', 'breast_l')
-            copy_bone_between_skeletons(source_armature, target_armature, 'breast_R', 'spine_05')
+            copy_edit_bone_between_skeletons(source_armature, target_armature, 'breast_R', 'spine_05')
             rename_bone(target_armature, 'breast_R', 'breast_r')
             match_pose_bone_head_pos(target_armature, source_armature, "breast_l", BONE_MAPPING["breast_l"])
             match_pose_bone_head_pos(target_armature, source_armature, "breast_r", BONE_MAPPING["breast_r"])

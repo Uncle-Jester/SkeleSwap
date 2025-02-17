@@ -3,13 +3,14 @@ from mathutils import Matrix, Vector # type: ignore
 import json
 import os
 
-from .utils import rotate_bone, match_pose_bone_head_pos, match_edit_bone_pos, chain_pose_bone_position, scale_pose_bone, match_pose_bone_orientation, get_foot_z_location, move_pose_bone, orient_bone, move_edit_bone, assign_bone_color_to_armature, match_edit_bone_z_location, match_edit_bone_chain_scale, scale_edit_bone_chain
+from .utils import rotate_bone, match_pose_bone_head_pos, match_edit_bone_pos, chain_pose_bone_position, scale_pose_bone, match_pose_bone_orientation, get_foot_z_location, move_pose_bone, orient_bone, move_edit_bone, assign_bone_color_to_armature, match_edit_bone_z_location, match_edit_bone_chain_scale, scale_edit_bone_chain, copy_bone_between_armatures, delete_edit_bone
 from .utils import is_flipped_unreal_bone
 from .utils import debug_print
 
 class CreateTransformProperties(bpy.types.PropertyGroup):
     create_transform_foot_z_location: bpy.props.StringProperty(name="Foot Z Location", default="")  # type: ignore
-    load_transform_map_wo_applying: bpy.props.StringProperty(name="Load Transform Map Without Applying", default=True)  # type: ignore
+    load_transform_map_wo_applying: bpy.props.BoolProperty(name="Load Transform Map Without Applying", default=True)  # type: ignore
+    new_bone_name: bpy.props.StringProperty(name="Name of the new Bone", default="") # type: ignore
 
     def set_data(self, value):
         if isinstance(value, Matrix):
@@ -62,6 +63,10 @@ class BoneTransformPanel(bpy.types.Panel):
         row.prop(scene, "selected_target_bone", text="Target Bone")
         row.operator("object.select_target_bone_from_viewport", text="Select Target Bone")
         
+        if scene.transform_type == "copy_bone_between_armatures":
+            row = layout.row()
+            row.prop(create_transform_props, "new_bone_name", text="Name for the copied bone")
+
         if scene.transform_type == "match_edit_bone_chain_scale":
             row = layout.row()
             row.prop(scene, "source_bone_chain", text="Source Bone Chain")
@@ -137,7 +142,7 @@ class Transform_item(bpy.types.PropertyGroup):
         return data
 
 
-def add_transform(context, target_bone_name, source_bone_name, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain=[], source_chain=[], apply_transform=True):
+def add_transform(context, target_bone_name, source_bone_name, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain=[], source_chain=[], new_bone_name="" ,apply_transform=True):
     scene = context.scene
 
     target_armature = (
@@ -227,6 +232,15 @@ def add_transform(context, target_bone_name, source_bone_name, axis, transform_v
         new_transform.set_data(revert_data, 'revert_data')
         new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_chain": target_chain, "source_chain": source_chain}, 'transform_details')
         new_transform.name = f"Match EDIT Bone Chain Scale: {target_chain[0]} - {target_chain[-1]}"
+    elif transform_type == 'copy_bone_between_armatures':
+        revert_data = None
+        if(apply_transform):
+            revert_data = copy_bone_between_armatures(target_armature, source_armature, source_bone_name, target_bone_name, new_bone_name)
+        new_transform = scene.transform_list.add()
+        new_transform.transform_type = transform_type
+        new_transform.set_data(revert_data, 'revert_data')
+        new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone": target_chain, "source_bone": source_chain, "new_bone_name": new_bone_name}, 'transform_details')
+        new_transform.name = f"Copy Bone: {source_bone_name} -> {new_bone_name} -> Parent: {target_bone_name}"
     else:
         raise ValueError(f"In CreateTransformMap-AddTransform: Invalid transform type: {transform_type}")
     return new_transform if new_transform else None
@@ -254,6 +268,7 @@ class OBJECT_OT_add_transform(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
+        create_transform_props = scene.create_transform_props
 
         target_bone_name = scene.selected_target_bone
         source_bone_name = scene.selected_source_bone
@@ -261,13 +276,14 @@ class OBJECT_OT_add_transform(bpy.types.Operator):
         source_chain = [item.name for item in scene.source_bone_chain]
         target_armature_indicator = scene.target_armature_indicator
         source_armature_indicator = scene.source_armature_indicator
+        new_bone_name = create_transform_props.new_bone_name
         axis = scene.axis
         transform_value = scene.value
         mirror = scene.mirror
 
         transform_type = scene.transform_type
         try:
-            new_transform = add_transform(context, target_bone_name, source_bone_name, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain)
+            new_transform = add_transform(context, target_bone_name, source_bone_name, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain, new_bone_name=new_bone_name)
         except Exception as e:
             self.report({'WARNING'}, f"Something went wrong when trying to add transform. Try re-selecting the target and source bones, and make sure you have the correct armatures selected. Error: {e}")
             return {'CANCELLED'}
@@ -358,6 +374,12 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
                     revert_data['scale_factor']
                 )
                 debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted edit bone chain scale for the bone chain: {revert_data['target_chain']}")
+            elif scene.transform_list[self.index].transform_type == "copy_bone_between_armatures":
+                delete_edit_bone(
+                    revert_data['target_armature'], 
+                    revert_data['new_bone_name'], 
+                )
+                debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted Copy Bone, by deleting the copied bone: {revert_data['new_bone_name']}")
             else:
                 print('TBD')
         except Exception as e:
@@ -382,6 +404,9 @@ class OBJECT_OT_select_source_bone(bpy.types.Operator):
                     context.scene.source_armature_indicator = 'S' if selected_object.name == context.scene.source_armature.name else 'T'
                     mapping_content = get_bone_mapping_contents(context.scene)
                     debug_print(f"CreateTransformMap-SelectingSourceBone: mapping_content: {mapping_content}")
+                    if context.scene.selected_template == "copy_bone_between_armatures":
+                        context.scene.create_transform_props.new_bone_name = context.scene.selected_source_bone
+                        debug_print(f"CreateTransformMap-SelectingSourceBone: Set source bone name as default value for Copied Bone Name: {context.scene.create_transform_props.new_bone_name}")
                     if mapping_content:
                         paired_target_bone = None
                         for target_bone, source_bone in mapping_content.items():
@@ -677,7 +702,8 @@ class OBJECT_OT_load_bone_transform(bpy.types.Operator):
                 transform_type = transform_data.get("transform_type")
                 target_armature_indicator = transform_data.get("target_armature_indicator")
                 source_armature_indicator = transform_data.get("source_armature_indicator")
-                add_transform(context, target_bone_name, source_bone_name, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain, apply_transform=apply_transform)
+                new_bone_name = transform_data.get("new_bone_name")
+                add_transform(context, target_bone_name, source_bone_name, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain, new_bone_name=new_bone_name, apply_transform=apply_transform)
 
             self.report({'INFO'}, f"Bone transform loaded from {self.filepath}")
         except Exception as e:
@@ -757,7 +783,8 @@ def register():
             ('rotate_bone', "Rotate POSE Bone", "Rotate Bone"),
             ('match_edit_bone_pos', "Match EDIT Bone Head Position", "Match Edit Bone Head Position"),
             ('match_edit_bone_z_location', "Match EDIT Bone Z Position", "Match Edit Bone Z Position"),
-            ('match_edit_bone_chain_scale', "Match EDIT Bone Chain Scale", "Match Edit Bone Chain Scale")
+            ('match_edit_bone_chain_scale', "Match EDIT Bone Chain Scale", "Match Edit Bone Chain Scale"),
+            ('copy_bone_between_armatures', "Copy Bone Between Armatures", "Copy Bone Between Armatures")
         ],
         default='rotate_bone'
     )

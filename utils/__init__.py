@@ -1,4 +1,4 @@
-from .bone_transform_utils import rotate_bone, match_pose_bone_head_pos,match_edit_bone_pos, chain_pose_bone_position, scale_pose_bone, match_pose_bone_orientation, copy_bone_between_skeletons, move_pose_bone, orient_bone, move_edit_bone, match_edit_bone_z_location, match_edit_bone_chain_scale, scale_edit_bone_chain
+from .bone_transform_utils import rotate_bone, match_pose_bone_head_pos,match_edit_bone_pos, chain_pose_bone_position, scale_pose_bone, match_pose_bone_orientation, copy_edit_bone_between_skeletons, move_pose_bone, orient_bone, move_edit_bone, match_edit_bone_z_location, match_edit_bone_chain_scale, scale_edit_bone_chain, copy_bone_between_armatures, delete_edit_bone
 from .dev_utils import debug_print, get_json_property, assign_bone_color_to_armature
 from .facial_animation_utils import link_animation, set_frame_to, convert_animation_to_shapekeys
 from .mesh_utilts import duplicate_mesh, delete_mesh, copy_shapekeys, delete_all_shapekeys, create_basis_shape_key, add_decimate_modifier, rename_mesh, transfer_weights, transfer_weights_for_specific_bones, get_all_meshes_of_armature, delete_a_list_of_meshes, duplicate_a_list_of_meshes

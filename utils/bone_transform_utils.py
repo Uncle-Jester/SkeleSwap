@@ -1,8 +1,8 @@
 import math
 import bpy # type: ignore
 from mathutils import Matrix, Vector, Euler # type: ignore
-from .general_bone_utils import find_mirror_bone_name, remove_connected_relation
-from .dev_utils import debug_print
+from .general_bone_utils import find_mirror_bone_name, remove_connected_relation, rename_bone
+from .dev_utils import debug_print, validate
 from .ue_specific_utils import is_flipped_unreal_bone
 
 # TBD: Create a separate function for validating inputs, to get rid of the unholy amount of code duplication in every function when validating armatures/bone_names/etc. 
@@ -437,7 +437,7 @@ def scale_pose_bone(armature, bone_name, scale_value, axis=None): #TBD Implement
     except Exception as e:
        raise RuntimeError(f"In BoneTransformUtils-ScalePoseBone: Could not scale pose bone. Error: {e}") 
 
-def copy_bone_between_skeletons(source_armature, target_armature, bone_name, bone_to_parent_to):
+def copy_edit_bone_between_skeletons(source_armature, target_armature, bone_name, bone_to_parent_to):
     if not target_armature or target_armature.type != "ARMATURE":
         if target_armature:
             raise ValueError(f"In BoneTransformUtils-CopyBoneBetweenSkeletons: Target Armature Input is type: {target_armature.type}. Excpected type ARMATURE")
@@ -574,3 +574,29 @@ def scale_edit_bone_chain(target_armature, target_chain, scale_factor, onZAxis=F
             bpy.ops.transform.resize(value = (scale_factor, scale_factor, scale_factor))
     except Exception as e:
        raise RuntimeError(f"In BoneTransformUtils-ChainEditBoneScale: Could not scale edit bone chain. Error: {e}")
+
+
+def copy_bone_between_armatures(target_armature, source_armature, bone_name_to_copy, bone_to_parent_to, new_bone_name):
+    copy_edit_bone_between_skeletons(source_armature, target_armature, bone_name_to_copy, bone_to_parent_to)
+    rename_bone(target_armature, bone_name_to_copy, new_bone_name)
+    match_pose_bone_head_pos(target_armature, source_armature, new_bone_name, bone_name_to_copy)
+
+    #TBD Tell users to add the key value pair to the bone mapping beforehand, so there would be no errors or unexpected behabiours in later steps
+
+    return {"new_bone_name": new_bone_name, "target_armature": target_armature}
+
+def delete_edit_bone(armature, bone_name):
+    validate([armature, bone_name], ["ARMATURE", "str"], stack_location="BoneTransformUtils-DeleteEditBone", input_identifier_strings=["target_armature", "bone_name"])
+    try:
+        bpy.context.view_layer.objects.active = armature
+        bpy.ops.object.mode_set(mode='EDIT')
+        edit_bones = armature.data.edit_bones
+
+        if bone_name not in edit_bones:
+            raise ValueError(f"In BoneTransformUtils-DeleteEditBone: Bone '{bone_name}' not found in the armature '{armature.name}'.")
+
+        edit_bones.remove(edit_bones[bone_name])
+        bpy.ops.object.mode_set(mode='OBJECT')
+        debug_print(f"BoneTransformUtils-DeleteEditBone: Deleted bone '{bone_name}' from armature '{armature.name}'.")
+    except Exception as e:
+        raise RuntimeError(f"In BoneTransformUtils-DeleteEditBone: Could not delete bone. Error: {e}")
