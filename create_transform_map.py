@@ -411,7 +411,7 @@ class OBJECT_OT_select_source_bone(bpy.types.Operator):
                     context.scene.source_armature_indicator = 'S' if selected_object.name == context.scene.source_armature.name else 'T'
                     mapping_content = get_bone_mapping_contents(context.scene)
                     debug_print(f"CreateTransformMap-SelectingSourceBone: mapping_content: {mapping_content}")
-                    if context.scene.selected_template == "copy_bone_between_armatures":
+                    if context.scene.transform_type == "copy_bone_between_armatures":
                         context.scene.create_transform_props.new_bone_name = context.scene.selected_source_bone
                         debug_print(f"CreateTransformMap-SelectingSourceBone: Set source bone name as default value for Copied Bone Name: {context.scene.create_transform_props.new_bone_name}")
                     if mapping_content:

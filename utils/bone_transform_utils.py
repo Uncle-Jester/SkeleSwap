@@ -581,7 +581,7 @@ def copy_bone_between_armatures(target_armature, source_armature, bone_name_to_c
     rename_bone(target_armature, bone_name_to_copy, new_bone_name)
     match_pose_bone_head_pos(target_armature, source_armature, new_bone_name, bone_name_to_copy)
 
-    #TBD Tell users to add the key value pair to the bone mapping beforehand, so there would be no errors or unexpected behabiours in later steps
+    #TBD Tell users to add the key value pair to the bone mapping beforehand, so there would be no errors or unexpected behabiours in later steps... for example an infor tooltip or something similar
 
     return {"new_bone_name": new_bone_name, "target_armature": target_armature}
 
@@ -596,7 +596,7 @@ def delete_edit_bone(armature, bone_name):
             raise ValueError(f"In BoneTransformUtils-DeleteEditBone: Bone '{bone_name}' not found in the armature '{armature.name}'.")
 
         edit_bones.remove(edit_bones[bone_name])
-        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.mode_set(mode='POSE')
         debug_print(f"BoneTransformUtils-DeleteEditBone: Deleted bone '{bone_name}' from armature '{armature.name}'.")
     except Exception as e:
         raise RuntimeError(f"In BoneTransformUtils-DeleteEditBone: Could not delete bone. Error: {e}")

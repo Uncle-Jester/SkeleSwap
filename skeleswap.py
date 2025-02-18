@@ -175,7 +175,7 @@ def get_template_config_contents(scene):
         bone_transform_property_name = template_data.get("transform_map")
         if bone_mapping_property_name and bone_transform_property_name:
             debug_print(f"MainPanel-GetTemplateConfigContents: bone_mapping: {bone_mapping_property_name}, transform_map: {bone_transform_property_name}")
-            bone_mapping_filepath = get_current_json_data_file_path("bone_mapping")
+            bone_mapping_filepath = get_current_json_data_file_path("bone_mappings")
             transform_map_filepath = get_current_json_data_file_path("bone_transforms")
             template_data["bone_mapping"] = get_json_property(bone_mapping_filepath, bone_mapping_property_name)
             template_data["transform_map"] = get_json_property(transform_map_filepath, bone_transform_property_name)
@@ -189,6 +189,7 @@ def set_template_config_contents(scene, config):
     skelewap_props = scene.skeleswap_props
     scene.target_is_epic_skeleton = config.get("target_is_epic_skeleton", False)
     skelewap_props.has_facial_animations = config.get("has_facial_animations", False)
+    skelewap_props.has_separate_face_rig = config.get("has_separate_face_rig", False)
     skelewap_props.is_mb_to_epic = config.get("option_name") == "MB to Epic Skeleton"
 
 def template_config_update_callback(self, context):
@@ -436,8 +437,13 @@ class OBJECT_OT_link_blendshapes_animation(bpy.types.Operator):
         is_mb_to_epic = skeleswap_props.is_mb_to_epic
         potential_face_rig = context.object if (context.object and context.object.type == 'ARMATURE') and (context.object != context.scene.target_armature) and (context.object != context.scene.source_armature) else None
         
+        debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Check if MB to Epic Template or Has Separate Face Rig: {has_separate_face_rig or is_mb_to_epic}")
+        debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Is MB to Epic Template: {is_mb_to_epic}. Has Separate Face Rig: {has_separate_face_rig}")
         if has_separate_face_rig or is_mb_to_epic:
+            debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Potential face rig is selected: {potential_face_rig}")
+            debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Looking for a face rig armature in {bpy.data.objects}")
             for obj in bpy.data.objects:
+                debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Checking {obj} if type:{obj.type} is 'MESH' and the name: {obj.name.lower} contains 'face-rig'")
                 if obj.type == 'ARMATURE' and 'face_rig' in obj.name.lower():
                     debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Found face rig match: {obj.name}")
                     face_rig_armature = obj
@@ -452,13 +458,15 @@ class OBJECT_OT_link_blendshapes_animation(bpy.types.Operator):
                     self.report({'WARNING'}, f"No face rig found. Try selecting it in the viewport and try again")
                     debug_print('No separate face rig found')
                     return {"CANCELLED"}
-        elif not is_mb_to_epic and not has_separate_face_rig:
+        elif not has_separate_face_rig:
+            debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Template doesnt have separate face rig")
             face_rig_armature = context.scene.source_armature
         
         if is_mb_to_epic:
             filepath = os.path.join(imports_dir, "ARKIT_Blendshape_Animations_For_MB_Lab_FaceRig.blend")
             action_name = "52_Shapekeys"
         else:
+            debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Using custom file path")
             filepath = shapekey_animation_blend_path
             action_name = shapekey_action_name
         

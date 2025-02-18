@@ -3,6 +3,51 @@ import json
 import os
 import shutil
 
+
+class PathStateManager:
+    _instance = None  # Singleton instance
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(PathStateManager, cls).__new__(cls)
+            cls._instance.persistent_paths = {}  # Tracks only persistent paths
+        return cls._instance
+
+    def get_json_file_path(self, json_file_name):
+        if json_file_name in self.persistent_paths:
+            return self.persistent_paths[json_file_name]
+
+        persistent_data_dir = bpy.utils.user_resource('SCRIPTS', path="addon_data/SkeleSwap")
+        persisted_json_file_path = os.path.join(persistent_data_dir, f"{json_file_name}.json")
+        addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        default_path = os.path.join(addon_dir, "utils", "data", f"{json_file_name}.json")
+
+        if os.path.exists(persisted_json_file_path):
+            self.persistent_paths[json_file_name] = persisted_json_file_path
+            return persisted_json_file_path
+        
+        return default_path
+
+    def ensure_persistent_path(self, json_file_name):
+        if json_file_name in self.persistent_paths:
+            return self.persistent_paths[json_file_name]
+
+        persistent_data_dir = bpy.utils.user_resource('SCRIPTS', path="addon_data/SkeleSwap")
+        json_file_path = os.path.join(persistent_data_dir, f"{json_file_name}.json")
+
+        os.makedirs(persistent_data_dir, exist_ok=True)
+
+        if not os.path.exists(json_file_path):
+            addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+            original_json = os.path.join(addon_dir, "utils", "data", f"{json_file_name}.json")
+            if os.path.exists(original_json):
+                shutil.copy(original_json, json_file_path)
+
+        self.persistent_paths[json_file_name] = json_file_path
+        return json_file_path
+
+path_state_manager = PathStateManager()
+
 def get_debug_print_status():
     if hasattr(bpy.context.scene, "enable_debug_print"):
         return bpy.context.scene.enable_debug_print
@@ -35,18 +80,26 @@ def get_json_property(file_path, property):
         return {'CANCELLED'}
 
 
-def get_current_json_data_file_path(json_file_name):
+""" def get_current_json_data_file_path(json_file_name):
     persistent_data_dir = bpy.utils.user_resource('SCRIPTS', path="addon_data/SkeleSwap")
     persisted_json_file_path = os.path.join(persistent_data_dir, f"{json_file_name}.json")
+    addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    default_path = os.path.join(addon_dir, "utils", "data", f"{json_file_name}.json")
+    debug_print(f"DevUtils-GetCurrentJSONDataFilePath: Path to persisted data: {persisted_json_file_path}")
     if not os.path.exists(persisted_json_file_path):
-        addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        return os.path.join(addon_dir, "utils", "data", f"{json_file_name}.json")
+        debug_print(f"DevUtils-GetCurrentJSONDataFilePath: Persisted Path doesnt exist, returning default path: {default_path}")
+        return default_path
     else:
-        return persisted_json_file_path
+        debug_print(f"DevUtils-GetCurrentJSONDataFilePath: Persisted Path exists, returning path: {persisted_json_file_path}")
+        return persisted_json_file_path """
+
+def get_current_json_data_file_path(json_file_name):
+    path = path_state_manager.get_json_file_path(json_file_name)
+    debug_print(f"DevUtils-GetCurrentJSONDataFilePath: Returning path: {path}")
+    return path
 
 
-
-def save_to_persistent_data_store_json_property(json_file_name, property_name, jsonData):
+""" def save_to_persistent_data_store_json_property(json_file_name, property_name, jsonData):
     persistent_data_dir = bpy.utils.user_resource('SCRIPTS', path="addon_data/SkeleSwap")
     try:    
         debug_print(f"DevUtils-SaveToPersistentStoreJsonProp: Checking persistent file directory, creating if doesnt exist")
@@ -79,6 +132,23 @@ def save_to_persistent_data_store_json_property(json_file_name, property_name, j
         
     except Exception as e:
         print(f"An error occurred while reading the json file. Error: {e}")
+        return {'CANCELLED'} """
+
+def save_to_persistent_data_store_json_property(json_file_name, property_name, jsonData):
+    json_file_path = path_state_manager.ensure_persistent_path(json_file_name)  # if the path exists it returns it from cahce, if not creates it chaches it, then returns it
+
+    try:
+        with open(json_file_path, 'r+') as json_file:
+            data = json.load(json_file)
+            data[property_name] = jsonData
+            json_file.seek(0)
+            json.dump(data, json_file, indent=4)
+            json_file.truncate()
+    except (FileNotFoundError, json.JSONDecodeError):
+        with open(json_file_path, 'w') as json_file:
+            json.dump({property_name: jsonData}, json_file, indent=4)
+    except Exception as e:
+        print(f"An error occurred while saving the JSON file. Error: {e}")
         return {'CANCELLED'}
 
 
@@ -99,20 +169,31 @@ def assign_bone_color_to_armature(armature_object, rgb_color):
     bpy.context.view_layer.objects.active = armature_object
     bpy.ops.object.mode_set(mode='POSE')
 
-    bone_group = armature_object.pose.bone_groups.get("CustomColorGroup")
-    if not bone_group:
-        bone_group = armature_object.pose.bone_groups.new(name="CustomColorGroup")
+    major, minor, _ = bpy.app.version
 
-    bone_group.colors.normal = base_color
-    bone_group.colors.select = selected_color
-    bone_group.colors.active = active_color
+    if major < 4:  # Blender 2.8x - 3.x: Use Bone Groups
+        bone_group = armature_object.pose.bone_groups.get("CustomColorGroup")
+        if not bone_group:
+            bone_group = armature_object.pose.bone_groups.new(name="CustomColorGroup")
 
-    bone_group.color_set = 'CUSTOM'
+        bone_group.colors.normal = base_color
+        bone_group.colors.select = selected_color
+        bone_group.colors.active = active_color
+        bone_group.color_set = 'CUSTOM'
 
-    for bone in armature_object.pose.bones:
-        bone.bone_group = bone_group
+        for bone in armature_object.pose.bones:
+            bone.bone_group = bone_group
 
-    print(f"Assigned color {rgb_color} to all bones in {armature_object.name} with tweaks for selected and active.")
+        print(f"Assigned color {rgb_color} using Bone Groups (Blender {major}.{minor})")
+
+    else:  # Blender 4.x+: Assign color directly to bones
+        for bone in armature_object.pose.bones:
+            bone.color.custom = True
+            bone.color.normal = base_color
+            bone.color.select = selected_color
+            bone.color.active = active_color
+
+        print(f"Assigned color {rgb_color} directly to bones (Blender {major}.{minor})")
 
 def validate(inputs, validate_types=None, stack_location=None, custom_message=None, input_identifier_strings=None):
     stack_location = stack_location if stack_location else 'unknown'

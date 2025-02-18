@@ -2,9 +2,12 @@ import bpy # type: ignore
 import os
 
 def link_action(filepath, action_name):
+    print(f"FacialAnimationUtils-LinkAction: Attemting to link action: {action_name}")
     with bpy.data.libraries.load(filepath, link=True) as (data_from, data_to):
         if action_name in data_from.actions:
+            print(f"FacialAnimationUtils-LinkAction: Action in target file exists")
             data_to.actions.append(action_name)
+            print(f"FacialAnimationUtils-LinkAction: Action, {action_name}, appended")
         else:
             raise ValueError(f"Action '{action_name}' not found in the .blend file.")
     
@@ -19,15 +22,19 @@ def link_animation(armature, file_path_for_action, action_name):
     
     try:
         action = link_action(file_path_for_action, action_name)
+        print(f"FacialAnimationUtils-LinkAnimation: Action, {action_name}, from {file_path_for_action}, has been linked")
     
         if action:
+            print(f"FacialAnimationUtils-LinkAnimation: Action is valid, attempting to create animation data")
             armature.animation_data_create()
             armature.animation_data.action = action
+            print(f"FacialAnimationUtils-LinkAnimation: Animation data created")
             
             if action.library:
-                action.make_local()
+                print(f"FacialAnimationUtils-LinkAnimation: Action library exists. Attempting to make it local")
+                action.make_local(clear_proxy=True)
+                print(f"FacialAnimationUtils-LinkAnimation: Action has been made local")
             
-            action.library = None
             print({'INFO'}, f"Library unlinked from action: {action_name}")
         else:
             raise NameError(f"Action '{action_name}' not found in the .blend file.")
