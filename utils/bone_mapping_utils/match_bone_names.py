@@ -16,7 +16,7 @@ bone_synonym_map = [
     ["ring","handRing"],
     ["pinky", "little", "handPinky", "handLittle"],
     ["thigh", 'upLeg'],
-    ["calf", "leg", "lowerLeg", "LowLeg"],
+    ["calf", "leg", "lowerLeg", "LowLeg", "shin"],
     ["foot", "feet"],
     ["toe", "ball", "toes", "toeBase"],
     ["shoulder", "clavicle"],

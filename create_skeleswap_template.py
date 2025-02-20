@@ -21,7 +21,7 @@ def get_bone_mapping_options():
     return []
 
 def get_transform_map_options():
-    json_file_path = get_current_json_data_file_path("bone_mappings")
+    json_file_path = get_current_json_data_file_path("bone_transforms")
     if os.path.exists(json_file_path):
         with open(json_file_path, 'r') as json_file:
             try:
@@ -101,7 +101,7 @@ class OBJECT_OT_select_T_transform_map(bpy.types.Operator):
 
     def execute(self, context):
         create_template_properties = context.scene.create_template_properties
-        selected_transform_map_name = create_template_properties.selected_bone_mapping
+        selected_transform_map_name = create_template_properties.selected_transform_map
         debug_print(f"CreateTemplate: Selected Transform Map: {selected_transform_map_name}")
         self.report({'INFO'}, f"CreateTemplate: Selected Transform Map: {selected_transform_map_name}")
         return {'FINISHED'}

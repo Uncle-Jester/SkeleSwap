@@ -246,7 +246,7 @@ def add_transform(context, target_bone_name, source_bone_name, axis, transform_v
         new_transform = scene.transform_list.add()
         new_transform.transform_type = transform_type
         new_transform.set_data(revert_data, 'revert_data')
-        new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone": target_chain, "source_bone": source_chain, "new_bone_name": new_bone_name}, 'transform_details')
+        new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone": target_bone_name, "source_bone": source_bone_name, "new_bone_name": new_bone_name}, 'transform_details')
         new_transform.name = f"Copy Bone: {source_bone_name} -> {new_bone_name} -> Parent: {target_bone_name}"
     else:
         raise ValueError(f"In CreateTransformMap-AddTransform: Invalid transform type: {transform_type}")

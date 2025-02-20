@@ -8,6 +8,8 @@ def snap_to_IK(armature):
         print("Provided object is not an armature.")
         return
     apply_fk_transforms(armature)
+    bpy.context.view_layer.update()
+
     print("FK bones successfully snapped to IK bones.")
 
 def snap_to_FK(armature):
@@ -15,6 +17,7 @@ def snap_to_FK(armature):
         print("Provided object is not an armature.")
         return
     apply_ik_transforms(armature)
+    bpy.context.view_layer.update()
     print("IK bones successfully snapped to FK bones.")
 
 

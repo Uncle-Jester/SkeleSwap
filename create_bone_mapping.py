@@ -238,7 +238,7 @@ class OBJECT_OT_export_bone_mapping(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        file_name = f"{context.scene.input_text}" or "bone_mappings.json"
+        file_name = f"{context.scene.input_text}.json" or "bone_mappings.json"
         self.filepath = bpy.path.abspath(f"//{file_name}")
 
         context.window_manager.fileselect_add(self)
