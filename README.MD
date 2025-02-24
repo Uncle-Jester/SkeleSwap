@@ -33,6 +33,10 @@ Once you have created your template for your custom needs, you can export the bo
 
 If your face rigs are the same accross multiple characters, and you want facial motion track using ARKIT52, but you dont want to create the animations over and over again. You can create it once, save it in a blend file, the addon can get the animation from the blend file, and create the shapekeys based on that animation. (works best if the face rig is a separate armature. If it is part of the main armature, that is still a work in progress)
 
+## Download
+ **[Download Latest Unstable (Main Branch)](https://github.com/Uncle-Jester/SkeleSwap/releases/latest-unstable/download/SkeleSwap.zip)**  
+ **[Download Latest Stable (Release Branch)](https://github.com/Uncle-Jester/SkeleSwap/releases/latest-stable/download/SkeleSwap.zip)**  
+
 ## Planned Features (In order of Priority)
 
 - **Generating Dynamic Control Rig (IK, FK) -> _*Already done for UE5 Skeleton, and I have some ideas how to make it work for other armatures...but its a lot of work I am not keen on doing atm, but plan to get around to it... ...eventually*_**
