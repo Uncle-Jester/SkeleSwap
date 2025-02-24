@@ -6,6 +6,9 @@ on:
       - main
       - release
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -52,6 +55,12 @@ jobs:
         with:
           name: ${{ env.ZIP_NAME }}
           path: build/${{ env.ZIP_NAME }}
+
+      - name: Delete Existing Tag (if it exists)
+        run: |
+          git tag -d latest-unstable || true
+          git push origin --delete latest-unstable || true
+        continue-on-error: true
 
       - name: Create GitHub Release (For Both Branches)
         uses: softprops/action-gh-release@v1
