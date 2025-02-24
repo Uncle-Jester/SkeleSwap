@@ -48,7 +48,7 @@ jobs:
           echo "Created zip: $ZIP_NAME"
 
       - name: Upload Artifact (Keep Available in Repo)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ZIP_NAME }}
           path: build/${{ env.ZIP_NAME }}
