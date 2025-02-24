@@ -24,10 +24,10 @@ jobs:
       - name: Prepare Addon Files
         run: |
           mkdir -p build/SkeleSwap
-          cp -r * build/SkeleSwap
-          rm -rf build/SkeleSwap/docs  # Remove docs folder
-          find build/SkeleSwap -name "README.md" -delete  # Remove all README.md files in subdirectories
-          find build/SkeleSwap -name "*.blend1" -delete  # Remove unnecessary .blend1 backup files
+          rsync -av --exclude=build --exclude=.git --exclude=.github --exclude=.gitignore . build/SkeleSwap
+          rm -rf build/SkeleSwap/docs
+          find build/SkeleSwap -name "README.md" -delete
+          find build/SkeleSwap -name "*.blend1" -delete
 
       - name: Create Zip Archive (Unstable for main, Stable for release)
         run: |
