@@ -21,6 +21,7 @@ jobs:
         run: |
           if [ ! -f __init__.py ]; then
             echo "ERROR: __init__.py not found!"
+          fi
 
       - name: Extract Version from `__init__.py`
         id: get_version_a
