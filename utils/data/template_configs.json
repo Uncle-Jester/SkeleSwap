@@ -1,0 +1,20 @@
+{
+    "MB to Epic Skeleton": 
+        {
+            "option_name": "MB to Epic Skeleton",
+            "bone_mapping": "epic_to_MB",
+            "transform_map": "epic_to_MB",
+            "target_is_epic_skeleton": true,
+            "has_facial_animations": true,
+            "has_separate_face_rig": true
+        },
+    "Mixamo to Epic Skeleton":
+        {
+            "option_name": "Mixamo to Epic Skeleton",
+            "bone_mapping": "epic_to_Mixamo",
+            "transform_map": "epic_to_Mixamo",
+            "target_is_epic_skeleton": true,
+            "has_facial_animations": false,
+            "has_separate_face_rig": false
+        }
+}

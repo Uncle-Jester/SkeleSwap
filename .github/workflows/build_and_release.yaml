@@ -1,0 +1,65 @@
+name: Build and Release Addon
+
+on:
+  push:
+    branches:
+      - main
+      - release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Extract Version from `__init__.py`
+        id: get_version
+        run: |
+          VERSION=$(grep -oP "(?<=^bl_info = \{.*'version': \()(\d+, \d+, \d+)(?=\)\})" SkeleSwap/__init__.py | tr -d ', ' | tr ' ' '.')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Version extracted: $VERSION"
+
+      - name: Prepare Addon Files
+        run: |
+          mkdir -p build/SkeleSwap
+          cp -r * build/SkeleSwap
+          rm -rf build/SkeleSwap/docs  # Remove docs folder
+          find build/SkeleSwap -name "README.md" -delete  # Remove all README.md files in subdirectories
+          find build/SkeleSwap -name "*.blend1" -delete  # Remove unnecessary .blend1 backup files
+
+      - name: Create Zip Archive (Unstable for main, Stable for release)
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            ZIP_NAME="SkeleSwap-${VERSION}_unstable.zip"
+            TAG_NAME="latest-unstable"
+            RELEASE_NAME="Unstable Build (Main Branch)"
+          else
+            ZIP_NAME="SkeleSwap-${VERSION}.zip"
+            TAG_NAME="latest-stable"
+            RELEASE_NAME="Stable Release (Release Branch)"
+          fi
+          cd build
+          zip -r $ZIP_NAME SkeleSwap
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
+          echo "Created zip: $ZIP_NAME"
+
+      - name: Upload Artifact (Keep Available in Repo)
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.ZIP_NAME }}
+          path: build/${{ env.ZIP_NAME }}
+
+      - name: Create GitHub Release (For Both Branches)
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/${{ env.ZIP_NAME }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ env.TAG_NAME }}
+          name: "${{ env.RELEASE_NAME }}"
+          body: "New ${{ env.RELEASE_NAME }} of SkeleSwap."
+          draft: false
+          prerelease: ${{ github.ref == 'refs/heads/main' }}
