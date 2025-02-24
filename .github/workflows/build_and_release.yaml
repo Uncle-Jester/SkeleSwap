@@ -17,10 +17,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Extract Version from `__init__.py using awk`
+      - name: Extract Version from `__init__.py` using awk
         id: get_version
         run: |
-          VERSION=$(awk -F '[()]' '/"version": \(/ {print $2}' __init__.py | tr ', ' '.')
+          VERSION=$(awk -F '[()]' '/"version": \(/ {print $2}' __init__.py | tr -d ' ,')
           echo "Extracted Version: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
@@ -36,11 +36,11 @@ jobs:
       - name: Create Zip Archive (Unstable for main, Stable for release)
         run: |
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            ZIP_NAME="SkeleSwap($VERSION)_unstable.zip"
+            ZIP_NAME="SkeleSwap_${{ env.VERSION }}_unstable.zip"
             TAG_NAME="latest-unstable"
             RELEASE_NAME="Unstable Build (Main Branch)"
           else
-            ZIP_NAME="SkeleSwap($VERSION).zip"
+            ZIP_NAME="SkeleSwap_${{ env.VERSION }}.zip"
             TAG_NAME="latest-stable"
             RELEASE_NAME="Stable Release (Release Branch)"
           fi
@@ -59,8 +59,8 @@ jobs:
 
       - name: Delete Existing Tag (if it exists)
         run: |
-          git tag -d latest-unstable || true
-          git push origin --delete latest-unstable || true
+          git tag -d ${{ env.TAG_NAME }} || true
+          git push origin --delete ${{ env.TAG_NAME }} || true
         continue-on-error: true
 
       - name: Create GitHub Release (For Both Branches)
