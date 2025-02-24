@@ -20,7 +20,7 @@ jobs:
       - name: Extract Version from `__init__.py` using awk
         id: get_version
         run: |
-          VERSION=$(awk -F '[()]' '/"version": \(/ {print $2}' __init__.py | tr -d ' ,')
+          VERSION=$(awk -F '[()]' '/"version": \(/ {print $2}' __init__.py | tr -d ' ' | tr ',' '.')
           echo "Extracted Version: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
@@ -62,6 +62,11 @@ jobs:
           git tag -d ${{ env.TAG_NAME }} || true
           git push origin --delete ${{ env.TAG_NAME }} || true
         continue-on-error: true
+
+      - name: Create and Push Tag
+        run: |
+          git tag ${{ env.TAG_NAME }}
+          git push origin ${{ env.TAG_NAME }}
 
       - name: Create GitHub Release (For Both Branches)
         uses: softprops/action-gh-release@v1
