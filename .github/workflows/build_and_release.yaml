@@ -29,7 +29,8 @@ jobs:
           mkdir -p build/SkeleSwap
           rsync -av --exclude=build --exclude=.git --exclude=.github --exclude=.gitignore . build/SkeleSwap
           rm -rf build/SkeleSwap/docs
-          find build/SkeleSwap -name "README.md" -delete
+          find build/SkeleSwap -name "*.md" -delete
+          find build/SkeleSwap -name "*.MD" -delete
           find build/SkeleSwap -name "*.blend1" -delete
 
       - name: Create Zip Archive (Unstable for main, Stable for release)
