@@ -56,6 +56,9 @@ class BoneTransformPanel(bpy.types.Panel):
         sub_row.prop(scene, "target_armature", text="Target Armature")
         
         row = layout.row()
+        row.prop(create_transform_props, "transform_target_is_epic_skeleton", text="Transform Target is Epic Skeleton")
+
+        row = layout.row()
         row.operator("object.assign_color_to_armatures", text="Assign Color to armatures")
         
         row = layout.row()
