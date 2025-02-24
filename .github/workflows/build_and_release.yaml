@@ -23,11 +23,11 @@ jobs:
             echo "ERROR: __init__.py not found!"
 
       - name: Extract Version from `__init__.py`
-        id: get_version
+        id: get_version_a
         run: |
-          VERSION=$(grep -oP "(?<=^bl_info = \{.*'version': \()(\d+, \d+, \d+)(?=\)\})" __init__.py | tr -d ', ' | tr ' ' '.')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Version extracted: $VERSION"
+          VERSIONA=$(grep -oP "(?<=^bl_info = \{.*'version': \()(\d+, \d+, \d+)(?=\)\})" __init__.py | tr -d ', ' | tr ' ' '.')
+          echo "VERSION=$VERSIONA" >> $GITHUB_ENV
+          echo "Version extracted: $VERSIONA"
 
       - name: Extract Version from `__init__.py using awk`
         id: get_version
