@@ -20,7 +20,7 @@ jobs:
       - name: Extract Version from `__init__.py` using awk
         id: get_version
         run: |
-          VERSION=$(awk -F '[()]' '/"version": \(/ {print $2}' __init__.py | tr -d ' ,')
+          VERSION=$(awk -F '[()]' '/"version": \(/ {print $2}' __init__.py | tr -d ' ' | tr ',' '.')
           echo "Extracted Version: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
