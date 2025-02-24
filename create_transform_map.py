@@ -11,6 +11,8 @@ class CreateTransformProperties(bpy.types.PropertyGroup):
     create_transform_foot_z_location: bpy.props.StringProperty(name="Foot Z Location", default="")  # type: ignore
     apply_on_load: bpy.props.BoolProperty(name="Load Transform Map Without Applying", default=False)  # type: ignore
     new_bone_name: bpy.props.StringProperty(name="Name of the new Bone", default="") # type: ignore
+    transform_map_name_input: bpy.props.StringProperty(name="Transform Map Name", default="") # type: ignore
+    transform_target_is_epic_skeleton: bpy.props.BoolProperty(name="Load Transform Map Without Applying", default=True) # type: ignore
 
     def set_data(self, value):
         if isinstance(value, Matrix):
@@ -46,6 +48,7 @@ class BoneTransformPanel(bpy.types.Panel):
         
         row = layout.row()
         row.prop(scene, "selected_bone_mapping")
+        row.prop(create_transform_props, "transform_map_name_input")
 
         row = layout.row(align=True)
         sub_row = row.row(align=True)
@@ -163,6 +166,7 @@ def add_transform(context, target_bone_name, source_bone_name, axis, transform_v
     )
 
     foot_z_no_template = scene.create_transform_props.get_data()
+    transform_target_is_epic_skeleton = scene.create_transform_props.transform_target_is_epic_skeleton
     new_transform = None
     debug_print(f"In CreateTransformMap -> AddTransform(Func): Apply Transform: {apply_transform}")
     if transform_type == 'rotate_bone':
@@ -194,7 +198,7 @@ def add_transform(context, target_bone_name, source_bone_name, axis, transform_v
         new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "source_bone_name":source_bone_name, "foot_z_location": foot_z_location}, 'transform_details')
         new_transform.name = f"Match POSE Bone Head Position: {target_bone_name} -> {source_bone_name}"
     elif transform_type == 'match_pose_bone_orientation':
-        unreal_right = False if target_armature_indicator == "S" else is_flipped_unreal_bone(target_bone_name, scene.target_is_epic_skeleton)
+        unreal_right = False if target_armature_indicator == "S" else is_flipped_unreal_bone(target_bone_name, transform_target_is_epic_skeleton)
         revert_data = None
         if(apply_transform):
             revert_data = match_pose_bone_orientation(target_armature, source_armature, target_bone_name, source_bone_name, unreal_right)
@@ -639,7 +643,7 @@ class OBJECT_OT_export_bone_transform(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        file_name = f"{context.scene.input_text}_transforms.json" or "bone_transforms.json"
+        file_name = f"{context.scene.create_transform_props.transform_map_name_input}_transforms.json" or "bone_transforms.json"
         self.filepath = bpy.path.abspath(f"//{file_name}")
 
         context.window_manager.fileselect_add(self)
@@ -652,7 +656,7 @@ class OBJECT_OT_save_bone_transform(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         bone_transforms_json = create_bone_transform_json(scene, mode = "save")
-        property_name = context.scene.input_text or "default_property"
+        property_name = context.scene.create_transform_props.transform_map_name_input or "default_property"
 
         save_to_persistent_data_store_json_property("bone_transforms", property_name, bone_transforms_json)
         return {'FINISHED'}
@@ -674,6 +678,9 @@ class OBJECT_OT_load_bone_transform(bpy.types.Operator):
                 bone_transforms = json_object["transforms"]
 
             scene.transform_list.clear()
+
+            create_transform_props.tranform_map_name_input = bpy.path.basename(self.filepath) if not create_transform_props.tranform_map_name_input else create_transform_props.tranform_map_name_input
+
             debug_print(f"CreateTransformMap-LoadBoneTransformMap: Loading all Transforms. Apply on Load: {apply_transform}")
             for transform_data in bone_transforms:
                 target_bone_name = transform_data.get("target_bone_name")
@@ -688,7 +695,6 @@ class OBJECT_OT_load_bone_transform(bpy.types.Operator):
                 source_armature_indicator = transform_data.get("source_armature_indicator")
                 new_bone_name = transform_data.get("new_bone_name")
                 add_transform(context, target_bone_name, source_bone_name, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain, new_bone_name=new_bone_name, apply_transform=apply_transform)
-
             self.report({'INFO'}, f"Bone transform loaded from {self.filepath}")
         except Exception as e:
             self.report({'ERROR'}, f"Failed to load bone transforms: {e}")
