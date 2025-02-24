@@ -246,7 +246,7 @@ def add_transform(context, target_bone_name, source_bone_name, axis, transform_v
         new_transform = scene.transform_list.add()
         new_transform.transform_type = transform_type
         new_transform.set_data(revert_data, 'revert_data')
-        new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone": target_bone_name, "source_bone": source_bone_name, "new_bone_name": new_bone_name}, 'transform_details')
+        new_transform.set_data({"target_armature_indicator": target_armature_indicator, "source_armature_indicator": source_armature_indicator, "transform_type":transform_type, "target_bone_name": target_bone_name, "source_bone_name": source_bone_name, "new_bone_name": new_bone_name}, 'transform_details')
         new_transform.name = f"Copy Bone: {source_bone_name} -> {new_bone_name} -> Parent: {target_bone_name}"
     else:
         raise ValueError(f"In CreateTransformMap-AddTransform: Invalid transform type: {transform_type}")
@@ -600,14 +600,18 @@ class OBJECT_OT_assign_color_to_armatures(bpy.types.Operator):
         return {'FINISHED'}
 
 
-def create_bone_transform_json(scene):
+def create_bone_transform_json(scene, mode = "export"):
     bone_transform_list = []
     bone_transform_json = {}
 
     for transform in scene.transform_list:
         bone_transform_list.append(transform.get_data('transform_details'))
     bone_transform_json["transforms"] = bone_transform_list
-    return bone_transform_json
+    
+    if mode == "save":
+        return bone_transform_list
+    else:
+        return bone_transform_json
 
 
 class OBJECT_OT_export_bone_transform(bpy.types.Operator):
@@ -618,7 +622,7 @@ class OBJECT_OT_export_bone_transform(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        bone_transform_list = create_bone_transform_json(scene)
+        bone_transform_list = create_bone_transform_json(scene, mode = "export")
         
         file_path = self.filepath
         
@@ -647,7 +651,7 @@ class OBJECT_OT_save_bone_transform(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        bone_transforms_json = create_bone_transform_json(scene)
+        bone_transforms_json = create_bone_transform_json(scene, mode = "save")
         property_name = context.scene.input_text or "default_property"
 
         save_to_persistent_data_store_json_property("bone_transforms", property_name, bone_transforms_json)
