@@ -17,19 +17,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Check If `__init__.py` Exists
-        run: |
-          if [ ! -f __init__.py ]; then
-            echo "ERROR: __init__.py not found!"
-          fi
-
-      - name: Extract Version from `__init__.py`
-        id: get_version_a
-        run: |
-          VERSIONA=$(grep -oP "(?<=^bl_info = \{.*'version': \()(\d+, \d+, \d+)(?=\)\})" __init__.py | tr -d ', ' | tr ' ' '.')
-          echo "VERSION=$VERSIONA" >> $GITHUB_ENV
-          echo "Version extracted: $VERSIONA"
-
       - name: Extract Version from `__init__.py using awk`
         id: get_version
         run: |
@@ -49,11 +36,11 @@ jobs:
       - name: Create Zip Archive (Unstable for main, Stable for release)
         run: |
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            ZIP_NAME="SkeleSwap_unstable.zip"
+            ZIP_NAME="SkeleSwap($VERSION)_unstable.zip"
             TAG_NAME="latest-unstable"
             RELEASE_NAME="Unstable Build (Main Branch)"
           else
-            ZIP_NAME="SkeleSwap.zip"
+            ZIP_NAME="SkeleSwap($VERSION).zip"
             TAG_NAME="latest-stable"
             RELEASE_NAME="Stable Release (Release Branch)"
           fi
