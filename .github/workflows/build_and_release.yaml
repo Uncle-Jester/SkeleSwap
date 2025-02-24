@@ -63,6 +63,11 @@ jobs:
           git push origin --delete ${{ env.TAG_NAME }} || true
         continue-on-error: true
 
+      - name: Create and Push Tag
+        run: |
+          git tag ${{ env.TAG_NAME }}
+          git push origin ${{ env.TAG_NAME }}
+
       - name: Create GitHub Release (For Both Branches)
         uses: softprops/action-gh-release@v1
         with:
