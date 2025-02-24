@@ -20,7 +20,7 @@ jobs:
       - name: Extract Version from `__init__.py`
         id: get_version
         run: |
-          VERSION=$(grep -oP "(?<=^bl_info = \{.*'version': \()(\d+, \d+, \d+)(?=\)\})" SkeleSwap/__init__.py | tr -d ', ' | tr ' ' '.')
+          VERSION=$(grep -oP "(?<=^bl_info = \{.*'version': \()(\d+, \d+, \d+)(?=\)\})" __init__.py | tr -d ', ' | tr ' ' '.')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Version extracted: $VERSION"
 
