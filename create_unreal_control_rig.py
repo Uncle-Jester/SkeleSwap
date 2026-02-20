@@ -4,28 +4,38 @@ from.utils.create_control_rig_utils import create_custom_shape_mesh, add_custom_
 from .utils.dev_utils import validate
 #TBD: Clean up this incredible mess
 
-def snap_to_IK(armature):
+IK_FK_SWITCH_PROPERTY = "IK_controls"
+
+
+def get_ik_fk_mode_from_armature(armature, default=True):
+    if not armature or getattr(armature, "type", None) != "ARMATURE":
+        return default
+    return bool(armature.get(IK_FK_SWITCH_PROPERTY, default))
+
+
+def snap_fk_controls_to_current_pose(armature):
     validate(
         [armature],
         ["ARMATURE"],
-        stack_location="CreateUnrealControlRig-SnapToIK",
+        stack_location="CreateUnrealControlRig-SnapFKControlsToCurrentPose",
         input_identifier_strings=["armature"],
     )
     apply_fk_transforms(armature)
     bpy.context.view_layer.update()
 
-    print("FK bones successfully snapped to IK bones.")
+    print("FK controls successfully snapped to current pose.")
 
-def snap_to_FK(armature):
+
+def snap_ik_controls_to_current_pose(armature):
     validate(
         [armature],
         ["ARMATURE"],
-        stack_location="CreateUnrealControlRig-SnapToFK",
+        stack_location="CreateUnrealControlRig-SnapIKControlsToCurrentPose",
         input_identifier_strings=["armature"],
     )
     apply_ik_transforms(armature)
     bpy.context.view_layer.update()
-    print("IK bones successfully snapped to FK bones.")
+    print("IK controls successfully snapped to current pose.")
 
 
 def generate_rig(armature, ik=True, fk=False, snap=False, independent_spine=True):
@@ -58,7 +68,7 @@ def generate_rig(armature, ik=True, fk=False, snap=False, independent_spine=True
     if(ik and fk):
         create_driver_bones(armature, "IK_DRIVER_BONES", "DRV_IK") # these were originally in the generate_ik and generate_fk rig functions... but since they copied the copy transform constraints as well, it led to a feedback loop when the rig was generated
         create_driver_bones(armature, "FK_DRIVER_BONES", "DRV_FK") # so they have to be created before any of the constraints get applied on them
-        add_ik_fk_switch_property(armature, "IK_controls")
+        add_ik_fk_switch_property(armature, IK_FK_SWITCH_PROPERTY)
 
     if ik and (not fk):
         create_driver_bones(armature, "IK_DRIVER_BONES", "DRV_IK")
@@ -88,8 +98,8 @@ def generate_rig(armature, ik=True, fk=False, snap=False, independent_spine=True
     bpy.ops.object.mode_set(mode='POSE')
 
 def generate_fk_rig(armature, shape_mode = None, snap = False):
-    #driverSnapToFk = {"property_name": "IK_controls", "invert" : True} if snap else None
-    driverSnapToFk = {"property_name": "IK_controls", "invert" : True}
+    #driverSnapToFk = {"property_name": IK_FK_SWITCH_PROPERTY, "invert" : True} if snap else None
+    driverSnapToFk = {"property_name": IK_FK_SWITCH_PROPERTY, "invert" : True}
     add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, "FK_DRIVER_BONES", "DRV_FK", True, add_driver_to_copy_transform_influence=True if shape_mode is not None else False)
     
     remove_constraint_by_name(armature, "ball_l", "FK_Copy Transforms -> DRV_FK_ball_l")
@@ -180,8 +190,8 @@ def generate_fk_rig(armature, shape_mode = None, snap = False):
 
 
 def generate_ik_rig(armature, shape_mode, snap, independent_spine):
-    driverSnapToIk = {"property_name": "IK_controls", "invert" : False} if snap else None
-    driverSnapToFk = {"property_name": "IK_controls", "invert" : True} if snap else None
+    driverSnapToIk = {"property_name": IK_FK_SWITCH_PROPERTY, "invert" : False} if snap else None
+    driverSnapToFk = {"property_name": IK_FK_SWITCH_PROPERTY, "invert" : True} if snap else None
     add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, "IK_DRIVER_BONES", "DRV_IK", True, add_driver_to_copy_transform_influence=(True if shape_mode is not None else False))
 
 
@@ -520,12 +530,6 @@ def generate_ik_rig(armature, shape_mode, snap, independent_spine):
 
 
 class IK_FK_Properties(bpy.types.PropertyGroup):
-
-    ik_fk_switch: bpy.props.BoolProperty(
-        name="IK/FK Switch",
-        description="Toggle between IK and FK",
-        default=True
-    ) # type: ignore
     generate_fk: bpy.props.BoolProperty(
         name="generate_FK",
         description="Boolean to determine whether to generate FK or not",
@@ -562,6 +566,8 @@ class OBJECT_PT_control_rig_panel(bpy.types.Panel):
         layout = self.layout
         scene = context.scene
         panel_props = scene.ik_fk_panel_props
+        armature = scene.target_armature
+        is_ik_mode = get_ik_fk_mode_from_armature(armature)
 
         row = layout.row()
         row.prop(panel_props, "generate_ik", text="Generate IK")
@@ -581,8 +587,8 @@ class OBJECT_PT_control_rig_panel(bpy.types.Panel):
             row = layout.row()
             row.label(text="Switch IK/FK Mode:")
             row = layout.row()
-            row.operator("object.switch_ik_fk", text="IK Mode", depress=panel_props.ik_fk_switch ).mode = 'IK'
-            row.operator("object.switch_ik_fk", text="FK Mode", depress=not panel_props.ik_fk_switch ).mode = 'FK'
+            row.operator("object.switch_ik_fk", text="IK Mode", depress=is_ik_mode ).mode = 'IK'
+            row.operator("object.switch_ik_fk", text="FK Mode", depress=not is_ik_mode ).mode = 'FK'
 
 
 class OBJECT_OT_Switch_IK_FK(bpy.types.Operator):
@@ -601,8 +607,7 @@ class OBJECT_OT_Switch_IK_FK(bpy.types.Operator):
     def execute(self, context):
         panel_props = context.scene.ik_fk_panel_props
         armature = context.scene.target_armature
-        is_ik = self.mode == 'IK'
-        panel_props.ik_fk_switch = is_ik
+        target_ik_mode = self.mode == 'IK'
         try:
             validate(
                 [armature],
@@ -610,16 +615,19 @@ class OBJECT_OT_Switch_IK_FK(bpy.types.Operator):
                 stack_location="CreateUnrealControlRig-SwitchIKFK",
                 input_identifier_strings=["armature"],
             )
-            if is_ik:
-                if panel_props.add_ik_fk_snap:
-                    snap_to_FK(armature)
-                armature["IK_controls"] = is_ik
-                print(f"IS_IK: {is_ik}")
-            else:
-                if panel_props.add_ik_fk_snap:
-                    snap_to_IK(armature)
-                armature["IK_controls"] = is_ik
-                print(f"IS_IK: {is_ik}")
+
+            if IK_FK_SWITCH_PROPERTY not in armature.keys():
+                add_ik_fk_switch_property(armature, IK_FK_SWITCH_PROPERTY)
+
+            current_ik_mode = get_ik_fk_mode_from_armature(armature)
+            if panel_props.add_ik_fk_snap and current_ik_mode != target_ik_mode:
+                if target_ik_mode:
+                    snap_ik_controls_to_current_pose(armature)
+                else:
+                    snap_fk_controls_to_current_pose(armature)
+
+            armature[IK_FK_SWITCH_PROPERTY] = target_ik_mode
+            print(f"IK mode state: {target_ik_mode}")
 
             bpy.context.view_layer.objects.active = armature
             bpy.ops.object.mode_set(mode='OBJECT')
