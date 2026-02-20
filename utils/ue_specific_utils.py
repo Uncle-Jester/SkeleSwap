@@ -1,6 +1,12 @@
-from .dev_utils import debug_print
+from .dev_utils import debug_print, validate
 
 def is_flipped_unreal_bone(bone_name, is_target_unreal_skeleton):
+    validate(
+        [bone_name],
+        ["str"],
+        stack_location="UESpecificUtils-IsFlippedUnrealBone",
+        input_identifier_strings=["bone_name"],
+    )
     bones = {
         "_r": ["clavicle", "upperarm", "lowerarm", "hand", "thumb", "index","middle", "ring", "pinky", "ball"],
         "_l": ["thigh", "calf"],

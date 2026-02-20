@@ -4,16 +4,33 @@ import os
 
 from .utils.bone_mapping_utils import map_bone_lists
 from .utils import save_to_persistent_data_store_json_property
+from .utils.dev_utils import validate
 
 def update_source_armature(self, context):
     armature = bpy.context.scene.source_armature
-    if armature and armature.type != 'ARMATURE':
-        bpy.context.scene.source_armature = None
+    if armature:
+        try:
+            validate(
+                [armature],
+                ['ARMATURE'],
+                stack_location="CreateBoneMapping-UpdateSourceArmature",
+                input_identifier_strings=["source_armature"],
+            )
+        except ValueError:
+            bpy.context.scene.source_armature = None
 
 def update_target_armature(self, context):
     armature = bpy.context.scene.target_armature
-    if armature and armature.type != 'ARMATURE':
-        bpy.context.scene.target_armature = None
+    if armature:
+        try:
+            validate(
+                [armature],
+                ['ARMATURE'],
+                stack_location="CreateBoneMapping-UpdateTargetArmature",
+                input_identifier_strings=["target_armature"],
+            )
+        except ValueError:
+            bpy.context.scene.target_armature = None
 
 def create_bone_mapping_json(scene):
     bone_mapping = {}
@@ -152,7 +169,14 @@ class OBJECT_OT_prefill_target_bones(bpy.types.Operator):
         scene = context.scene
         armature_target = scene.target_armature
 
-        if not armature_target or armature_target.type != 'ARMATURE':
+        try:
+            validate(
+                [armature_target],
+                ['ARMATURE'],
+                stack_location="CreateBoneMapping-PrefillTargetBones",
+                input_identifier_strings=["target_armature"],
+            )
+        except ValueError:
             self.report({'WARNING'}, "Target Armature not selected or invalid")
             return {'CANCELLED'}
 
@@ -180,10 +204,24 @@ class OBJECT_OT_auto_map_bones(bpy.types.Operator):
         armature_target = scene.target_armature
         armature_source = scene.source_armature
 
-        if not armature_target or armature_target.type != 'ARMATURE':
+        try:
+            validate(
+                [armature_target],
+                ['ARMATURE'],
+                stack_location="CreateBoneMapping-AutoMapBones",
+                input_identifier_strings=["target_armature"],
+            )
+        except ValueError:
             self.report({'WARNING'}, "Target Armature not selected or invalid")
             return {'CANCELLED'}
-        if not armature_source or armature_source.type != 'ARMATURE':
+        try:
+            validate(
+                [armature_source],
+                ['ARMATURE'],
+                stack_location="CreateBoneMapping-AutoMapBones",
+                input_identifier_strings=["source_armature"],
+            )
+        except ValueError:
             self.report({'WARNING'}, "Source Armature not selected or invalid")
             return {'CANCELLED'}
 

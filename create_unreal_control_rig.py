@@ -1,30 +1,40 @@
 import bpy #type: ignore
 
 from.utils.create_control_rig_utils import create_custom_shape_mesh, add_custom_shape_for_bone, create_deform_bones_collection, add_ik_fk_switch_property, add_copy_transforms_constraints_to_deform_bones_for_drivers, create_driver_bones, duplicate_bone, clear_parent, connect_bone_tail_to_head, extrude_bone, parent_bone_keep_offset, add_IK_constraint, add_copy_location_constraint, add_damped_track_constraint, add_track_to_constraint, add_copy_rotation_constraint, remove_constraint_by_name, remove_constraint_by_type, move_constraint_to_top, move_edit_bone_by_vector, scale_edit_bone, create_bone_at_intersection, assign_bones_to_new_collection, set_bone_collection_visibility, get_bone_collection, add_driver_bone_constraints_to_collection_of_bones, apply_fk_transforms, apply_ik_transforms, add_copy_rotation_constraint_with_driver, add_copy_location_constraint_with_driver, add_copy_transforms_constraint_with_driver
+from .utils.dev_utils import validate
 #TBD: Clean up this incredible mess
 
 def snap_to_IK(armature):
-    if armature.type != 'ARMATURE':
-        print("Provided object is not an armature.")
-        return
+    validate(
+        [armature],
+        ["ARMATURE"],
+        stack_location="CreateUnrealControlRig-SnapToIK",
+        input_identifier_strings=["armature"],
+    )
     apply_fk_transforms(armature)
     bpy.context.view_layer.update()
 
     print("FK bones successfully snapped to IK bones.")
 
 def snap_to_FK(armature):
-    if armature.type != 'ARMATURE':
-        print("Provided object is not an armature.")
-        return
+    validate(
+        [armature],
+        ["ARMATURE"],
+        stack_location="CreateUnrealControlRig-SnapToFK",
+        input_identifier_strings=["armature"],
+    )
     apply_ik_transforms(armature)
     bpy.context.view_layer.update()
     print("IK bones successfully snapped to FK bones.")
 
 
 def generate_rig(armature, ik=True, fk=False, snap=False, independent_spine=True):
-    if not armature or armature.type != 'ARMATURE':
-        print("Please select an armature object.")
-        return
+    validate(
+        [armature],
+        ["ARMATURE"],
+        stack_location="CreateUnrealControlRig-GenerateRig",
+        input_identifier_strings=["armature"],
+    )
 
     snap_allowed = snap and fk
     bpy.ops.object.mode_set(mode='EDIT')
@@ -593,23 +603,32 @@ class OBJECT_OT_Switch_IK_FK(bpy.types.Operator):
         armature = context.scene.target_armature
         is_ik = self.mode == 'IK'
         panel_props.ik_fk_switch = is_ik
-        
-        if is_ik:
-            if panel_props.add_ik_fk_snap:
-                snap_to_FK(armature)
-            armature["IK_controls"] = is_ik
-            print(f"IS_IK: {is_ik}")
-        else:
-            if panel_props.add_ik_fk_snap:
-                snap_to_IK(armature)
-            armature["IK_controls"] = is_ik
-            print(f"IS_IK: {is_ik}")
+        try:
+            validate(
+                [armature],
+                ["ARMATURE"],
+                stack_location="CreateUnrealControlRig-SwitchIKFK",
+                input_identifier_strings=["armature"],
+            )
+            if is_ik:
+                if panel_props.add_ik_fk_snap:
+                    snap_to_FK(armature)
+                armature["IK_controls"] = is_ik
+                print(f"IS_IK: {is_ik}")
+            else:
+                if panel_props.add_ik_fk_snap:
+                    snap_to_IK(armature)
+                armature["IK_controls"] = is_ik
+                print(f"IS_IK: {is_ik}")
 
-        bpy.context.view_layer.objects.active = armature
-        bpy.ops.object.mode_set(mode='OBJECT')
-        bpy.ops.object.mode_set(mode='POSE')
-        self.report({'INFO'}, f"Switched to {self.mode} mode.")
-        return {'FINISHED'}
+            bpy.context.view_layer.objects.active = armature
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.mode_set(mode='POSE')
+            self.report({'INFO'}, f"Switched to {self.mode} mode.")
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to switch IK/FK mode. Error: {e}")
+            return {'CANCELLED'}
 
 class OBJECT_OT_generate_rig(bpy.types.Operator):
     bl_idname = "object.generate_rig"
@@ -621,8 +640,12 @@ class OBJECT_OT_generate_rig(bpy.types.Operator):
         armature = context.scene.target_armature     
         scene = context.scene
         panel_props = scene.ik_fk_panel_props
-        generate_rig(armature, panel_props.generate_ik, panel_props.generate_fk, panel_props.add_ik_fk_snap, panel_props.add_spine_ctrls)
-        return {'FINISHED'}
+        try:
+            generate_rig(armature, panel_props.generate_ik, panel_props.generate_fk, panel_props.add_ik_fk_snap, panel_props.add_spine_ctrls)
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to generate control rig. Error: {e}")
+            return {'CANCELLED'}
 
 
 # Register functions

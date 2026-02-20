@@ -6,6 +6,7 @@ import os
 from .utils import rotate_bone, match_pose_bone_head_pos, match_edit_bone_pos, chain_pose_bone_position, scale_pose_bone, match_pose_bone_orientation, get_foot_z_location, move_pose_bone, orient_bone, move_edit_bone, assign_bone_color_to_armature, match_edit_bone_z_location, match_edit_bone_chain_scale, scale_edit_bone_chain, copy_bone_between_armatures, delete_edit_bone
 from .utils import is_flipped_unreal_bone
 from .utils import debug_print, get_current_json_data_file_path, save_to_persistent_data_store_json_property
+from .utils.dev_utils import validate
 
 class CreateTransformProperties(bpy.types.PropertyGroup):
     create_transform_foot_z_location: bpy.props.StringProperty(name="Foot Z Location", default="")  # type: ignore
@@ -269,9 +270,15 @@ class OBJECT_OT_save_foot_z_location(bpy.types.Operator):
         target_armature = scene.target_armature
         foot_bone_name = scene.selected_target_bone
 
-        if foot_bone_name and target_armature:
+        try:
+            validate(
+                [target_armature, foot_bone_name],
+                ["ARMATURE", "str"],
+                stack_location="CreateTransformMap-SaveFootZLocation",
+                input_identifier_strings=["target_armature", "foot_bone_name"],
+            )
             create_transform_props.set_data(get_foot_z_location(target_armature, foot_bone_name))
-        else:
+        except ValueError:
             self.report({'WARNING'}, "No selected target armature, or foot bone found. Make sure to select them before trying to save the foot z location")
             return {'CANCELLED'}
         return {'FINISHED'}
@@ -523,14 +530,30 @@ class OBJECT_OT_select_target_bone_chain(bpy.types.Operator):
 def update_source_armature(self, context):
     armature = bpy.context.scene.source_armature
     debug_print('CreateTransformMap-UpdateSourceArmature: updated source armature')
-    if armature and armature.type != 'ARMATURE':
-        bpy.context.scene.source_armature = None
+    if armature:
+        try:
+            validate(
+                [armature],
+                ['ARMATURE'],
+                stack_location="CreateTransformMap-UpdateSourceArmature",
+                input_identifier_strings=["source_armature"],
+            )
+        except ValueError:
+            bpy.context.scene.source_armature = None
 
 def update_target_armature(self, context):
     debug_print("CreateTransformMap-UpdateSourceArmature:updated source armature")
     armature = bpy.context.scene.target_armature
-    if armature and armature.type != 'ARMATURE':
-        bpy.context.scene.target_armature = None
+    if armature:
+        try:
+            validate(
+                [armature],
+                ['ARMATURE'],
+                stack_location="CreateTransformMap-UpdateTargetArmature",
+                input_identifier_strings=["target_armature"],
+            )
+        except ValueError:
+            bpy.context.scene.target_armature = None
 
 def get_bone_mapping_options():
     json_file_path = get_current_json_data_file_path("bone_mappings")
@@ -595,15 +618,20 @@ class OBJECT_OT_assign_color_to_armatures(bpy.types.Operator):
     def execute(self, context):
         armature1 = context.scene.source_armature
         armature2 = context.scene.target_armature
-        if armature1 and armature2:
-            try:
-                debug_print('CreateTransformMap-AssignColorToArmatures: Assigning colors')
-                assign_bone_color_to_armature(armature1, (1,95,100))
-                assign_bone_color_to_armature(armature2, (115,30,0))
-            except Exception as e:
-                self.report({'WARNING'}, f"Couldn't assign color to armatures. Error: {e}")
-        else:
+        try:
+            validate(
+                [armature1, armature2],
+                ["ARMATURE", "ARMATURE"],
+                stack_location="CreateTransformMap-AssignColorToArmatures",
+                input_identifier_strings=["source_armature", "target_armature"],
+            )
+            debug_print('CreateTransformMap-AssignColorToArmatures: Assigning colors')
+            assign_bone_color_to_armature(armature1, (1,95,100))
+            assign_bone_color_to_armature(armature2, (115,30,0))
+        except ValueError:
             self.report({'WARNING'}, f"Make sure you have both target and source armature selected before assigning color to armatures.")
+        except Exception as e:
+            self.report({'WARNING'}, f"Couldn't assign color to armatures. Error: {e}")
         return {'FINISHED'}
 
 

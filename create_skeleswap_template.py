@@ -3,6 +3,7 @@ import os
 import json
 
 from .utils import debug_print, save_to_persistent_data_store_json_property, get_current_json_data_file_path
+from .utils.dev_utils import validate
 
 addon_dir = os.path.dirname(os.path.realpath(__file__))
 utils_dir = os.path.join(addon_dir, "utils")
@@ -115,6 +116,12 @@ class OBJECT_OT_save_template(bpy.types.Operator):
         create_template_properties = scene.create_template_properties
         property_name = create_template_properties.template_name or "My Template"
         template = create_template_json(create_template_properties)
+        validate(
+            [property_name, template],
+            ["str", "dict"],
+            stack_location="CreateTemplate-SaveTemplate",
+            input_identifier_strings=["property_name", "template"],
+        )
 
         try:
             debug_print(f"CreateTemplate-SaveTemplate: Attempting to save new temolate, {template}, in the template json, under property: {property_name}")

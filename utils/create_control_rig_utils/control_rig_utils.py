@@ -1,6 +1,7 @@
 import bpy #type: ignore
 from mathutils import Vector #type: ignore
 from .. import remove_connected_relation
+from ..dev_utils import validate
 
 ######################################## Unreal Specific Utils ##########################################################
 main_bones = [
@@ -26,6 +27,12 @@ flipped_bones = [
 ]
 
 def apply_ik_transforms(armature):
+    validate(
+        [armature],
+        ["ARMATURE"],
+        stack_location="ControlRigUtils-ApplyIKTransforms",
+        input_identifier_strings=["armature"],
+    )
     bpy.context.view_layer.objects.active = armature
     bpy.ops.object.mode_set(mode='POSE')
     
@@ -55,6 +62,12 @@ def apply_ik_transforms(armature):
     bpy.context.view_layer.update()
 
 def apply_fk_transforms(armature):
+    validate(
+        [armature],
+        ["ARMATURE"],
+        stack_location="ControlRigUtils-ApplyFKTransforms",
+        input_identifier_strings=["armature"],
+    )
     bpy.context.view_layer.objects.active = armature
     bpy.ops.object.mode_set(mode='POSE')
     
@@ -142,6 +155,12 @@ def add_copy_location_constraint_with_driver(armature, bone_name, target_bone_na
         add_driver_to_constraint_influence(armature, copy_transform_constraint, driver_property_name, invert=invert)
 
 def add_driver_bone_constraints_to_collection_of_bones(armature, source_driver_bone_collection_name, source_driver_prefix, target_driver_bone_collection_name, target_driver_prefix, add_transform_constraint_to_flipped_bones=True, driver=None):
+    validate(
+        [armature, source_driver_bone_collection_name, source_driver_prefix, target_driver_bone_collection_name, target_driver_prefix],
+        ["ARMATURE", "str", "str", "str", "str"],
+        stack_location="ControlRigUtils-AddDriverBoneConstraintsToCollectionOfBones",
+        input_identifier_strings=["armature", "source_driver_bone_collection_name", "source_driver_prefix", "target_driver_bone_collection_name", "target_driver_prefix"],
+    )
     bpy.ops.object.mode_set(mode='POSE')
     source_driver_bone_collection = get_bone_collection(armature, source_driver_bone_collection_name)
     target_driver_bone_collection = get_bone_collection(armature, target_driver_bone_collection_name)
@@ -169,6 +188,12 @@ def add_driver_bone_constraints_to_collection_of_bones(armature, source_driver_b
             bone.select = False
 
 def add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, driver_bone_collection_name, driver_prefix, add_transform_constraint_to_flipped_bones=True, add_driver_to_copy_transform_influence = False):
+    validate(
+        [armature, driver_bone_collection_name, driver_prefix],
+        ["ARMATURE", "str", "str"],
+        stack_location="ControlRigUtils-AddCopyTransformsConstraintsToDeformBonesForDrivers",
+        input_identifier_strings=["armature", "driver_bone_collection_name", "driver_prefix"],
+    )
     bpy.ops.object.mode_set(mode='POSE')
     driver_bone_collection = get_bone_collection(armature, driver_bone_collection_name)
     pose_bones = armature.pose.bones
@@ -212,6 +237,12 @@ def add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, driver
 ######################################## Overly Specific bone creation Utils #####################################
 
 def create_driver_bones(armature, collection_name, driver_prefix):
+    validate(
+        [armature, collection_name, driver_prefix],
+        ["ARMATURE", "str", "str"],
+        stack_location="ControlRigUtils-CreateDriverBones",
+        input_identifier_strings=["armature", "collection_name", "driver_prefix"],
+    )
     new_collection = create_bone_collection(armature, collection_name)
     bpy.ops.object.mode_set(mode='OBJECT')
     deform_bone_collection = get_bone_collection(armature, "DEFORM_BONES")
