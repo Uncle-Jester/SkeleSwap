@@ -14,13 +14,12 @@ def normalize_matrix(matrix):
 
 
 def rotate_bone(armature, bone_name, axis, degrees, mirror=False): 
-    if not armature or armature.type != "ARMATURE":
-        if armature:
-            raise ValueError(f"In BoneTransformUtils-RotateBone: Input is type: {armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-RotateBone: No Armature Provided")
-    
-    if not bone_name:
-        raise ValueError(f"In BoneTransformUtils-RotateBone: No Bone Name Provided")
+    validate(
+        [armature, bone_name, axis],
+        ["ARMATURE", "str", "str"],
+        stack_location="BoneTransformUtils-RotateBone",
+        input_identifier_strings=["armature", "bone_name", "axis"],
+    )
     
     debug_print(f"BoneTransformUtils-RotateBone: Rotating {bone_name}, of the armature {armature.name}, on the LOCAL {axis} axis, by {degrees} degrees")
     try:
@@ -70,19 +69,12 @@ def rotate_bone(armature, bone_name, axis, degrees, mirror=False):
         raise RuntimeError(f"In BoneTransformUtils-RotateBone: Could not rotate bone. Error: {e}")
 
 def match_edit_bone_pos(target_armature, source_armature, target_bone_name, source_bone_name):
-    if not target_armature or target_armature.type != "ARMATURE":
-        if target_armature:
-            raise ValueError(f"In BoneTransformUtils-MatchEditBonePos: Target Armature Input is type: {target_armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-MatchEditBonePos: No Target Armature Provided")    
-    if not target_bone_name:
-        raise ValueError(f"In BoneTransformUtils-MatchEditBonePos: No Target Bone Name Provided")
-    
-    if not source_armature or source_armature.type != "ARMATURE":
-        if source_armature:
-            raise ValueError(f"In BoneTransformUtils-MatchEditBonePos: Source Armature Input is type: {source_armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-MatchEditBonePos: No Source Armature Provided")    
-    if not source_bone_name:
-        raise ValueError(f"In BoneTransformUtils-MatchEditBonePos: No Source Bone Name Provided")
+    validate(
+        [target_armature, source_armature, target_bone_name, source_bone_name],
+        ["ARMATURE", "ARMATURE", "str", "str"],
+        stack_location="BoneTransformUtils-MatchEditBonePos",
+        input_identifier_strings=["target_armature", "source_armature", "target_bone_name", "source_bone_name"],
+    )
     
     try:
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -120,12 +112,12 @@ def match_edit_bone_pos(target_armature, source_armature, target_bone_name, sour
        raise RuntimeError(f"In BoneTransformUtils-MatchEditBonePos: Could not Match Edit Bone Position. Error: {e}") 
 
 def move_edit_bone(target_armature, target_bone_name, offset):
-    if not target_armature or target_armature.type != "ARMATURE":
-        if target_armature:
-            raise ValueError(f"In BoneTransformUtils-MoveEditBone: Target Armature Input is type: {target_armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-MoveEditBone: No Target Armature Provided")    
-    if not target_bone_name:
-        raise ValueError(f"In BoneTransformUtils-MoveEditBone: No Target Bone Name Provided")
+    validate(
+        [target_armature, target_bone_name],
+        ["ARMATURE", "str"],
+        stack_location="BoneTransformUtils-MoveEditBone",
+        input_identifier_strings=["target_armature", "target_bone_name"],
+    )
     try:
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.context.view_layer.objects.active = target_armature
@@ -146,19 +138,12 @@ def move_edit_bone(target_armature, target_bone_name, offset):
        raise RuntimeError(f"In BoneTransformUtils-MoveEditBone: Could not Match Edit Bone Position. Error: {e}") 
 
 def match_pose_bone_head_pos(target_armature, source_armature, target_bone_name, source_bone_name, foot_z_location = None):
-    if not target_armature or target_armature.type != "ARMATURE":
-        if target_armature:
-            raise ValueError(f"In BoneTransformUtils-MatchPoseBoneHeadPos: Target Armature Input is type: {target_armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-MatchPoseBoneHeadPos: No Target Armature Provided")    
-    if not target_bone_name:
-        raise ValueError(f"In BoneTransformUtils-MatchPoseBoneHeadPos: No Target Bone Name Provided")
-    
-    if not source_armature or source_armature.type != "ARMATURE":
-        if source_armature:
-            raise ValueError(f"In BoneTransformUtils-MatchPoseBoneHeadPos: Source Armature Input is type: {source_armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-MatchPoseBoneHeadPos: No Source Armature Provided")    
-    if not source_bone_name:
-        raise ValueError(f"In BoneTransformUtils-MatchPoseBoneHeadPos: No Source Bone Name Provided")
+    validate(
+        [target_armature, source_armature, target_bone_name, source_bone_name],
+        ["ARMATURE", "ARMATURE", "str", "str"],
+        stack_location="BoneTransformUtils-MatchPoseBoneHeadPos",
+        input_identifier_strings=["target_armature", "source_armature", "target_bone_name", "source_bone_name"],
+    )
     
     try:
         if bpy.context.view_layer.objects.active != target_armature:
@@ -183,19 +168,12 @@ def match_pose_bone_head_pos(target_armature, source_armature, target_bone_name,
        raise RuntimeError(f"In BoneTransformUtils-MatchPoseBoneHeadPos: Could not Match Pose Bone Head Position. Error: {e}") 
 
 def match_edit_bone_z_location(target_armature, source_armature, target_bone_name, source_bone_name):
-    if not target_armature or target_armature.type != "ARMATURE":
-        if target_armature:
-            raise ValueError(f"In BoneTransformUtils-MatchEditBoneZLocation: Target Armature Input is type: {target_armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-MatchEditBoneZLocation: No Target Armature Provided")    
-    if not target_bone_name:
-        raise ValueError(f"In BoneTransformUtils-MatchEditBoneZLocation: No Target Bone Name Provided")
-    
-    if not source_armature or source_armature.type != "ARMATURE":
-        if source_armature:
-            raise ValueError(f"In BoneTransformUtils-MatchEditBoneZLocation: Source Armature Input is type: {source_armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-MatchEditBoneZLocation: No Source Armature Provided")    
-    if not source_bone_name:
-        raise ValueError(f"In BoneTransformUtils-MatchEditBoneZLocation: No Source Bone Name Provided")
+    validate(
+        [target_armature, source_armature, target_bone_name, source_bone_name],
+        ["ARMATURE", "ARMATURE", "str", "str"],
+        stack_location="BoneTransformUtils-MatchEditBoneZLocation",
+        input_identifier_strings=["target_armature", "source_armature", "target_bone_name", "source_bone_name"],
+    )
 
     try:
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -229,14 +207,12 @@ def match_edit_bone_z_location(target_armature, source_armature, target_bone_nam
 
 
 def chain_pose_bone_position(armature, bone_to_move, bone_to_move_to):
-    if not armature or armature.type != "ARMATURE":
-        if armature:
-            raise ValueError(f"In BoneTransformUtils-ChainPoseBones: Armature Input is type: {armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-ChainPoseBones: No Armature Provided")    
-    if not bone_to_move:
-        raise ValueError(f"In BoneTransformUtils-ChainPoseBones: No Bone to Move Provided")
-    if not bone_to_move_to:
-        raise ValueError(f"In BoneTransformUtils-ChainPoseBones: No Bone to Move to Provided")
+    validate(
+        [armature, bone_to_move, bone_to_move_to],
+        ["ARMATURE", "str", "str"],
+        stack_location="BoneTransformUtils-ChainPoseBones",
+        input_identifier_strings=["armature", "bone_to_move", "bone_to_move_to"],
+    )
 
     debug_print(f"BoneTransformUtils-ChainPoseBones: Bone to move: {bone_to_move}, Bone to move to: {bone_to_move_to}, Armature: {armature.name}")
     try:
@@ -257,12 +233,12 @@ def chain_pose_bone_position(armature, bone_to_move, bone_to_move_to):
        raise RuntimeError(f"In BoneTransformUtils-ChainPoseBones: Could not chain pose bones. Error: {e}") 
 
 def get_bone_positions_from_armature(armature, bone_name):
-    if not armature or armature.type != "ARMATURE":
-        if armature:
-            raise ValueError(f"In BoneTransformUtils-GetBonePositionsFromArmature: Armature Input is type: {armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-GetBonePositionsFromArmature: No Armature Provided")    
-    if not bone_name:
-        raise ValueError(f"In BoneTransformUtils-GetBonePositionsFromArmature: No Bone to Move Provided")
+    validate(
+        [armature, bone_name],
+        ["ARMATURE", "str"],
+        stack_location="BoneTransformUtils-GetBonePositionsFromArmature",
+        input_identifier_strings=["armature", "bone_name"],
+    )
 
     bone = armature.data.bones.get(bone_name)
     
@@ -279,12 +255,12 @@ def get_bone_positions_from_armature(armature, bone_name):
        raise RuntimeError(f"In BoneTransformUtils-GetBonePositionsFromArmature: Could not get bone positions. Error: {e}") 
 
 def move_pose_bone(armature, bone_name, new_head, foot_head_Z=None):
-    if not armature or armature.type != "ARMATURE":
-        if armature:
-            raise ValueError(f"In BoneTransformUtils-MovePoseBone: Armature Input is type: {armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-MovePoseBone: No Armature Provided")    
-    if not bone_name:
-        raise ValueError(f"In BoneTransformUtils-MovePoseBone: No Bone to Move Provided")
+    validate(
+        [armature, bone_name],
+        ["ARMATURE", "str"],
+        stack_location="BoneTransformUtils-MovePoseBone",
+        input_identifier_strings=["armature", "bone_name"],
+    )
 
 
     pose_bone = armature.pose.bones.get(bone_name)
@@ -317,19 +293,12 @@ def move_pose_bone(armature, bone_name, new_head, foot_head_Z=None):
        raise RuntimeError(f"In BoneTransformUtils-MovePoseBone: Could not move pose bone. Error: {e}") 
 
 def match_pose_bone_orientation(target_armature, source_armature, target_bone_name, source_bone_name, UE_right=False):
-    if not target_armature or target_armature.type != "ARMATURE":
-        if target_armature:
-            raise ValueError(f"In BoneTransformUtils-MatchPoseBoneOrientation: Target Armature Input is type: {target_armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-MatchPoseBoneOrientation: No Target Armature Provided")    
-    if not target_bone_name:
-        raise ValueError(f"In BoneTransformUtils-MatchPoseBoneOrientation: No Target Bone Name Provided")
-    
-    if not source_armature or source_armature.type != "ARMATURE":
-        if source_armature:
-            raise ValueError(f"In BoneTransformUtils-MatchPoseBoneOrientation: Source Armature Input is type: {source_armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-MatchPoseBoneOrientation: No Source Armature Provided")    
-    if not source_bone_name:
-        raise ValueError(f"In BoneTransformUtils-MatchPoseBoneOrientation: No Source Bone Name Provided")
+    validate(
+        [target_armature, source_armature, target_bone_name, source_bone_name],
+        ["ARMATURE", "ARMATURE", "str", "str"],
+        stack_location="BoneTransformUtils-MatchPoseBoneOrientation",
+        input_identifier_strings=["target_armature", "source_armature", "target_bone_name", "source_bone_name"],
+    )
 
     if bpy.context.view_layer.objects.active != target_armature:
         bpy.context.view_layer.objects.active = target_armature
@@ -366,12 +335,12 @@ def match_pose_bone_orientation(target_armature, source_armature, target_bone_na
        raise RuntimeError(f"In BoneTransformUtils-MatchPoseBoneOrientation: Could not match pose bone orientation. Error: {e}") 
 
 def orient_bone(armature, bone_name, orientation):
-    if not armature or armature.type != "ARMATURE":
-        if armature:
-            raise ValueError(f"In BoneTransformUtils-OrientBone: Armature Input is type: {armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-OrientBone: No Armature Provided")    
-    if not bone_name:
-        raise ValueError(f"In BoneTransformUtils-OrientBone: No Bone to Move Provided")
+    validate(
+        [armature, bone_name],
+        ["ARMATURE", "str"],
+        stack_location="BoneTransformUtils-OrientBone",
+        input_identifier_strings=["armature", "bone_name"],
+    )
     
     try:
         bone = armature.pose.bones.get(bone_name)
@@ -397,12 +366,12 @@ def orient_bone(armature, bone_name, orientation):
        raise RuntimeError(f"In BoneTransformUtils-OrientBone: Could not orient bone. Error: {e}") 
 
 def scale_pose_bone(armature, bone_name, scale_value, axis=None): #TBD Implement Mirror
-    if not armature or armature.type != "ARMATURE":
-        if armature:
-            raise ValueError(f"In BoneTransformUtils-ScalePoseBone: Armature Input is type: {armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-ScalePoseBone: No Armature Provided")    
-    if not bone_name:
-        raise ValueError(f"In BoneTransformUtils-ScalePoseBone: No Bone to Move Provided")
+    validate(
+        [armature, bone_name],
+        ["ARMATURE", "str"],
+        stack_location="BoneTransformUtils-ScalePoseBone",
+        input_identifier_strings=["armature", "bone_name"],
+    )
 
     pose_bone = armature.pose.bones.get(bone_name)
     if not pose_bone:
@@ -438,18 +407,12 @@ def scale_pose_bone(armature, bone_name, scale_value, axis=None): #TBD Implement
        raise RuntimeError(f"In BoneTransformUtils-ScalePoseBone: Could not scale pose bone. Error: {e}") 
 
 def copy_edit_bone_between_skeletons(source_armature, target_armature, bone_name, bone_to_parent_to):
-    if not target_armature or target_armature.type != "ARMATURE":
-        if target_armature:
-            raise ValueError(f"In BoneTransformUtils-CopyBoneBetweenSkeletons: Target Armature Input is type: {target_armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-CopyBoneBetweenSkeletons: No Target Armature Provided")    
-    
-    if not source_armature or source_armature.type != "ARMATURE":
-        if source_armature:
-            raise ValueError(f"In BoneTransformUtils-CopyBoneBetweenSkeletons: Source Armature Input is type: {source_armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-CopyBoneBetweenSkeletons: No Source Armature Provided")
-    
-    if not bone_name:
-        raise ValueError(f"In BoneTransformUtils-CopyBoneBetweenSkeletons: No Bone Name Provided")
+    validate(
+        [target_armature, source_armature, bone_name, bone_to_parent_to],
+        ["ARMATURE", "ARMATURE", "str", "str"],
+        stack_location="BoneTransformUtils-CopyBoneBetweenSkeletons",
+        input_identifier_strings=["target_armature", "source_armature", "bone_name", "bone_to_parent_to"],
+    )
 
     bpy.context.view_layer.objects.active = source_armature
     bpy.ops.object.mode_set(mode='EDIT')
@@ -492,19 +455,12 @@ def copy_edit_bone_between_skeletons(source_armature, target_armature, bone_name
 
 
 def match_edit_bone_chain_scale(target_armature, source_armature, target_chain, source_chain, onZAxis=False): # TBD: Probably should add some sort of validation that the list of bones are indeed a chain or not
-    if not target_armature or target_armature.type != "ARMATURE":
-        if target_armature:
-            raise ValueError(f"In BoneTransformUtils-MatchEditBoneChainScale: Target Armature Input is type: {target_armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-MatchEditBoneChainScale: No Target Armature Provided")    
-    if not target_chain:
-        raise ValueError(f"In BoneTransformUtils-MatchEditBoneChainScale: Target chain is not provided or is an empty list")
-    
-    if not source_armature or source_armature.type != "ARMATURE":
-        if source_armature:
-            raise ValueError(f"In BoneTransformUtils-MatchEditBoneChainScale: Source Armature Input is type: {source_armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-MatchEditBoneChainScale: No Source Armature Provided")    
-    if not source_chain:
-        raise ValueError(f"In BoneTransformUtils-MatchEditBoneChainScale: Source chain is not provided or is an empty list")
+    validate(
+        [target_armature, source_armature, target_chain, source_chain],
+        ["ARMATURE", "ARMATURE", "list", "list"],
+        stack_location="BoneTransformUtils-MatchEditBoneChainScale",
+        input_identifier_strings=["target_armature", "source_armature", "target_chain", "source_chain"],
+    )
     try:
         bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -544,12 +500,12 @@ def match_edit_bone_chain_scale(target_armature, source_armature, target_chain, 
        raise RuntimeError(f"In BoneTransformUtils-MatchEditBoneChainScale: Could not match edit bone chain scale. Error: {e}") 
 
 def scale_edit_bone_chain(target_armature, target_chain, scale_factor, onZAxis=False):
-    if not target_armature or target_armature.type != "ARMATURE":
-        if target_armature:
-            raise ValueError(f"In BoneTransformUtils-ChainEditBoneScale: Target Armature Input is type: {target_armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In BoneTransformUtils-ChainEditBoneScale: No Target Armature Provided")    
-    if not target_chain:
-        raise ValueError(f"In BoneTransformUtils-ChainEditBoneScale: Target chain is not provided or is an empty list")
+    validate(
+        [target_armature, target_chain],
+        ["ARMATURE", "list"],
+        stack_location="BoneTransformUtils-ChainEditBoneScale",
+        input_identifier_strings=["target_armature", "target_chain"],
+    )
     
     target_edit_bones = target_armature.data.edit_bones
     

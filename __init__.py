@@ -3,7 +3,7 @@ bl_info = {
     "blender": (2, 83, 0),
     "category": "Rigging",
     "description": "Replaces the skeleton of a skeletal mesh to the armature of an other mesh, and some other stuff...we will see",
-    "author": "BrownbusTheJester",
+    "author": "UncleJester",
     "version": (1, 0, 0),
 }
 

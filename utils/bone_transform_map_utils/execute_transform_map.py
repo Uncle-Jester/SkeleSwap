@@ -1,6 +1,13 @@
 from .. import match_pose_bone_head_pos, match_pose_bone_orientation, chain_pose_bone_position, match_edit_bone_pos, rotate_bone, scale_pose_bone, match_edit_bone_z_location, match_edit_bone_chain_scale, copy_bone_between_armatures
+from ..dev_utils import validate
 
 def apply_transform_map(transform_map, foot_z_loc, global_target_armature, global_source_armature):
+    validate(
+        [transform_map, global_target_armature, global_source_armature],
+        ["list", "ARMATURE", "ARMATURE"],
+        stack_location="ExecuteTransformMap-ApplyTransformMap",
+        input_identifier_strings=["transform_map", "global_target_armature", "global_source_armature"],
+    )
     for transform in transform_map:
         transform_type = transform.get("transform_type")
         target_armature_indicator = transform.get("target_armature_indicator")

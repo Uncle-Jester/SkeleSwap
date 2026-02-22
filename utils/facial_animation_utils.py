@@ -1,7 +1,14 @@
 import bpy # type: ignore
 import os
+from .dev_utils import validate
 
 def link_action(filepath, action_name):
+    validate(
+        [filepath, action_name],
+        ["str", "str"],
+        stack_location="FacialAnimationUtils-LinkAction",
+        input_identifier_strings=["filepath", "action_name"],
+    )
     print(f"FacialAnimationUtils-LinkAction: Attemting to link action: {action_name}")
     with bpy.data.libraries.load(filepath, link=True) as (data_from, data_to):
         if action_name in data_from.actions:
@@ -14,8 +21,12 @@ def link_action(filepath, action_name):
     return bpy.data.actions.get(action_name)
 
 def link_animation(armature, file_path_for_action, action_name):
-    if not armature or armature.type != 'ARMATURE':
-        raise ValueError(f"Selected object ({armature}) is not an Armature")
+    validate(
+        [armature, file_path_for_action, action_name],
+        ["ARMATURE", "str", "str"],
+        stack_location="FacialAnimationUtils-LinkAnimation",
+        input_identifier_strings=["armature", "file_path_for_action", "action_name"],
+    )
     
     if not os.path.exists(file_path_for_action):
         raise LookupError(f"file path for the animation is not correct. File path: {file_path_for_action}")

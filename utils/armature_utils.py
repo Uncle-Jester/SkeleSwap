@@ -1,16 +1,13 @@
 import bpy # type: ignore
-from .dev_utils import debug_print
+from .dev_utils import debug_print, validate
 
 def parent_armature(mesh, armature):
-    if not mesh:
-       raise ValueError(f"In ArmatureUtils-ParentArmature: Mesh was not a provided.")     
-    if mesh.type != 'MESH':
-        raise ValueError(f"In ArmatureUtils-ParentArmature: Input is type: {mesh.type}. Excpected type MESH")
-    
-    if not armature or armature.type != "ARMATURE":
-        if armature:
-            raise ValueError(f"In ArmatureUtils-ParentArmature: Input is type: {armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In ArmatureUtils-ParentArmature: No Armature Provided")
+    validate(
+        [mesh, armature],
+        ["MESH", "ARMATURE"],
+        stack_location="ArmatureUtils-ParentArmature",
+        input_identifier_strings=["mesh", "armature"],
+    )
     
     if mesh.parent == armature:
         debug_print(f"ArmatureUtils-ApplyArmature: Armature is already the mesh's parent")
@@ -32,15 +29,12 @@ def parent_armature(mesh, armature):
         raise RuntimeError(f"In ArmatureUtils-ApplyArmature: Couldn't Parent mesh {mesh.name} to armature, {armature.name} Error: {e}")
 
 def apply_armature(mesh, armature):
-    if not mesh:
-       raise ValueError(f"In ArmatureUtils-ApplyArmature: Mesh was not a provided.")     
-    if mesh.type != 'MESH':
-        raise ValueError(f"In ArmatureUtils-ApplyArmature: Input is type: {mesh.type}. Excpected type MESH")
-    
-    if not armature or armature.type != "ARMATURE":
-        if armature:
-            raise ValueError(f"In ArmatureUtils-ApplyArmature: Input is type: {armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In ArmatureUtils-ApplyArmature: No Armature Provided")
+    validate(
+        [mesh, armature],
+        ["MESH", "ARMATURE"],
+        stack_location="ArmatureUtils-ApplyArmature",
+        input_identifier_strings=["mesh", "armature"],
+    )
     
     if mesh.parent != armature:
         raise ValueError(f"In ArmatureUtils-ApplyArmature: Mesh '{mesh.name}' is not parented to the armature '{armature.name}'.")
@@ -58,10 +52,12 @@ def apply_armature(mesh, armature):
         raise e
 
 def clear_all_armatures(mesh):
-    if not mesh:
-       raise ValueError(f"In ArmatureUtils-ClearAllArmatures: Mesh was not a provided.")     
-    if mesh.type != 'MESH':
-        raise ValueError(f"In ArmatureUtils-ClearAllArmatures: Input is type: {mesh.type}. Excpected type MESH")
+    validate(
+        [mesh],
+        ["MESH"],
+        stack_location="ArmatureUtils-ClearAllArmatures",
+        input_identifier_strings=["mesh"],
+    )
     try:
 
         armature_modifiers = [mod for mod in mesh.modifiers if mod.type == 'ARMATURE']
@@ -79,10 +75,12 @@ def clear_all_armatures(mesh):
         raise e
 
 def delete_armature(armature):
-    if not armature or armature.type != "ARMATURE":
-        if armature:
-            raise ValueError(f"In ArmatureUtils-DeleteArmature: Input is type: {armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In ArmatureUtils-DeleteArmature: No Armature Provided")
+    validate(
+        [armature],
+        ["ARMATURE"],
+        stack_location="ArmatureUtils-DeleteArmature",
+        input_identifier_strings=["armature"],
+    )
     try:
         bpy.context.view_layer.objects.active = armature
         if bpy.context.object and bpy.context.object.mode != 'OBJECT':
@@ -97,10 +95,12 @@ def delete_armature(armature):
 
 
 def apply_pose_as_rest_pose(armature):
-    if not armature or armature.type != "ARMATURE":
-        if armature:
-            raise ValueError(f"In ArmatureUtils-ApplyPoseAsRestPose: Armature is type: {armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In ArmatureUtils-ApplyPoseAsRestPose: No Armature Provided")
+    validate(
+        [armature],
+        ["ARMATURE"],
+        stack_location="ArmatureUtils-ApplyPoseAsRestPose",
+        input_identifier_strings=["armature"],
+    )
     try:   
         bpy.context.view_layer.objects.active = armature
         bpy.ops.object.mode_set(mode='POSE')
@@ -112,10 +112,12 @@ def apply_pose_as_rest_pose(armature):
 
 
 def scale_selected_armature_with_child_meshes(armature, scale_factor=100):
-    if not armature or armature.type != "ARMATURE":
-        if armature:
-            raise ValueError(f"In ArmatureUtils-ScaleSelectedArmatureWithChildMeshes: Input is type: {armature.type}. Excpected type ARMATURE")
-        raise ValueError(f"In ArmatureUtils-ScaleSelectedArmatureWithChildMeshes: No Armature Provided")
+    validate(
+        [armature],
+        ["ARMATURE"],
+        stack_location="ArmatureUtils-ScaleSelectedArmatureWithChildMeshes",
+        input_identifier_strings=["armature"],
+    )
 
     try:
         bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))
@@ -153,8 +155,21 @@ def scale_selected_armature_with_child_meshes(armature, scale_factor=100):
         raise e
 
 def find_armature_by_name(armature_name):
+    validate(
+        [armature_name],
+        ["str"],
+        stack_location="ArmatureUtils-FindArmatureByName",
+        input_identifier_strings=["armature_name"],
+    )
     armature = bpy.data.objects.get(armature_name)
-    if not armature or armature.type != 'ARMATURE':
+    try:
+        validate(
+            [armature],
+            ["ARMATURE"],
+            stack_location="ArmatureUtils-FindArmatureByName",
+            input_identifier_strings=["armature"],
+        )
+    except ValueError:
         print(f"Armature '{armature_name}' not found. Please Import a UE5 SKM")
         return {'CANCELLED'}
     return armature

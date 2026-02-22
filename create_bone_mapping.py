@@ -4,16 +4,33 @@ import os
 
 from .utils.bone_mapping_utils import map_bone_lists
 from .utils import save_to_persistent_data_store_json_property
+from .utils.dev_utils import validate
 
 def update_source_armature(self, context):
     armature = bpy.context.scene.source_armature
-    if armature and armature.type != 'ARMATURE':
-        bpy.context.scene.source_armature = None
+    if armature:
+        try:
+            validate(
+                [armature],
+                ['ARMATURE'],
+                stack_location="CreateBoneMapping-UpdateSourceArmature",
+                input_identifier_strings=["source_armature"],
+            )
+        except ValueError:
+            bpy.context.scene.source_armature = None
 
 def update_target_armature(self, context):
     armature = bpy.context.scene.target_armature
-    if armature and armature.type != 'ARMATURE':
-        bpy.context.scene.target_armature = None
+    if armature:
+        try:
+            validate(
+                [armature],
+                ['ARMATURE'],
+                stack_location="CreateBoneMapping-UpdateTargetArmature",
+                input_identifier_strings=["target_armature"],
+            )
+        except ValueError:
+            bpy.context.scene.target_armature = None
 
 def create_bone_mapping_json(scene):
     bone_mapping = {}
@@ -89,12 +106,15 @@ class OBJECT_OT_add_bone_pair(bpy.types.Operator):
     bl_label = "Add Transform"
 
     def execute(self, context):
-        scene = context.scene
-
-        new_item = scene.bone_pair_list.add()
-        new_item.target_bone_name = ""
-        new_item.source_bone_name = ""
-        return {'FINISHED'}
+        try:
+            scene = context.scene
+            new_item = scene.bone_pair_list.add()
+            new_item.target_bone_name = ""
+            new_item.source_bone_name = ""
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateBoneMapping-AddBonePair-Execute: Failed to add bone pair. Error: {e}")
+            return {'CANCELLED'}
 
 
 class OBJECT_OT_remove_bone_pair_from_list(bpy.types.Operator):
@@ -103,9 +123,13 @@ class OBJECT_OT_remove_bone_pair_from_list(bpy.types.Operator):
     index: bpy.props.IntProperty() # type: ignore
 
     def execute(self, context):
-        scene = context.scene
-        scene.bone_pair_list.remove(self.index)
-        return {'FINISHED'}
+        try:
+            scene = context.scene
+            scene.bone_pair_list.remove(self.index)
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateBoneMapping-RemoveBonePair-Execute: Failed to remove bone pair. Error: {e}")
+            return {'CANCELLED'}
 
 
 class OBJECT_OT_set_target_bone(bpy.types.Operator):
@@ -115,15 +139,19 @@ class OBJECT_OT_set_target_bone(bpy.types.Operator):
     index: bpy.props.IntProperty() # type: ignore
     
     def execute(self, context):
-        scene = context.scene
-        selected_bone = context.active_pose_bone
-        armature_target = scene.target_armature
-        
-        if selected_bone and selected_bone.id_data == armature_target:
-            scene.bone_pair_list[self.index].target_bone_name = selected_bone.name
-            return {'FINISHED'}
-        else:
-            self.report({'WARNING'}, "Select a bone from the target armature")
+        try:
+            scene = context.scene
+            selected_bone = context.active_pose_bone
+            armature_target = scene.target_armature
+            
+            if selected_bone and selected_bone.id_data == armature_target:
+                scene.bone_pair_list[self.index].target_bone_name = selected_bone.name
+                return {'FINISHED'}
+            else:
+                self.report({'WARNING'}, "Select a bone from the target armature")
+                return {'CANCELLED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateBoneMapping-SetTargetBone-Execute: Failed to set target bone. Error: {e}")
             return {'CANCELLED'}
 
 class OBJECT_OT_set_source_bone(bpy.types.Operator):
@@ -133,15 +161,19 @@ class OBJECT_OT_set_source_bone(bpy.types.Operator):
     index: bpy.props.IntProperty() # type: ignore
     
     def execute(self, context):
-        scene = context.scene
-        selected_bone = context.active_pose_bone
-        armature_source = scene.source_armature
-        
-        if selected_bone and selected_bone.id_data == armature_source:
-            scene.bone_pair_list[self.index].source_bone_name = selected_bone.name
-            return {'FINISHED'}
-        else:
-            self.report({'WARNING'}, "Select a bone from the source armature")
+        try:
+            scene = context.scene
+            selected_bone = context.active_pose_bone
+            armature_source = scene.source_armature
+            
+            if selected_bone and selected_bone.id_data == armature_source:
+                scene.bone_pair_list[self.index].source_bone_name = selected_bone.name
+                return {'FINISHED'}
+            else:
+                self.report({'WARNING'}, "Select a bone from the source armature")
+                return {'CANCELLED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateBoneMapping-SetSourceBone-Execute: Failed to set source bone. Error: {e}")
             return {'CANCELLED'}
 
 class OBJECT_OT_prefill_target_bones(bpy.types.Operator):
@@ -152,24 +184,34 @@ class OBJECT_OT_prefill_target_bones(bpy.types.Operator):
         scene = context.scene
         armature_target = scene.target_armature
 
-        if not armature_target or armature_target.type != 'ARMATURE':
+        try:
+            validate(
+                [armature_target],
+                ['ARMATURE'],
+                stack_location="CreateBoneMapping-PrefillTargetBones",
+                input_identifier_strings=["target_armature"],
+            )
+        except ValueError:
             self.report({'WARNING'}, "Target Armature not selected or invalid")
             return {'CANCELLED'}
+        try:
+            bpy.context.view_layer.objects.active = armature_target
+            if bpy.context.object.mode != 'POSE':
+                bpy.ops.object.mode_set(mode='POSE')
+            
+            pose_bones = armature_target.pose.bones
+            
+            scene.bone_pair_list.clear()
 
-        bpy.context.view_layer.objects.active = armature_target
-        if bpy.context.object.mode != 'POSE':
-            bpy.ops.object.mode_set(mode='POSE')
-        
-        pose_bones = armature_target.pose.bones
-        
-        scene.bone_pair_list.clear()
+            for bone in pose_bones:
+                pair_item = scene.bone_pair_list.add()
+                pair_item.target_bone_name = bone.name
+                pair_item.source_bone_name = ""
 
-        for bone in pose_bones:
-            pair_item = scene.bone_pair_list.add()
-            pair_item.target_bone_name = bone.name
-            pair_item.source_bone_name = ""
-
-        return {'FINISHED'}
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateBoneMapping-PrefillTargetBones-Execute: Failed to prefill target bones. Error: {e}")
+            return {'CANCELLED'}
 
 class OBJECT_OT_auto_map_bones(bpy.types.Operator):
     bl_idname = "object.auto_map_bones"
@@ -180,38 +222,55 @@ class OBJECT_OT_auto_map_bones(bpy.types.Operator):
         armature_target = scene.target_armature
         armature_source = scene.source_armature
 
-        if not armature_target or armature_target.type != 'ARMATURE':
+        try:
+            validate(
+                [armature_target],
+                ['ARMATURE'],
+                stack_location="CreateBoneMapping-AutoMapBones",
+                input_identifier_strings=["target_armature"],
+            )
+        except ValueError:
             self.report({'WARNING'}, "Target Armature not selected or invalid")
             return {'CANCELLED'}
-        if not armature_source or armature_source.type != 'ARMATURE':
+        try:
+            validate(
+                [armature_source],
+                ['ARMATURE'],
+                stack_location="CreateBoneMapping-AutoMapBones",
+                input_identifier_strings=["source_armature"],
+            )
+        except ValueError:
             self.report({'WARNING'}, "Source Armature not selected or invalid")
             return {'CANCELLED'}
+        try:
+            bpy.context.view_layer.objects.active = armature_target
+            if bpy.context.object.mode != 'POSE':
+                bpy.ops.object.mode_set(mode='POSE')
+            
+            target_pose_bones = [bone.name for bone in armature_target.pose.bones]
+            source_pose_bones = [bone.name for bone in armature_source.pose.bones]
+                
+            target_bones_to_map = []
+            
+            if scene.bone_pair_list:
+                for list_item in scene.bone_pair_list:
+                    if list_item.target_bone_name:
+                        target_bones_to_map.append(list_item.target_bone_name)
+            else:
+                target_bones_to_map = target_pose_bones
 
-        bpy.context.view_layer.objects.active = armature_target
-        if bpy.context.object.mode != 'POSE':
-            bpy.ops.object.mode_set(mode='POSE')
-        
-        target_pose_bones = [bone.name for bone in armature_target.pose.bones]
-        source_pose_bones = [bone.name for bone in armature_source.pose.bones]
-             
-        target_bones_to_map = []
-        
-        if scene.bone_pair_list:
-            for list_item in scene.bone_pair_list:
-                if list_item.target_bone_name:
-                    target_bones_to_map.append(list_item.target_bone_name)
-        else:
-            target_bones_to_map = target_pose_bones
+            bone_map = map_bone_lists(target_bones_to_map, source_pose_bones)
 
-        bone_map = map_bone_lists(target_bones_to_map, source_pose_bones)
+            scene.bone_pair_list.clear()
+            for target_bone, source_bone in bone_map.items():
+                pair_item = scene.bone_pair_list.add()
+                pair_item.target_bone_name = target_bone if target_bone is not None else ""
+                pair_item.source_bone_name = source_bone if source_bone is not None else ""
 
-        scene.bone_pair_list.clear()
-        for target_bone, source_bone in bone_map.items():
-            pair_item = scene.bone_pair_list.add()
-            pair_item.target_bone_name = target_bone if target_bone is not None else ""
-            pair_item.source_bone_name = source_bone if source_bone is not None else ""
-
-        return {'FINISHED'}
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateBoneMapping-AutoMapBones-Execute: Failed to auto map bones. Error: {e}")
+            return {'CANCELLED'}
 
 class OBJECT_OT_export_bone_mapping(bpy.types.Operator):
     bl_idname = "object.export_bone_mapping"
@@ -233,8 +292,8 @@ class OBJECT_OT_export_bone_mapping(bpy.types.Operator):
                 json.dump(bone_mapping, json_file, indent=4)
             self.report({'INFO'}, f"Bone mapping exported to {file_path}")
         except Exception as e:
-            self.report({'ERROR'}, f"Failed to export bone mapping: {e}")
-
+            self.report({'ERROR'}, f"In CreateBoneMapping-ExportBoneMapping-Execute: Failed to export bone mapping. Error: {e}")
+            return {'CANCELLED'}
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -261,7 +320,7 @@ class OBJECT_OT_save_bone_mapping(bpy.types.Operator):
             save_to_persistent_data_store_json_property("bone_mappings", property_name, bone_mapping_json)    
             self.report({'INFO'}, f"Bone mapping saved to under '{property_name}'")
         except Exception as e:
-            self.report({'ERROR'}, f"Failed to save bone mapping: {e}")
+            self.report({'ERROR'}, f"In CreateBoneMapping-SaveBoneMapping-Execute: Failed to save bone mapping. Error: {e}")
             return {'CANCELLED'}
 
         return {'FINISHED'}
@@ -290,7 +349,7 @@ class OBJECT_OT_load_bone_mapping(bpy.types.Operator):
 
             self.report({'INFO'}, f"Bone mapping loaded from {self.filepath}")
         except Exception as e:
-            self.report({'ERROR'}, f"Failed to load bone mapping: {e}")
+            self.report({'ERROR'}, f"In CreateBoneMapping-LoadBoneMapping-Execute: Failed to load bone mapping. Error: {e}")
             return {"CANCELLED"}
 
         return {'FINISHED'}
