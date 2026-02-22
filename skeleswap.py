@@ -250,22 +250,32 @@ class OBJECT_OT_select_template_config(bpy.types.Operator):
     ) # type: ignore
 
     def execute(self, context):
-        selected_template_name = context.scene.selected_template_config
-        json_file_path = get_current_json_data_file_path("template_configs")
-        debug_print(f"MainPanel-SelectTemplateConfig-Execute: Template Selected: {selected_template_name}")
-        if os.path.exists(json_file_path):
-            with open(json_file_path, 'r') as json_file:
-                try:
-                    data = json.load(json_file)
-                    if data and data.get(selected_template_name):
-                        template_contents = data[selected_template_name]
-                        debug_print(f"MainPanel-SelectTemplateConfig-Execute: Contents of selected template: {template_contents}")
-                        set_template_config_contents(context.scene, template_contents)
-                except json.JSONDecodeError:
-                    return {}
+        try:
+            selected_template_name = context.scene.selected_template_config
+            json_file_path = get_current_json_data_file_path("template_configs")
+            debug_print(f"MainPanel-SelectTemplateConfig-Execute: Template Selected: {selected_template_name}")
 
-        self.report({'INFO'}, f"Selected Template: {selected_template_name}")
-        return {'FINISHED'}
+            if not os.path.exists(json_file_path):
+                self.report({'WARNING'}, "Template config file was not found")
+                return {'CANCELLED'}
+
+            with open(json_file_path, 'r') as json_file:
+                data = json.load(json_file)
+                template_contents = data.get(selected_template_name) if data else None
+                if not template_contents:
+                    self.report({'WARNING'}, "Selected template config is invalid or empty")
+                    return {'CANCELLED'}
+                debug_print(f"MainPanel-SelectTemplateConfig-Execute: Contents of selected template: {template_contents}")
+                set_template_config_contents(context.scene, template_contents)
+
+            self.report({'INFO'}, f"Selected Template: {selected_template_name}")
+            return {'FINISHED'}
+        except json.JSONDecodeError as e:
+            self.report({'ERROR'}, f"In MainPanel-SelectTemplateConfig-Execute: Failed to decode template config json. Error: {e}")
+            return {'CANCELLED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In MainPanel-SelectTemplateConfig-Execute: Failed to select template config. Error: {e}")
+            return {'CANCELLED'}
 
 class OBJECT_OT_setup_scene_for_epic_skeleton(bpy.types.Operator):
     bl_idname = "object.setup_scene_for_epic_skeleton"
@@ -273,20 +283,24 @@ class OBJECT_OT_setup_scene_for_epic_skeleton(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        bpy.context.scene.unit_settings.system = 'METRIC'
-        bpy.context.scene.unit_settings.scale_length = 0.01        
-        bpy.context.space_data.overlay.grid_scale = 1.0
-        bpy.context.space_data.overlay.grid_subdivisions = 10
-        
-        for area in bpy.context.screen.areas:
-            if area.type == 'VIEW_3D':
-                for space in area.spaces:
-                    if space.type == 'VIEW_3D':
-                        space.clip_start = 0.1
-                        space.clip_end = 10000
+        try:
+            bpy.context.scene.unit_settings.system = 'METRIC'
+            bpy.context.scene.unit_settings.scale_length = 0.01        
+            bpy.context.space_data.overlay.grid_scale = 1.0
+            bpy.context.space_data.overlay.grid_subdivisions = 10
+            
+            for area in bpy.context.screen.areas:
+                if area.type == 'VIEW_3D':
+                    for space in area.spaces:
+                        if space.type == 'VIEW_3D':
+                            space.clip_start = 0.1
+                            space.clip_end = 10000
 
-        self.report({'INFO'}, "Scene configured for Epic Skeleton")
-        return {'FINISHED'}
+            self.report({'INFO'}, "Scene configured for Epic Skeleton")
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In MainPanel-SetupSceneForEpicSkeleton-Execute: Failed to setup scene for epic skeleton. Error: {e}")
+            return {'CANCELLED'}
 
 class OBJECT_OT_adjust_scale(bpy.types.Operator):
     bl_idname = "object.adjust_scale"
@@ -308,6 +322,10 @@ class OBJECT_OT_adjust_scale(bpy.types.Operator):
         except ValueError:
             debug_print(f"MainPanel-AdjustScale: Invalid Armature: {armature}")
             self.report({'WARNING'}, "Source Armature is not valid, please select a valid source armature")
+            return {"CANCELLED"}
+        except Exception as e:
+            self.report({'ERROR'}, f"In MainPanel-AdjustScale-Execute: Failed to adjust scale. Error: {e}")
+            debug_print(f"MainPanel-AdjustScale: Error: {e}")
             return {"CANCELLED"}
         return {'FINISHED'}
 
@@ -346,9 +364,14 @@ class OBJECT_OT_rename_vertex_groups(bpy.types.Operator):
             self.report({'WARNING'}, "Bone mapping in the template is invalid. Make sure the template is set up properly")
             return {'CANCELLED'}
         
-        rename_vertex_groups(armature, BONE_MAPPING)
-        self.report({'INFO'}, "Renamed vertex groups according to the set bone mapping")
-        return {'FINISHED'}
+        try:
+            rename_vertex_groups(armature, BONE_MAPPING)
+            self.report({'INFO'}, "Renamed vertex groups according to the set bone mapping")
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In MainPanel-RenameVertexGroups-Execute: Failed to rename vertex groups. Error: {e}")
+            debug_print(f"MainPanel-RenameVertexGroups-Execute: Error: {e}")
+            return {'CANCELLED'}
 
 class OBJECT_OT_import_t_quinn(bpy.types.Operator):
     bl_idname = "object.import_t_quinn"
@@ -400,10 +423,14 @@ class OBJECT_OT_move_pelvis(bpy.types.Operator):
             self.report({'WARNING'}, f"No Source Armature, please select a source armature")
             return {'CANCELLED'}
 
-        match_edit_bone_pos(target_armature, source_armature, 'pelvis', 'pelvis')
-        bpy.ops.object.mode_set(mode='OBJECT')
-
-        return {'FINISHED'}
+        try:
+            match_edit_bone_pos(target_armature, source_armature, 'pelvis', 'pelvis')
+            bpy.ops.object.mode_set(mode='OBJECT')
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In MainPanel-MovePelvis-Execute: Failed to move pelvis. Error: {e}")
+            debug_print(f"MainPanel-MovePelvis: Error: {e}")
+            return {'CANCELLED'}
 
 class OBJECT_OT_match_bone_positions(bpy.types.Operator):
     bl_idname = "object.match_bone_positions"
@@ -463,9 +490,13 @@ class OBJECT_OT_enable_debug_print(bpy.types.Operator):
     bl_description = "Checkbox, which enables debug print"
 
     def execute(self, context):
-           context.scene.enable_debug_print = not context.scene.enable_debug_print
-           self.report({'INFO'}, f"Debug Print Enabled: {context.scene.enable_debug_print}")
-           return {'FINISHED'}
+        try:
+            context.scene.enable_debug_print = not context.scene.enable_debug_print
+            self.report({'INFO'}, f"Debug Print Enabled: {context.scene.enable_debug_print}")
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In MainPanel-EnableDebugPrint-Execute: Failed to toggle debug print. Error: {e}")
+            return {'CANCELLED'}
 
 class OBJECT_OT_open_blend_file_browser(bpy.types.Operator):
     bl_idname = "object.open_blend_file_browser"
@@ -482,12 +513,16 @@ class OBJECT_OT_open_blend_file_browser(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-        if self.filepath.lower().endswith(".blend"):
-            context.scene.skeleswap_props.shapekey_animation_blend_path = self.filepath
-            self.report({'INFO'}, f"Selected file: {self.filepath}")
-            return {'FINISHED'}
-        else:
-            self.report({'ERROR'}, "Please select a .blend file")
+        try:
+            if self.filepath.lower().endswith(".blend"):
+                context.scene.skeleswap_props.shapekey_animation_blend_path = self.filepath
+                self.report({'INFO'}, f"Selected file: {self.filepath}")
+                return {'FINISHED'}
+            else:
+                self.report({'ERROR'}, "Please select a .blend file")
+                return {'CANCELLED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In MainPanel-OpenBlendFileBrowser-Execute: Failed to set blend file path. Error: {e}")
             return {'CANCELLED'}
 
 class OBJECT_OT_link_blendshapes_animation(bpy.types.Operator):
@@ -496,63 +531,64 @@ class OBJECT_OT_link_blendshapes_animation(bpy.types.Operator):
     bl_description = "Link the MB lab face rig animation of the blendshapes, needed to convert them to facekeys"
 
     def execute(self, context):
-        face_rig_armature = None
-        skeleswap_props = context.scene.skeleswap_props
-        shapekey_animation_blend_path = skeleswap_props.shapekey_animation_blend_path
-        has_separate_face_rig = skeleswap_props.has_separate_face_rig
-        shapekey_action_name = skeleswap_props.shapekey_action_name
-        is_mb_to_epic = skeleswap_props.is_mb_to_epic
-        potential_face_rig = context.object if (context.object and context.object.type == 'ARMATURE') and (context.object != context.scene.target_armature) and (context.object != context.scene.source_armature) else None
-        
-        debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Check if MB to Epic Template or Has Separate Face Rig: {has_separate_face_rig or is_mb_to_epic}")
-        debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Is MB to Epic Template: {is_mb_to_epic}. Has Separate Face Rig: {has_separate_face_rig}")
-        if has_separate_face_rig or is_mb_to_epic:
-            debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Potential face rig is selected: {potential_face_rig}")
-            debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Looking for a face rig armature in {bpy.data.objects}")
-            for obj in bpy.data.objects:
-                debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Checking {obj} if type:{obj.type} is 'MESH' and the name: {obj.name.lower} contains 'face-rig'")
-                if obj.type == 'ARMATURE' and 'face_rig' in obj.name.lower():
-                    debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Found face rig match: {obj.name}")
-                    face_rig_armature = obj
-                    break
-            if not face_rig_armature:
-                debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: No facerig found in scene, trying to see if selected object is a separate armature")
-                debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: ptential_face_rig: {potential_face_rig}")
-                if potential_face_rig:
-                    debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Separate selected armature found, treating it as the face rig. Selected armature : {potential_face_rig.name}")
-                    face_rig_armature = potential_face_rig
-                else:
-                    self.report({'WARNING'}, f"No face rig found. Try selecting it in the viewport and try again")
-                    debug_print('No separate face rig found')
-                    return {"CANCELLED"}
-        elif not has_separate_face_rig:
-            debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Template doesnt have separate face rig")
-            face_rig_armature = context.scene.source_armature
-        
-        if is_mb_to_epic:
-            filepath = os.path.join(imports_dir, "ARKIT_Blendshape_Animations_For_MB_Lab_FaceRig.blend")
-            action_name = "52_Shapekeys"
-        else:
-            debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Using custom file path")
-            filepath = shapekey_animation_blend_path
-            action_name = shapekey_action_name
-        
-        if not filepath:
-            self.report({'WARNING'}, f"Please select your blend file")
-            return {'CANCELLED'}
-        if not action_name:
-            self.report({'WARNING'}, f"Please fill in the Action Name input")
-            return {'CANCELLED'}
-        if has_separate_face_rig and not face_rig_armature:
-            debug_print("MainPanel-LinkBlendShapesAnimations-Execute: No Face Rig Armature Found")
-            self.report({'WARNING'}, f"No face rig found. Try selecting it in the viewport and try again")
-            return {'CANCELLED'}
         try:
+            face_rig_armature = None
+            skeleswap_props = context.scene.skeleswap_props
+            shapekey_animation_blend_path = skeleswap_props.shapekey_animation_blend_path
+            has_separate_face_rig = skeleswap_props.has_separate_face_rig
+            shapekey_action_name = skeleswap_props.shapekey_action_name
+            is_mb_to_epic = skeleswap_props.is_mb_to_epic
+            potential_face_rig = context.object if (context.object and context.object.type == 'ARMATURE') and (context.object != context.scene.target_armature) and (context.object != context.scene.source_armature) else None
+            
+            debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Check if MB to Epic Template or Has Separate Face Rig: {has_separate_face_rig or is_mb_to_epic}")
+            debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Is MB to Epic Template: {is_mb_to_epic}. Has Separate Face Rig: {has_separate_face_rig}")
+            if has_separate_face_rig or is_mb_to_epic:
+                debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Potential face rig is selected: {potential_face_rig}")
+                debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Looking for a face rig armature in {bpy.data.objects}")
+                for obj in bpy.data.objects:
+                    debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Checking {obj} if type:{obj.type} is 'MESH' and the name: {obj.name.lower} contains 'face-rig'")
+                    if obj.type == 'ARMATURE' and 'face_rig' in obj.name.lower():
+                        debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Found face rig match: {obj.name}")
+                        face_rig_armature = obj
+                        break
+                if not face_rig_armature:
+                    debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: No facerig found in scene, trying to see if selected object is a separate armature")
+                    debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: ptential_face_rig: {potential_face_rig}")
+                    if potential_face_rig:
+                        debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Separate selected armature found, treating it as the face rig. Selected armature : {potential_face_rig.name}")
+                        face_rig_armature = potential_face_rig
+                    else:
+                        self.report({'WARNING'}, f"No face rig found. Try selecting it in the viewport and try again")
+                        debug_print('No separate face rig found')
+                        return {"CANCELLED"}
+            elif not has_separate_face_rig:
+                debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Template doesnt have separate face rig")
+                face_rig_armature = context.scene.source_armature
+            
+            if is_mb_to_epic:
+                filepath = os.path.join(imports_dir, "ARKIT_Blendshape_Animations_For_MB_Lab_FaceRig.blend")
+                action_name = "52_Shapekeys"
+            else:
+                debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Using custom file path")
+                filepath = shapekey_animation_blend_path
+                action_name = shapekey_action_name
+            
+            if not filepath:
+                self.report({'WARNING'}, f"Please select your blend file")
+                return {'CANCELLED'}
+            if not action_name:
+                self.report({'WARNING'}, f"Please fill in the Action Name input")
+                return {'CANCELLED'}
+            if has_separate_face_rig and not face_rig_armature:
+                debug_print("MainPanel-LinkBlendShapesAnimations-Execute: No Face Rig Armature Found")
+                self.report({'WARNING'}, f"No face rig found. Try selecting it in the viewport and try again")
+                return {'CANCELLED'}
+
             link_animation(face_rig_armature, filepath, action_name)
             return {'FINISHED'}
         except Exception as e:
             debug_print(f"MainPanel-LinkBlendShapesAnimations-Execute: Failed to link animation. Error:{e}")
-            self.report({'ERROR'}, f"Failed to link animation. Error:{e}")
+            self.report({'ERROR'}, f"In MainPanel-LinkBlendShapesAnimations-Execute: Failed to link animation. Error: {e}")
             return {'CANCELLED'}
 
 class OBJECT_OT_create_ar_kit_shape_keys(bpy.types.Operator):
@@ -610,32 +646,37 @@ class OBJECT_OT_remove_face_rig(bpy.types.Operator):
     bl_description = "Removes the face rig"
 
     def execute(self, context):
-        skeleswap_props = context.scene.skeleswap_props
-        has_separate_face_rig = skeleswap_props.has_separate_face_rig
-        if skeleswap_props.is_mb_to_epic or has_separate_face_rig:
-            potential_face_rig = context.object if (context.object and context.object.type == 'ARMATURE') and (context.object != context.scene.target_armature) and (context.object != context.scene.source_armature) else None
-            for obj in bpy.data.objects:
-                if obj.type == 'ARMATURE' and ('face_rig' in obj.name.lower() or 'phoneme_rig' in obj.name.lower()):
-                    bpy.ops.object.select_all(action='DESELECT')
-                    obj.select_set(True)
-                    face_rig = obj
-                    context.view_layer.objects.active = obj
-                    debug_print(f"Selected armature: {obj.name}")
-                    if(skeleswap_props.is_mb_to_epic):
-                        delete_collection(face_rig)
-                        self.report({'INFO'}, f"Deleted face rig and its collection")
-                        return {'FINISHED'}
-                    else:
-                        delete_armature(face_rig)
-                        self.report({'INFO'}, f"Deleted face rig armature")
-                        return {'FINISHED'}
-            if potential_face_rig:
-                debug_print(f"MainPanel-RemoveFaceRig-Execute: Potential Face rig selected in view port. deleting: {potential_face_rig}")
-                delete_armature(potential_face_rig)
-                self.report({'INFO'}, f"Deleted face rig armature")
-                return {'FINISHED'}
-        bpy.ops.object.mode_set(mode='OBJECT')
-        return {'FINISHED'}
+        try:
+            skeleswap_props = context.scene.skeleswap_props
+            has_separate_face_rig = skeleswap_props.has_separate_face_rig
+            if skeleswap_props.is_mb_to_epic or has_separate_face_rig:
+                potential_face_rig = context.object if (context.object and context.object.type == 'ARMATURE') and (context.object != context.scene.target_armature) and (context.object != context.scene.source_armature) else None
+                for obj in bpy.data.objects:
+                    if obj.type == 'ARMATURE' and ('face_rig' in obj.name.lower() or 'phoneme_rig' in obj.name.lower()):
+                        bpy.ops.object.select_all(action='DESELECT')
+                        obj.select_set(True)
+                        face_rig = obj
+                        context.view_layer.objects.active = obj
+                        debug_print(f"Selected armature: {obj.name}")
+                        if(skeleswap_props.is_mb_to_epic):
+                            delete_collection(face_rig)
+                            self.report({'INFO'}, f"Deleted face rig and its collection")
+                            return {'FINISHED'}
+                        else:
+                            delete_armature(face_rig)
+                            self.report({'INFO'}, f"Deleted face rig armature")
+                            return {'FINISHED'}
+                if potential_face_rig:
+                    debug_print(f"MainPanel-RemoveFaceRig-Execute: Potential Face rig selected in view port. deleting: {potential_face_rig}")
+                    delete_armature(potential_face_rig)
+                    self.report({'INFO'}, f"Deleted face rig armature")
+                    return {'FINISHED'}
+            bpy.ops.object.mode_set(mode='OBJECT')
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In MainPanel-RemoveFaceRig-Execute: Failed to remove face rig. Error: {e}")
+            debug_print(f"MainPanel-RemoveFaceRig-Execute: Error: {e}")
+            return {'CANCELLED'}
 
 class OBJECT_OT_reparent_breast_bones(bpy.types.Operator):
     bl_idname = "object.reparent_breast_bones"
@@ -808,7 +849,7 @@ class OBJECT_OT_replace_skeleton(bpy.types.Operator):
                 debug_print(f"Couldn't replace skeleton. Error: {e}")
                 return {"CANCELLED"}
         else:
-           debug_print(f"MainPanel-ReplaceSkeleton-Execute: No mesh found: source_mesh: {source_mesh}, target_mesh: {target_mesh}, source_armature: {source_armature.name}, target_armature: {target_armature.name}")
+           debug_print(f"MainPanel-ReplaceSkeleton-Execute: No mesh found: source_mesh_list: {source_mesh_list}, target_mesh_list: {target_mesh_list}, source_armature: {source_armature.name if source_armature else None}, target_armature: {target_armature.name if target_armature else None}")
            self.report({'WARNING'}, f"No source or target mesh found. Makes sure they are not hidden from the scene")
            return {"CANCELLED"} 
         return {'FINISHED'}
@@ -898,27 +939,30 @@ class OBJECT_OT_export_character_as_FBX(bpy.types.Operator):
         except ValueError:
             self.report({'ERROR'}, "Invalid target armature")
             return {'CANCELLED'}
+        try:
+            bpy.ops.object.select_all(action='DESELECT')
 
-        bpy.ops.object.select_all(action='DESELECT')
+            armature.select_set(True)
+            bpy.context.view_layer.objects.active = armature
+            
+            for obj in armature.children:
+                if obj.type == 'MESH':
+                    obj.select_set(True)
 
-        armature.select_set(True)
-        bpy.context.view_layer.objects.active = armature
-        
-        for obj in armature.children:
-            if obj.type == 'MESH':
-                obj.select_set(True)
-
-        bpy.ops.export_scene.fbx(
-            filepath=self.filepath,
-            use_selection=True,
-            use_armature_deform_only=True,
-            add_leaf_bones=False,
-            primary_bone_axis='X',
-            secondary_bone_axis='-Y',
-            mesh_smooth_type='FACE',
-            bake_anim=False
-        )
-        return {'FINISHED'}
+            bpy.ops.export_scene.fbx(
+                filepath=self.filepath,
+                use_selection=True,
+                use_armature_deform_only=True,
+                add_leaf_bones=False,
+                primary_bone_axis='X',
+                secondary_bone_axis='-Y',
+                mesh_smooth_type='FACE',
+                bake_anim=False
+            )
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In MainPanel-ExportCharacterAsFBX-Execute: Failed to export character as FBX. Error: {e}")
+            return {'CANCELLED'}
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)

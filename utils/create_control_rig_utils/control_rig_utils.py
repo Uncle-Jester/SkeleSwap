@@ -1,7 +1,8 @@
 import bpy #type: ignore
 from mathutils import Vector #type: ignore
-from .. import remove_connected_relation
 from ..dev_utils import validate
+
+IK_FK_SWITCH_PROPERTY = "IK_controls"
 
 ######################################## Unreal Specific Utils ##########################################################
 main_bones = [
@@ -26,97 +27,6 @@ flipped_bones = [
     "pinky_metacarpal_r", "pinky_01_r", "pinky_02_r", "pinky_03_r"
 ]
 
-def apply_ik_transforms(armature):
-    validate(
-        [armature],
-        ["ARMATURE"],
-        stack_location="ControlRigUtils-ApplyIKTransforms",
-        input_identifier_strings=["armature"],
-    )
-    bpy.context.view_layer.objects.active = armature
-    bpy.ops.object.mode_set(mode='POSE')
-    
-    ik_driver_collection = get_bone_collection(armature, "IK_DRIVER_BONES")
-    ik_ctrl_collection = get_bone_collection(armature, "IK_CTRL_BONES")
-    if not ik_ctrl_collection:
-        return
-    
-    bpy.context.view_layer.update()
-    depsgraph = bpy.context.evaluated_depsgraph_get()
-    armature_eval = armature.evaluated_get(depsgraph)
-
-    for bone in ik_ctrl_collection.bones:
-        pose_bone = armature.pose.bones.get(bone.name)
-        eval_bone = armature_eval.pose.bones.get(bone.name)
-
-        if pose_bone and eval_bone:
-           pose_bone.matrix = eval_bone.matrix
-    
-    for bone in ik_driver_collection.bones:
-        pose_bone = armature.pose.bones.get(bone.name)
-        eval_bone = armature_eval.pose.bones.get(bone.name)
-
-        if pose_bone and eval_bone:
-           pose_bone.matrix = eval_bone.matrix
-
-    bpy.context.view_layer.update()
-
-def apply_fk_transforms(armature):
-    validate(
-        [armature],
-        ["ARMATURE"],
-        stack_location="ControlRigUtils-ApplyFKTransforms",
-        input_identifier_strings=["armature"],
-    )
-    bpy.context.view_layer.objects.active = armature
-    bpy.ops.object.mode_set(mode='POSE')
-    
-    fk_driver_collection = get_bone_collection(armature, "FK_DRIVER_BONES")
-    if not fk_driver_collection:
-        return
-    
-    bpy.context.view_layer.update()
-    depsgraph = bpy.context.evaluated_depsgraph_get()
-    armature_eval = armature.evaluated_get(depsgraph)
-
-    for bone in fk_driver_collection.bones:
-        pose_bone = armature.pose.bones.get(bone.name)
-        eval_bone = armature_eval.pose.bones.get(bone.name)
-
-        if pose_bone and eval_bone:
-           pose_bone.matrix = eval_bone.matrix
-    
-    bpy.context.view_layer.update()
-
-def add_transform_constraint_to_flipped_bone_with_driver(armature, bone, constraint_name, driver):
-    transform_constraint = bone.constraints.new(type='TRANSFORM')
-    transform_constraint.name = constraint_name
-    transform_constraint.target = armature
-    transform_constraint.subtarget = bone.name
-    transform_constraint.map_from = 'ROTATION'
-    transform_constraint.map_to = 'ROTATION'
-    transform_constraint.to_min_x_rot = 3.14159
-    if driver is not None:
-        driver_property_name = driver.get("property_name")
-        invert = driver.get("invert")
-        add_driver_to_constraint_influence(armature, transform_constraint, driver_property_name, invert=invert)
-
-
-
-def add_copy_transforms_constraint_with_driver(armature, bone_name, target_bone_name, constraint_name, driver):
-    bone = armature.pose.bones.get(bone_name)
-    if not bone:
-        return
-    copy_transform_constraint = bone.constraints.new(type='COPY_TRANSFORMS')
-    copy_transform_constraint.name = constraint_name
-    copy_transform_constraint.target = armature
-    copy_transform_constraint.subtarget = target_bone_name
-    
-    if driver is not None:
-        driver_property_name = driver.get("property_name")
-        invert = driver.get("invert")
-        add_driver_to_constraint_influence(armature, copy_transform_constraint, driver_property_name, invert=invert)
-
 def add_copy_rotation_constraint_with_driver(armature, bone_name, target_bone_name, constraint_name, driver = None, rotation_details = None):
     bone = armature.pose.bones.get(bone_name)
     if not bone:
@@ -139,53 +49,6 @@ def add_copy_rotation_constraint_with_driver(armature, bone_name, target_bone_na
         driver_property_name = driver.get("property_name")
         invert = driver.get("invert")
         add_driver_to_constraint_influence(armature, copy_rotation_constraint, driver_property_name, invert=invert)
-
-def add_copy_location_constraint_with_driver(armature, bone_name, target_bone_name, constraint_name, driver):
-    bone = armature.pose.bones.get(bone_name)
-    if not bone:
-        return
-    copy_transform_constraint = bone.constraints.new(type='COPY_LOCATION')
-    copy_transform_constraint.name = constraint_name
-    copy_transform_constraint.target = armature
-    copy_transform_constraint.subtarget = target_bone_name
-    
-    if driver is not None:
-        driver_property_name = driver.get("property_name")
-        invert = driver.get("invert")
-        add_driver_to_constraint_influence(armature, copy_transform_constraint, driver_property_name, invert=invert)
-
-def add_driver_bone_constraints_to_collection_of_bones(armature, source_driver_bone_collection_name, source_driver_prefix, target_driver_bone_collection_name, target_driver_prefix, add_transform_constraint_to_flipped_bones=True, driver=None):
-    validate(
-        [armature, source_driver_bone_collection_name, source_driver_prefix, target_driver_bone_collection_name, target_driver_prefix],
-        ["ARMATURE", "str", "str", "str", "str"],
-        stack_location="ControlRigUtils-AddDriverBoneConstraintsToCollectionOfBones",
-        input_identifier_strings=["armature", "source_driver_bone_collection_name", "source_driver_prefix", "target_driver_bone_collection_name", "target_driver_prefix"],
-    )
-    bpy.ops.object.mode_set(mode='POSE')
-    source_driver_bone_collection = get_bone_collection(armature, source_driver_bone_collection_name)
-    target_driver_bone_collection = get_bone_collection(armature, target_driver_bone_collection_name)
-    pose_bones = armature.pose.bones
-    for bone in source_driver_bone_collection.bones:
-        bone.select = True
-        driven_bone = pose_bones.get(bone.name.replace(f"{source_driver_prefix}_", f"{target_driver_prefix}_"))
-        
-        if driven_bone and driven_bone.name in target_driver_bone_collection.bones:
-            copy_constraint_name = f"Copy {source_driver_prefix.replace('DRV_', '')} Transforms -> {bone.name}"
-            driven_bone.bone.select = True
-            armature.data.bones.active = driven_bone.bone
-            
-            if driven_bone.name.replace(f"{target_driver_prefix}_", "") in flipped_bones:                
-                add_copy_transforms_constraint_with_driver(armature, driven_bone.name, bone.name, copy_constraint_name, driver)                
-            
-                if add_transform_constraint_to_flipped_bones:
-                    transform_constraint_name = f"{target_driver_prefix}_TRANSFORM (FLIP rotation) -> {bone.name}"
-                    add_transform_constraint_to_flipped_bone_with_driver(armature, driven_bone, transform_constraint_name, driver)
-            
-            else:
-                add_copy_transforms_constraint_with_driver(armature, driven_bone.name, bone.name, copy_constraint_name, driver)
-
-            driven_bone.bone.select = False
-            bone.select = False
 
 def add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, driver_bone_collection_name, driver_prefix, add_transform_constraint_to_flipped_bones=True, add_driver_to_copy_transform_influence = False):
     validate(
@@ -210,7 +73,7 @@ def add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, driver
                 copy_transform_constraint.subtarget = bone.name
                 
                 if add_driver_to_copy_transform_influence:
-                    add_driver_to_constraint_influence(armature, copy_transform_constraint, "IK_controls", invert=("FK" in driver_prefix))
+                    add_driver_to_constraint_influence(armature, copy_transform_constraint, IK_FK_SWITCH_PROPERTY, invert=("FK" in driver_prefix))
                 
                 if add_transform_constraint_to_flipped_bones:
                     transform_constraint = deform_bone.constraints.new(type='TRANSFORM')
@@ -221,7 +84,7 @@ def add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, driver
                     transform_constraint.map_to = 'ROTATION'
                     transform_constraint.to_min_x_rot = 3.14159
                     if add_driver_to_copy_transform_influence:
-                        add_driver_to_constraint_influence(armature, transform_constraint, "IK_controls", invert=("FK" in driver_prefix))
+                        add_driver_to_constraint_influence(armature, transform_constraint, IK_FK_SWITCH_PROPERTY, invert=("FK" in driver_prefix))
             else:
                 copy_transform_constraint = deform_bone.constraints.new(type='COPY_TRANSFORMS')
                 copy_transform_constraint.name = f"{driver_prefix.replace('DRV_', '')}_Copy Transforms -> {bone.name}"
@@ -229,7 +92,7 @@ def add_copy_transforms_constraints_to_deform_bones_for_drivers(armature, driver
                 copy_transform_constraint.subtarget = bone.name
                 
                 if add_driver_to_copy_transform_influence:
-                    add_driver_to_constraint_influence(armature, copy_transform_constraint, "IK_controls", invert=("FK" in driver_prefix))
+                    add_driver_to_constraint_influence(armature, copy_transform_constraint, IK_FK_SWITCH_PROPERTY, invert=("FK" in driver_prefix))
 
             deform_bone.bone.select = False
             bone.select = False
@@ -431,13 +294,13 @@ def parent_bone_keep_offset(armature, child_bone_name, parent_bone_name):
 
 ######################################## Driver and Custom Property Utils ###############################################
 
-def add_ik_fk_switch_property(armature, property_name="IK_controls"):
+def add_ik_fk_switch_property(armature, property_name=IK_FK_SWITCH_PROPERTY):
     if property_name not in armature.keys():
-        armature[property_name] = True
+        armature[property_name] = 1.0
         armature["_RNA_UI"] = armature.get("_RNA_UI", {})
         armature["_RNA_UI"][property_name] = {
             "description": "Toggle IK Controls (True = IK, False = FK)",
-            "default": True,
+            "default": 1.0,
             "min": 0,
             "max": 1
         }
@@ -555,6 +418,7 @@ def add_IK_constraint(armature, target_bone_name, effector_bone_name, pole_targe
             ik_constraint.target = armature
             ik_constraint.subtarget = effector_bone_name
             ik_constraint.chain_count = chain_length
+            ik_constraint.use_stretch = False
             if pole_target:
                 ik_constraint.pole_target = armature
                 ik_constraint.pole_subtarget = pole_target_name
@@ -783,7 +647,7 @@ def add_custom_shape_for_bone(armature, bone_name, shape, theme_number, wirefram
             var = driver.variables.new()
             var.name = "ik_fk_switch"
             var.targets[0].id = armature
-            var.targets[0].data_path = '["IK_controls"]'
+            var.targets[0].data_path = f'["{IK_FK_SWITCH_PROPERTY}"]'
 
             if mode == "IK":
                 driver.expression = "1 - ik_fk_switch"

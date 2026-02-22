@@ -85,11 +85,15 @@ class OBJECT_OT_select_T_bone_mapping(bpy.types.Operator):
     ) # type: ignore
 
     def execute(self, context):
-        create_template_properties = context.scene.create_template_properties
-        selected_mapping_name = create_template_properties.selected_bone_mapping
-        debug_print(f"CreateTemplate: Selected bone mapping: {selected_mapping_name}")
-        self.report({'INFO'}, f"CreateTemplate: Selected bone mapping: {selected_mapping_name}")
-        return {'FINISHED'}
+        try:
+            create_template_properties = context.scene.create_template_properties
+            selected_mapping_name = create_template_properties.selected_bone_mapping
+            debug_print(f"CreateTemplate: Selected bone mapping: {selected_mapping_name}")
+            self.report({'INFO'}, f"CreateTemplate: Selected bone mapping: {selected_mapping_name}")
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateTemplate-SelectTBoneMapping-Execute: Failed to select bone mapping. Error: {e}")
+            return {'CANCELLED'}
 
 class OBJECT_OT_select_T_transform_map(bpy.types.Operator):
     bl_idname = "object.select_t_transform_map"
@@ -101,35 +105,41 @@ class OBJECT_OT_select_T_transform_map(bpy.types.Operator):
     ) # type: ignore
 
     def execute(self, context):
-        create_template_properties = context.scene.create_template_properties
-        selected_transform_map_name = create_template_properties.selected_transform_map
-        debug_print(f"CreateTemplate: Selected Transform Map: {selected_transform_map_name}")
-        self.report({'INFO'}, f"CreateTemplate: Selected Transform Map: {selected_transform_map_name}")
-        return {'FINISHED'}
+        try:
+            create_template_properties = context.scene.create_template_properties
+            selected_transform_map_name = create_template_properties.selected_transform_map
+            debug_print(f"CreateTemplate: Selected Transform Map: {selected_transform_map_name}")
+            self.report({'INFO'}, f"CreateTemplate: Selected Transform Map: {selected_transform_map_name}")
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateTemplate-SelectTTransformMap-Execute: Failed to select transform map. Error: {e}")
+            return {'CANCELLED'}
 
 
 class OBJECT_OT_save_template(bpy.types.Operator):
     bl_idname = "object.save_template"
     bl_label = "Save Template"
     def execute(self, context):
-        scene = context.scene
-        create_template_properties = scene.create_template_properties
-        property_name = create_template_properties.template_name or "My Template"
-        template = create_template_json(create_template_properties)
-        validate(
-            [property_name, template],
-            ["str", "dict"],
-            stack_location="CreateTemplate-SaveTemplate",
-            input_identifier_strings=["property_name", "template"],
-        )
-
         try:
+            scene = context.scene
+            create_template_properties = scene.create_template_properties
+            property_name = create_template_properties.template_name or "My Template"
+            template = create_template_json(create_template_properties)
+            validate(
+                [property_name, template],
+                ["str", "dict"],
+                stack_location="CreateTemplate-SaveTemplate",
+                input_identifier_strings=["property_name", "template"],
+            )
+
             debug_print(f"CreateTemplate-SaveTemplate: Attempting to save new temolate, {template}, in the template json, under property: {property_name}")
-            save_to_persistent_data_store_json_property("template_configs", property_name, template)       
+            result = save_to_persistent_data_store_json_property("template_configs", property_name, template)
+            if result == {'CANCELLED'}:
+                raise RuntimeError("Failed to persist template json data")
+            return {'FINISHED'}
         except Exception as e:
-            self.report({'ERROR'}, f"Failed to save bone mapping: {e}")
-        
-        return {'FINISHED'}
+            self.report({'ERROR'}, f"In CreateTemplate-SaveTemplate-Execute: Failed to save template. Error: {e}")
+            return {'CANCELLED'}
 
 
 
