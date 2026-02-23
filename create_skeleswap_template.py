@@ -1,36 +1,12 @@
 import bpy # type: ignore
-import os
-import json
-
-from .utils import debug_print, save_to_persistent_data_store_json_property, get_current_json_data_file_path
+from .utils import debug_print, save_to_persistent_data_store_json_property, get_persistent_data_store_json_keys
 from .utils.dev_utils import validate
 
-addon_dir = os.path.dirname(os.path.realpath(__file__))
-utils_dir = os.path.join(addon_dir, "utils")
-data_dir = os.path.join(utils_dir, "data")
-
 def get_bone_mapping_options():
-    json_file_path = get_current_json_data_file_path("bone_mappings")
-
-    if os.path.exists(json_file_path):
-        with open(json_file_path, 'r') as json_file:
-            try:
-                data = json.load(json_file)
-                return list(data.keys())
-            except json.JSONDecodeError:
-                return []
-    return []
+    return get_persistent_data_store_json_keys("bone_mappings")
 
 def get_transform_map_options():
-    json_file_path = get_current_json_data_file_path("bone_transforms")
-    if os.path.exists(json_file_path):
-        with open(json_file_path, 'r') as json_file:
-            try:
-                data = json.load(json_file)
-                return list(data.keys())
-            except json.JSONDecodeError:
-                return []
-    return []
+    return get_persistent_data_store_json_keys("bone_transforms")
 
 
 def bone_mapping_t_update_callback(self, context):

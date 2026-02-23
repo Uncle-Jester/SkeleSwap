@@ -1,11 +1,10 @@
 import bpy # type: ignore
 from mathutils import Matrix, Vector # type: ignore
 import json
-import os
 
 from .utils import rotate_bone, match_pose_bone_head_pos, match_edit_bone_pos, chain_pose_bone_position, scale_pose_bone, match_pose_bone_orientation, get_foot_z_location, move_pose_bone, orient_bone, move_edit_bone, assign_bone_color_to_armature, match_edit_bone_z_location, match_edit_bone_chain_scale, scale_edit_bone_chain, copy_bone_between_armatures, delete_edit_bone
 from .utils import is_flipped_unreal_bone
-from .utils import debug_print, get_current_json_data_file_path, save_to_persistent_data_store_json_property
+from .utils import debug_print, save_to_persistent_data_store_json_property, get_persistent_data_store_json_property, get_persistent_data_store_json_keys
 from .utils.dev_utils import validate
 
 class CreateTransformProperties(bpy.types.PropertyGroup):
@@ -580,15 +579,7 @@ def update_target_armature(self, context):
             bpy.context.scene.target_armature = None
 
 def get_bone_mapping_options():
-    json_file_path = get_current_json_data_file_path("bone_mappings")
-    if os.path.exists(json_file_path):
-        with open(json_file_path, 'r') as json_file:
-            try:
-                data = json.load(json_file)
-                return list(data.keys())
-            except json.JSONDecodeError:
-                return []
-    return []
+    return get_persistent_data_store_json_keys("bone_mappings")
 
 def get_bone_mapping_contents(scene):
     if scene.bone_mapping_contents:
@@ -617,27 +608,15 @@ class CreateTransformMapSelectBoneMappingOperator(bpy.types.Operator):
             debug_print('CreateTransformMap-SelectBoneMapping-Execute: Executing select_bone_mapping')
             selected_mapping_name = context.scene.selected_bone_mapping
             debug_print(f"CreateTransformMap-SelectBoneMapping-Execute: Selected bone mapping name: {selected_mapping_name}")
-
-            json_file_path = get_current_json_data_file_path("bone_mappings")
-            if not os.path.exists(json_file_path):
-                self.report({'WARNING'}, "Bone mapping data file was not found")
+            mapping_contents = get_persistent_data_store_json_property("bone_mappings", selected_mapping_name)
+            if not mapping_contents:
+                self.report({'WARNING'}, "Selected bone mapping is invalid or empty")
                 return {'CANCELLED'}
-
-            with open(json_file_path, 'r') as json_file:
-                data = json.load(json_file)
-                mapping_contents = data.get(selected_mapping_name) if data else None
-                if not mapping_contents:
-                    self.report({'WARNING'}, "Selected bone mapping is invalid or empty")
-                    return {'CANCELLED'}
-
-                debug_print(f"CreateTransformMap-SelectBoneMapping-Execute: selected_bone_mapping_contents: {mapping_contents}")
-                set_bone_mapping_contents(context.scene, mapping_contents)
+            debug_print(f"CreateTransformMap-SelectBoneMapping-Execute: selected_bone_mapping_contents: {mapping_contents}")
+            set_bone_mapping_contents(context.scene, mapping_contents)
 
             self.report({'INFO'}, f"Selected bone mapping: {selected_mapping_name}")
             return {'FINISHED'}
-        except json.JSONDecodeError as e:
-            self.report({'ERROR'}, f"In CreateTransformMap-SelectBoneMapping-Execute: Failed to load bone mapping data. Error: {e}")
-            return {'CANCELLED'}
         except Exception as e:
             self.report({'ERROR'}, f"In CreateTransformMap-SelectBoneMapping-Execute: Failed to select bone mapping. Error: {e}")
             return {'CANCELLED'}
