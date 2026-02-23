@@ -39,7 +39,7 @@ def create_bone_mapping_json(scene):
     return bone_mapping
 
 
-class OBJECT_PT_bone_mapping_panel(bpy.types.Panel):
+class CreateBoneMappingPanel(bpy.types.Panel):
     bl_label = "Bone Mapping Panel"
     bl_idname = "OBJECT_PT_bone_mapping_panel"
     bl_space_type = 'VIEW_3D'
@@ -83,7 +83,9 @@ class BonePairItem(bpy.types.PropertyGroup):
     target_bone_name: bpy.props.StringProperty(name="Target Bone") # type: ignore
     source_bone_name: bpy.props.StringProperty(name="Source Bone") # type: ignore
 
-class OBJECT_UL_bone_pair_list(bpy.types.UIList):
+class CreateBoneMappingBonePairUIList(bpy.types.UIList):
+    bl_idname = "OBJECT_UL_bone_pair_list"
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         scene = context.scene
         armature_target = scene.target_armature
@@ -101,7 +103,7 @@ class OBJECT_UL_bone_pair_list(bpy.types.UIList):
             row.operator("object.remove_bone_pair_from_list", text="", icon='X', emboss=False).index = index
 
 
-class OBJECT_OT_add_bone_pair(bpy.types.Operator):
+class CreateBoneMappingAddBonePairOperator(bpy.types.Operator):
     bl_idname = "object.add_bone_pair"
     bl_label = "Add Transform"
 
@@ -117,7 +119,7 @@ class OBJECT_OT_add_bone_pair(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-class OBJECT_OT_remove_bone_pair_from_list(bpy.types.Operator):
+class CreateBoneMappingRemoveBonePairFromListOperator(bpy.types.Operator):
     bl_idname = "object.remove_bone_pair_from_list"
     bl_label = "Remove bone pair"
     index: bpy.props.IntProperty() # type: ignore
@@ -132,7 +134,7 @@ class OBJECT_OT_remove_bone_pair_from_list(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-class OBJECT_OT_set_target_bone(bpy.types.Operator):
+class CreateBoneMappingSetTargetBoneOperator(bpy.types.Operator):
     bl_idname = "object.set_target_bone"
     bl_label = "Set Target Bone"
     
@@ -154,7 +156,7 @@ class OBJECT_OT_set_target_bone(bpy.types.Operator):
             self.report({'ERROR'}, f"In CreateBoneMapping-SetTargetBone-Execute: Failed to set target bone. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_set_source_bone(bpy.types.Operator):
+class CreateBoneMappingSetSourceBoneOperator(bpy.types.Operator):
     bl_idname = "object.set_source_bone"
     bl_label = "Set Source Bone"
     
@@ -176,7 +178,7 @@ class OBJECT_OT_set_source_bone(bpy.types.Operator):
             self.report({'ERROR'}, f"In CreateBoneMapping-SetSourceBone-Execute: Failed to set source bone. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_prefill_target_bones(bpy.types.Operator):
+class CreateBoneMappingPrefillTargetBonesOperator(bpy.types.Operator):
     bl_idname = "object.prefill_target_bones"
     bl_label = "Prefill Target Bones"
 
@@ -213,7 +215,7 @@ class OBJECT_OT_prefill_target_bones(bpy.types.Operator):
             self.report({'ERROR'}, f"In CreateBoneMapping-PrefillTargetBones-Execute: Failed to prefill target bones. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_auto_map_bones(bpy.types.Operator):
+class CreateBoneMappingAutoMapBonesOperator(bpy.types.Operator):
     bl_idname = "object.auto_map_bones"
     bl_label = "AutoMap Bones"
 
@@ -272,7 +274,7 @@ class OBJECT_OT_auto_map_bones(bpy.types.Operator):
             self.report({'ERROR'}, f"In CreateBoneMapping-AutoMapBones-Execute: Failed to auto map bones. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_export_bone_mapping(bpy.types.Operator):
+class CreateBoneMappingExportBoneMappingOperator(bpy.types.Operator):
     bl_idname = "object.export_bone_mapping"
     bl_label = "Export Bone Mapping"
 
@@ -303,7 +305,7 @@ class OBJECT_OT_export_bone_mapping(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
-class OBJECT_OT_save_bone_mapping(bpy.types.Operator):
+class CreateBoneMappingSaveBoneMappingOperator(bpy.types.Operator):
     bl_idname = "object.save_bone_mapping"
     bl_label = "Save Bone Mapping"
 
@@ -326,7 +328,7 @@ class OBJECT_OT_save_bone_mapping(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_load_bone_mapping(bpy.types.Operator):
+class CreateBoneMappingLoadBoneMappingOperator(bpy.types.Operator):
     bl_idname = "object.load_bone_mapping"
     bl_label = "Load Bone Mapping"
 
@@ -362,17 +364,17 @@ class OBJECT_OT_load_bone_mapping(bpy.types.Operator):
 
 def register():
     bpy.utils.register_class(BonePairItem)
-    bpy.utils.register_class(OBJECT_PT_bone_mapping_panel)
-    bpy.utils.register_class(OBJECT_OT_load_bone_mapping)
-    bpy.utils.register_class(OBJECT_OT_add_bone_pair)
-    bpy.utils.register_class(OBJECT_OT_remove_bone_pair_from_list)
-    bpy.utils.register_class(OBJECT_UL_bone_pair_list)
-    bpy.utils.register_class(OBJECT_OT_set_target_bone)
-    bpy.utils.register_class(OBJECT_OT_set_source_bone)
-    bpy.utils.register_class(OBJECT_OT_prefill_target_bones)
-    bpy.utils.register_class(OBJECT_OT_auto_map_bones)
-    bpy.utils.register_class(OBJECT_OT_export_bone_mapping)
-    bpy.utils.register_class(OBJECT_OT_save_bone_mapping)
+    bpy.utils.register_class(CreateBoneMappingPanel)
+    bpy.utils.register_class(CreateBoneMappingLoadBoneMappingOperator)
+    bpy.utils.register_class(CreateBoneMappingAddBonePairOperator)
+    bpy.utils.register_class(CreateBoneMappingRemoveBonePairFromListOperator)
+    bpy.utils.register_class(CreateBoneMappingBonePairUIList)
+    bpy.utils.register_class(CreateBoneMappingSetTargetBoneOperator)
+    bpy.utils.register_class(CreateBoneMappingSetSourceBoneOperator)
+    bpy.utils.register_class(CreateBoneMappingPrefillTargetBonesOperator)
+    bpy.utils.register_class(CreateBoneMappingAutoMapBonesOperator)
+    bpy.utils.register_class(CreateBoneMappingExportBoneMappingOperator)
+    bpy.utils.register_class(CreateBoneMappingSaveBoneMappingOperator)
     bpy.types.Scene.input_text = bpy.props.StringProperty(name="Bone Map Name")
     #bpy.types.Scene.source_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_source_armature)
     #bpy.types.Scene.target_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_target_armature)
@@ -381,17 +383,17 @@ def register():
 
 def unregister():
     bpy.utils.unregister_class(BonePairItem)
-    bpy.utils.unregister_class(OBJECT_PT_bone_mapping_panel)
-    bpy.utils.unregister_class(OBJECT_OT_load_bone_mapping)
-    bpy.utils.unregister_class(OBJECT_OT_add_bone_pair)
-    bpy.utils.unregister_class(OBJECT_OT_remove_bone_pair_from_list)
-    bpy.utils.unregister_class(OBJECT_UL_bone_pair_list)
-    bpy.utils.unregister_class(OBJECT_OT_set_target_bone)
-    bpy.utils.unregister_class(OBJECT_OT_set_source_bone)
-    bpy.utils.unregister_class(OBJECT_OT_prefill_target_bones)
-    bpy.utils.unregister_class(OBJECT_OT_auto_map_bones)
-    bpy.utils.unregister_class(OBJECT_OT_export_bone_mapping)
-    bpy.utils.unregister_class(OBJECT_OT_save_bone_mapping)
+    bpy.utils.unregister_class(CreateBoneMappingPanel)
+    bpy.utils.unregister_class(CreateBoneMappingLoadBoneMappingOperator)
+    bpy.utils.unregister_class(CreateBoneMappingAddBonePairOperator)
+    bpy.utils.unregister_class(CreateBoneMappingRemoveBonePairFromListOperator)
+    bpy.utils.unregister_class(CreateBoneMappingBonePairUIList)
+    bpy.utils.unregister_class(CreateBoneMappingSetTargetBoneOperator)
+    bpy.utils.unregister_class(CreateBoneMappingSetSourceBoneOperator)
+    bpy.utils.unregister_class(CreateBoneMappingPrefillTargetBonesOperator)
+    bpy.utils.unregister_class(CreateBoneMappingAutoMapBonesOperator)
+    bpy.utils.unregister_class(CreateBoneMappingExportBoneMappingOperator)
+    bpy.utils.unregister_class(CreateBoneMappingSaveBoneMappingOperator)
     del bpy.types.Scene.input_text
     #del bpy.types.Scene.source_armature
     #del bpy.types.Scene.target_armature

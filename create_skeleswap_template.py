@@ -42,7 +42,7 @@ def transform_map_t_update_callback(self, context):
 def create_template_json(props):
     return props.get_data()
 
-class OBJECT_PT_create_template_panel(bpy.types.Panel):
+class CreateSkeleSwapTemplatePanel(bpy.types.Panel):
     bl_label = "Create SkeleSwap Template"
     bl_idname = "OBJECT_PT_create_template_panel"
     bl_space_type = 'VIEW_3D'
@@ -75,7 +75,7 @@ class OBJECT_PT_create_template_panel(bpy.types.Panel):
         row.label(text="Save Template")
         row.operator("object.save_template", text="Save Template")
 
-class OBJECT_OT_select_T_bone_mapping(bpy.types.Operator):
+class CreateSkeleSwapTemplateSelectTBoneMappingOperator(bpy.types.Operator):
     bl_idname = "object.select_t_bone_mapping"
     bl_label = "Select Bone Mapping"
 
@@ -95,7 +95,7 @@ class OBJECT_OT_select_T_bone_mapping(bpy.types.Operator):
             self.report({'ERROR'}, f"In CreateTemplate-SelectTBoneMapping-Execute: Failed to select bone mapping. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_select_T_transform_map(bpy.types.Operator):
+class CreateSkeleSwapTemplateSelectTTransformMapOperator(bpy.types.Operator):
     bl_idname = "object.select_t_transform_map"
     bl_label = "Select Transform Map"
 
@@ -116,7 +116,7 @@ class OBJECT_OT_select_T_transform_map(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-class OBJECT_OT_save_template(bpy.types.Operator):
+class CreateSkeleSwapTemplateSaveTemplateOperator(bpy.types.Operator):
     bl_idname = "object.save_template"
     bl_label = "Save Template"
     def execute(self, context):
@@ -181,10 +181,10 @@ def register():
     bpy.utils.register_class(CreateTemplateProperties)
     bpy.types.Scene.create_template_properties = bpy.props.PointerProperty(type=CreateTemplateProperties)
 
-    bpy.utils.register_class(OBJECT_PT_create_template_panel)
-    bpy.utils.register_class(OBJECT_OT_select_T_bone_mapping)
-    bpy.utils.register_class(OBJECT_OT_select_T_transform_map)
-    bpy.utils.register_class(OBJECT_OT_save_template)
+    bpy.utils.register_class(CreateSkeleSwapTemplatePanel)
+    bpy.utils.register_class(CreateSkeleSwapTemplateSelectTBoneMappingOperator)
+    bpy.utils.register_class(CreateSkeleSwapTemplateSelectTTransformMapOperator)
+    bpy.utils.register_class(CreateSkeleSwapTemplateSaveTemplateOperator)
 
 
 
@@ -194,10 +194,10 @@ def unregister():
     bpy.utils.unregister_class(CreateTemplateProperties)
     del bpy.types.Scene.create_template_properties
 
-    bpy.utils.unregister_class(OBJECT_PT_create_template_panel)
-    bpy.utils.unregister_class(OBJECT_OT_select_T_bone_mapping)
-    bpy.utils.unregister_class(OBJECT_OT_select_T_transform_map)
-    bpy.utils.unregister_class(OBJECT_OT_save_template)
+    bpy.utils.unregister_class(CreateSkeleSwapTemplatePanel)
+    bpy.utils.unregister_class(CreateSkeleSwapTemplateSelectTBoneMappingOperator)
+    bpy.utils.unregister_class(CreateSkeleSwapTemplateSelectTTransformMapOperator)
+    bpy.utils.unregister_class(CreateSkeleSwapTemplateSaveTemplateOperator)
 
 
 if __name__ == "__main__":

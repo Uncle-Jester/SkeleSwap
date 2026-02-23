@@ -682,7 +682,7 @@ class IK_FK_Properties(bpy.types.PropertyGroup):
     )
 
 
-class OBJECT_PT_control_rig_panel(bpy.types.Panel):
+class UnrealControlRigPanel(bpy.types.Panel):
     bl_label = "Control Rig"
     bl_idname = "OBJECT_PT_control_rig_panel"
     bl_parent_id = "OBJECT_PT_skeleswap_main_panel"
@@ -720,7 +720,7 @@ class OBJECT_PT_control_rig_panel(bpy.types.Panel):
             row.operator("object.switch_ik_fk", text="FK Mode", depress=not is_ik_mode).mode = "FK"
 
 
-class OBJECT_OT_Switch_IK_FK(bpy.types.Operator):
+class UnrealControlRigSwitchIkFkOperator(bpy.types.Operator):
     bl_idname = "object.switch_ik_fk"
     bl_label = "Switch IK/FK"
     bl_options = {"REGISTER", "UNDO"}
@@ -765,7 +765,7 @@ class OBJECT_OT_Switch_IK_FK(bpy.types.Operator):
             return {"CANCELLED"}
 
 
-class OBJECT_OT_generate_rig(bpy.types.Operator):
+class UnrealControlRigGenerateRigOperator(bpy.types.Operator):
     bl_idname = "object.generate_rig"
     bl_label = "Generate control rig"
     bl_options = {"REGISTER", "UNDO"}
@@ -799,9 +799,9 @@ class OBJECT_OT_generate_rig(bpy.types.Operator):
 
 classes = [
     IK_FK_Properties,
-    OBJECT_OT_Switch_IK_FK,
-    OBJECT_OT_generate_rig,
-    OBJECT_PT_control_rig_panel,
+    UnrealControlRigSwitchIkFkOperator,
+    UnrealControlRigGenerateRigOperator,
+    UnrealControlRigPanel,
 ]
 
 

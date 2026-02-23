@@ -260,7 +260,7 @@ def add_transform(context, target_bone_name, source_bone_name, axis, transform_v
         raise ValueError(f"In CreateTransformMap-AddTransform: Invalid transform type: {transform_type}")
     return new_transform if new_transform else None
 
-class OBJECT_OT_save_foot_z_location(bpy.types.Operator):
+class CreateTransformMapSaveFootZLocationOperator(bpy.types.Operator):
     bl_idname = "object.save_foot_z_location"
     bl_label = "Save Current Foot Z Location"
 
@@ -286,7 +286,7 @@ class OBJECT_OT_save_foot_z_location(bpy.types.Operator):
             self.report({'ERROR'}, f"In CreateTransformMap-SaveFootZLocation-Execute: Failed to save foot z location. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_add_transform(bpy.types.Operator):
+class CreateTransformMapAddTransformOperator(bpy.types.Operator):
     bl_idname = "object.add_transform"
     bl_label = "Add Transform"
 
@@ -317,7 +317,9 @@ class OBJECT_OT_add_transform(bpy.types.Operator):
         self.report({'INFO'}, f"{new_transform.name} added to the list")
         return {'FINISHED'}
 
-class OBJECT_UL_transform_list(bpy.types.UIList):
+class CreateTransformMapTransformListUIList(bpy.types.UIList):
+    bl_idname = "OBJECT_UL_transform_list"
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         transform = item
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
@@ -327,7 +329,7 @@ class OBJECT_UL_transform_list(bpy.types.UIList):
             layout.alignment = 'CENTER'
             layout.label(text=transform.name)
 
-class OBJECT_OT_remove_transform(bpy.types.Operator):
+class CreateTransformMapRemoveTransformOperator(bpy.types.Operator):
     bl_idname = "object.remove_transform"
     bl_label = "Remove Transform"
 
@@ -416,7 +418,7 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-class OBJECT_OT_select_source_bone(bpy.types.Operator):
+class CreateTransformMapSelectSourceBoneOperator(bpy.types.Operator):
     bl_idname = "object.select_source_bone_from_viewport"
     bl_label = "Select Source Bone From Viewport"
     
@@ -452,7 +454,7 @@ class OBJECT_OT_select_source_bone(bpy.types.Operator):
             self.report({'ERROR'}, f"In CreateTransformMap-SelectSourceBone-Execute: Failed to select source bone. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_select_target_bone(bpy.types.Operator):
+class CreateTransformMapSelectTargetBoneOperator(bpy.types.Operator):
     bl_idname = "object.select_target_bone_from_viewport"
     bl_label = "Select Target Bone From Viewport"
     
@@ -481,7 +483,7 @@ class OBJECT_OT_select_target_bone(bpy.types.Operator):
             self.report({'ERROR'}, f"In CreateTransformMap-SelectTargetBone-Execute: Failed to select target bone. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_select_source_bone_chain(bpy.types.Operator):
+class CreateTransformMapSelectSourceBoneChainOperator(bpy.types.Operator):
     bl_idname = "object.select_source_bone_chain"
     bl_label = "Select Source Bone Chain"
     bl_description = "Select a chain of bones in the viewport and set them as the Source Bone Chain"
@@ -515,7 +517,7 @@ class OBJECT_OT_select_source_bone_chain(bpy.types.Operator):
             self.report({'ERROR'}, f"In CreateTransformMap-SelectSourceBoneChain-Execute: Failed to select source bone chain. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_select_target_bone_chain(bpy.types.Operator):
+class CreateTransformMapSelectTargetBoneChainOperator(bpy.types.Operator):
     bl_idname = "object.select_target_bone_chain"
     bl_label = "Select Target Bone Chain"
     bl_description = "Select a chain of bones in the viewport and set them as the Target Bone Chain"
@@ -601,7 +603,7 @@ def bone_mapping_update_callback(self, context):
     debug_print('CreateTransformMape-BoneMappingUpdateCallback: Updating selected bone map')
     bpy.ops.object.select_bone_mapping()
 
-class OBJECT_OT_select_bone_mapping(bpy.types.Operator):
+class CreateTransformMapSelectBoneMappingOperator(bpy.types.Operator):
     bl_idname = "object.select_bone_mapping"
     bl_label = "Select Bone Mapping"
 
@@ -641,7 +643,7 @@ class OBJECT_OT_select_bone_mapping(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-class OBJECT_OT_assign_color_to_armatures(bpy.types.Operator):
+class CreateTransformMapAssignColorToArmaturesOperator(bpy.types.Operator):
     bl_idname = "object.assign_color_to_armatures"
     bl_label = "Refresh Bone Mapping"
 
@@ -681,7 +683,7 @@ def create_bone_transform_json(scene, mode = "export"):
         return bone_transform_json
 
 
-class OBJECT_OT_export_bone_transform(bpy.types.Operator):
+class CreateTransformMapExportBoneTransformOperator(bpy.types.Operator):
     bl_idname = "object.export_bone_transform"
     bl_label = "Export Bone Transforms"
 
@@ -712,7 +714,7 @@ class OBJECT_OT_export_bone_transform(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
-class OBJECT_OT_save_bone_transform(bpy.types.Operator):
+class CreateTransformMapSaveBoneTransformOperator(bpy.types.Operator):
     bl_idname = "object.save_bone_transform"
     bl_label = "Save Bone Mapping"
 
@@ -738,7 +740,7 @@ class OBJECT_OT_save_bone_transform(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-class OBJECT_OT_load_bone_transform(bpy.types.Operator):
+class CreateTransformMapLoadBoneTransformOperator(bpy.types.Operator):
     bl_idname = "object.load_bone_transform"
     bl_label = "Load Bone Transforms"
 
@@ -786,20 +788,20 @@ def register():
     bpy.types.Scene.create_transform_props = bpy.props.PointerProperty(type=CreateTransformProperties)
 
     bpy.utils.register_class(BoneTransformPanel)
-    bpy.utils.register_class(OBJECT_OT_assign_color_to_armatures)
-    bpy.utils.register_class(OBJECT_OT_select_source_bone)
-    bpy.utils.register_class(OBJECT_OT_select_target_bone)
-    bpy.utils.register_class(OBJECT_OT_select_source_bone_chain)
-    bpy.utils.register_class(OBJECT_OT_select_target_bone_chain)
+    bpy.utils.register_class(CreateTransformMapAssignColorToArmaturesOperator)
+    bpy.utils.register_class(CreateTransformMapSelectSourceBoneOperator)
+    bpy.utils.register_class(CreateTransformMapSelectTargetBoneOperator)
+    bpy.utils.register_class(CreateTransformMapSelectSourceBoneChainOperator)
+    bpy.utils.register_class(CreateTransformMapSelectTargetBoneChainOperator)
     bpy.utils.register_class(Transform_item)
-    bpy.utils.register_class(OBJECT_OT_add_transform)
-    bpy.utils.register_class(OBJECT_OT_remove_transform)
-    bpy.utils.register_class(OBJECT_UL_transform_list)
-    bpy.utils.register_class(OBJECT_OT_select_bone_mapping)
-    bpy.utils.register_class(OBJECT_OT_export_bone_transform)
-    bpy.utils.register_class(OBJECT_OT_save_bone_transform)
-    bpy.utils.register_class(OBJECT_OT_load_bone_transform)
-    bpy.utils.register_class(OBJECT_OT_save_foot_z_location)
+    bpy.utils.register_class(CreateTransformMapAddTransformOperator)
+    bpy.utils.register_class(CreateTransformMapRemoveTransformOperator)
+    bpy.utils.register_class(CreateTransformMapTransformListUIList)
+    bpy.utils.register_class(CreateTransformMapSelectBoneMappingOperator)
+    bpy.utils.register_class(CreateTransformMapExportBoneTransformOperator)
+    bpy.utils.register_class(CreateTransformMapSaveBoneTransformOperator)
+    bpy.utils.register_class(CreateTransformMapLoadBoneTransformOperator)
+    bpy.utils.register_class(CreateTransformMapSaveFootZLocationOperator)
 
 
     bpy.types.Scene.selected_source_bone = bpy.props.StringProperty(name="Selected Source Bone")
@@ -864,20 +866,20 @@ def register():
 def unregister():
     bpy.utils.unregister_class(CreateTransformProperties)
     bpy.utils.unregister_class(BoneTransformPanel)
-    bpy.utils.unregister_class(OBJECT_OT_assign_color_to_armatures)
-    bpy.utils.unregister_class(OBJECT_OT_select_source_bone)
-    bpy.utils.unregister_class(OBJECT_OT_select_target_bone)
-    bpy.utils.unregister_class(OBJECT_OT_select_source_bone_chain)
-    bpy.utils.unregister_class(OBJECT_OT_select_target_bone_chain)
+    bpy.utils.unregister_class(CreateTransformMapAssignColorToArmaturesOperator)
+    bpy.utils.unregister_class(CreateTransformMapSelectSourceBoneOperator)
+    bpy.utils.unregister_class(CreateTransformMapSelectTargetBoneOperator)
+    bpy.utils.unregister_class(CreateTransformMapSelectSourceBoneChainOperator)
+    bpy.utils.unregister_class(CreateTransformMapSelectTargetBoneChainOperator)
     bpy.utils.unregister_class(Transform_item)
-    bpy.utils.unregister_class(OBJECT_OT_add_transform)
-    bpy.utils.unregister_class(OBJECT_OT_remove_transform)
-    bpy.utils.unregister_class(OBJECT_UL_transform_list)
-    bpy.utils.unregister_class(OBJECT_OT_select_bone_mapping)
-    bpy.utils.unregister_class(OBJECT_OT_export_bone_transform)
-    bpy.utils.unregister_class(OBJECT_OT_save_bone_transform)
-    bpy.utils.unregister_class(OBJECT_OT_load_bone_transform)
-    bpy.utils.unregister_class(OBJECT_OT_save_foot_z_location)
+    bpy.utils.unregister_class(CreateTransformMapAddTransformOperator)
+    bpy.utils.unregister_class(CreateTransformMapRemoveTransformOperator)
+    bpy.utils.unregister_class(CreateTransformMapTransformListUIList)
+    bpy.utils.unregister_class(CreateTransformMapSelectBoneMappingOperator)
+    bpy.utils.unregister_class(CreateTransformMapExportBoneTransformOperator)
+    bpy.utils.unregister_class(CreateTransformMapSaveBoneTransformOperator)
+    bpy.utils.unregister_class(CreateTransformMapLoadBoneTransformOperator)
+    bpy.utils.unregister_class(CreateTransformMapSaveFootZLocationOperator)
     
     del bpy.types.Scene.create_transform_props
     del bpy.types.Scene.selected_source_bone
