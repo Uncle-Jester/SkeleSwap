@@ -13,8 +13,10 @@ from . import create_transform_map
 from . import create_bone_mapping
 from . import create_skeleswap_template
 from . import create_unreal_control_rig
+from .utils import initialize_persistent_data_store, reset_persistent_data_store_cache
 
 def register():
+    initialize_persistent_data_store()
     skeleswap.register()
     create_transform_map.register()
     create_bone_mapping.register()
@@ -27,6 +29,7 @@ def unregister():
     create_bone_mapping.unregister()
     create_skeleswap_template.unregister()
     create_unreal_control_rig.unregister()
+    reset_persistent_data_store_cache()
 
 if __name__ == "__main__":
     register()

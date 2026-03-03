@@ -4,7 +4,7 @@ import json
 
 from .utils import match_pose_bone_head_pos, match_edit_bone_pos, get_foot_z_location, add_copy_location_constraint, add_copy_rotation_constraint, apply_bone_constraints, copy_edit_bone_between_skeletons, rename_bone # bone transform utils imports
 from .utils import link_animation, set_frame_to, convert_animation_to_shapekeys # facial animation utils imports
-from .utils import get_json_property, debug_print, get_current_json_data_file_path
+from .utils import get_json_property, debug_print, get_persistent_data_store_json_property, get_persistent_data_store_json_keys
 from .utils.dev_utils import validate
 from .utils import duplicate_mesh, delete_mesh, copy_shapekeys, delete_all_shapekeys, create_basis_shape_key, rename_mesh, add_decimate_modifier, transfer_weights, transfer_weights_for_specific_bones, get_all_meshes_of_armature, duplicate_a_list_of_meshes, delete_a_list_of_meshes # mesh utils imports
 from .utils import delete_armature, parent_armature, scale_selected_armature_with_child_meshes, apply_armature, apply_pose_as_rest_pose
@@ -45,7 +45,7 @@ class SkeleSwapProperties(bpy.types.PropertyGroup):
     max=5
     ) # type: ignore """
 
-class OBJECT_PT_skeleswap_main_panel(bpy.types.Panel):
+class SkeleSwapMainPanel(bpy.types.Panel):
     bl_label = "Align Skeleton"
     bl_idname = "OBJECT_PT_skeleswap_main_panel"
     bl_space_type = 'VIEW_3D'
@@ -118,7 +118,7 @@ class OBJECT_PT_skeleswap_main_panel(bpy.types.Panel):
 
 
 
-class OBJECT_PT_facial_operators_panel(bpy.types.Panel):
+class SkeleSwapFacialOperatorsPanel(bpy.types.Panel):
     bl_label = "Facial Animation Setup"
     bl_idname = "OBJECT_PT_facial_operators_panel"
     bl_parent_id = "OBJECT_PT_skeleswap_main_panel"
@@ -160,19 +160,9 @@ def rename_vertex_groups(armature, bone_mapping):
                     obj.vertex_groups[source_bone].name = target_bone
 
 def get_template_config_options():
-    json_file_path = get_current_json_data_file_path("template_configs")
-    debug_print(f"MainPanel-GetTemplateConfigOptions: Getting options from filepath: {json_file_path}")
-    if os.path.exists(json_file_path):
-        with open(json_file_path, 'r') as json_file:
-            try:
-                data = json.load(json_file)
-                return list(data.keys())
-            except json.JSONDecodeError:
-                print(f"Could not load json file from filepath: {json_file_path}")
-                return []
-    else:
-        print("JSON path is not valid")
-    return []
+    options = get_persistent_data_store_json_keys("template_configs")
+    debug_print(f"MainPanel-GetTemplateConfigOptions: Loaded {len(options)} options from persistent cache")
+    return options
 
 def get_template_config_contents(scene):
     if scene.template:
@@ -182,13 +172,15 @@ def get_template_config_contents(scene):
         bone_transform_property_name = template_data.get("transform_map")
         if bone_mapping_property_name and bone_transform_property_name:
             debug_print(f"MainPanel-GetTemplateConfigContents: bone_mapping: {bone_mapping_property_name}, transform_map: {bone_transform_property_name}")
-            bone_mapping_filepath = get_current_json_data_file_path("bone_mappings")
-            transform_map_filepath = get_current_json_data_file_path("bone_transforms")
-            template_data["bone_mapping"] = get_json_property(bone_mapping_filepath, bone_mapping_property_name)
-            template_data["transform_map"] = get_json_property(transform_map_filepath, bone_transform_property_name)
+            bone_mapping = get_persistent_data_store_json_property("bone_mappings", bone_mapping_property_name)
+            transform_map = get_persistent_data_store_json_property("bone_transforms", bone_transform_property_name)
+            if not bone_mapping or not transform_map:
+                debug_print("MainPanel-GetTemplateConfigContents: Could not resolve mapping or transform map from persistent store")
+                return {}
+            template_data["bone_mapping"] = bone_mapping
+            template_data["transform_map"] = transform_map
             return template_data
-    else:
-        return {}
+    return {}
 
 def set_template_config_contents(scene, config):
     validate(
@@ -240,7 +232,7 @@ def update_target_armature(self, context):
             bpy.context.scene.target_armature = None
             debug_print("MainPanel-SelectTargetArmature: Target Armature is not an armature, resetting to None")
 
-class OBJECT_OT_select_template_config(bpy.types.Operator):
+class SkeleSwapSelectTemplateConfigOperator(bpy.types.Operator):
     bl_idname = "object.select_template_config"
     bl_label = "Select Template"
 
@@ -252,32 +244,21 @@ class OBJECT_OT_select_template_config(bpy.types.Operator):
     def execute(self, context):
         try:
             selected_template_name = context.scene.selected_template_config
-            json_file_path = get_current_json_data_file_path("template_configs")
             debug_print(f"MainPanel-SelectTemplateConfig-Execute: Template Selected: {selected_template_name}")
-
-            if not os.path.exists(json_file_path):
-                self.report({'WARNING'}, "Template config file was not found")
+            template_contents = get_persistent_data_store_json_property("template_configs", selected_template_name)
+            if not template_contents:
+                self.report({'WARNING'}, "Selected template config is invalid or empty")
                 return {'CANCELLED'}
-
-            with open(json_file_path, 'r') as json_file:
-                data = json.load(json_file)
-                template_contents = data.get(selected_template_name) if data else None
-                if not template_contents:
-                    self.report({'WARNING'}, "Selected template config is invalid or empty")
-                    return {'CANCELLED'}
-                debug_print(f"MainPanel-SelectTemplateConfig-Execute: Contents of selected template: {template_contents}")
-                set_template_config_contents(context.scene, template_contents)
+            debug_print(f"MainPanel-SelectTemplateConfig-Execute: Contents of selected template: {template_contents}")
+            set_template_config_contents(context.scene, template_contents)
 
             self.report({'INFO'}, f"Selected Template: {selected_template_name}")
             return {'FINISHED'}
-        except json.JSONDecodeError as e:
-            self.report({'ERROR'}, f"In MainPanel-SelectTemplateConfig-Execute: Failed to decode template config json. Error: {e}")
-            return {'CANCELLED'}
         except Exception as e:
             self.report({'ERROR'}, f"In MainPanel-SelectTemplateConfig-Execute: Failed to select template config. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_setup_scene_for_epic_skeleton(bpy.types.Operator):
+class SkeleSwapSetupSceneForEpicSkeletonOperator(bpy.types.Operator):
     bl_idname = "object.setup_scene_for_epic_skeleton"
     bl_label = "Setup Scene for UE5"
     bl_options = {'REGISTER', 'UNDO'}
@@ -302,7 +283,7 @@ class OBJECT_OT_setup_scene_for_epic_skeleton(bpy.types.Operator):
             self.report({'ERROR'}, f"In MainPanel-SetupSceneForEpicSkeleton-Execute: Failed to setup scene for epic skeleton. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_adjust_scale(bpy.types.Operator):
+class SkeleSwapAdjustScaleOperator(bpy.types.Operator):
     bl_idname = "object.adjust_scale"
     bl_label = "Rescales Source Armature and its child meshes"
     bl_options = {'REGISTER', 'UNDO'}
@@ -331,7 +312,7 @@ class OBJECT_OT_adjust_scale(bpy.types.Operator):
 
 
     
-class OBJECT_OT_rename_vertex_groups(bpy.types.Operator):
+class SkeleSwapRenameVertexGroupsOperator(bpy.types.Operator):
     bl_idname = "object.rename_vertex_groups"
     bl_label = "Rename Vertex Groups"
     bl_description = "Rename vertex groups, to match the epic mannequin"
@@ -373,7 +354,7 @@ class OBJECT_OT_rename_vertex_groups(bpy.types.Operator):
             debug_print(f"MainPanel-RenameVertexGroups-Execute: Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_import_t_quinn(bpy.types.Operator):
+class SkeleSwapImportTQuinnOperator(bpy.types.Operator):
     bl_idname = "object.import_t_quinn"
     bl_label = "Import Quinn in T Pose"
     bl_description = "Import T pose Quinn"
@@ -393,7 +374,7 @@ class OBJECT_OT_import_t_quinn(bpy.types.Operator):
         
         return {'FINISHED'}
 
-class OBJECT_OT_move_pelvis(bpy.types.Operator):
+class SkeleSwapMovePelvisOperator(bpy.types.Operator):
     bl_idname = "object.move_pelvis"
     bl_label = "Move Pelvis"
     bl_description = "Move Pelvis"
@@ -432,7 +413,7 @@ class OBJECT_OT_move_pelvis(bpy.types.Operator):
             debug_print(f"MainPanel-MovePelvis: Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_match_bone_positions(bpy.types.Operator):
+class SkeleSwapMatchBonePositionsOperator(bpy.types.Operator):
     bl_idname = "object.match_bone_positions"
     bl_label = "Match Bone positions"
     bl_description = "Match the positions of the Epic SKM to the MB lab SKM"
@@ -484,7 +465,7 @@ class OBJECT_OT_match_bone_positions(bpy.types.Operator):
         
         return {'FINISHED'}
 
-class OBJECT_OT_enable_debug_print(bpy.types.Operator):
+class SkeleSwapEnableDebugPrintOperator(bpy.types.Operator):
     bl_idname = "object.enable_debug_print"
     bl_label = "Enable Debug Print"
     bl_description = "Checkbox, which enables debug print"
@@ -498,7 +479,7 @@ class OBJECT_OT_enable_debug_print(bpy.types.Operator):
             self.report({'ERROR'}, f"In MainPanel-EnableDebugPrint-Execute: Failed to toggle debug print. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_open_blend_file_browser(bpy.types.Operator):
+class SkeleSwapOpenBlendFileBrowserOperator(bpy.types.Operator):
     bl_idname = "object.open_blend_file_browser"
     bl_label = "Browse For Blend File"
     bl_description = "Select a .blend file for shapekey animation"
@@ -525,7 +506,7 @@ class OBJECT_OT_open_blend_file_browser(bpy.types.Operator):
             self.report({'ERROR'}, f"In MainPanel-OpenBlendFileBrowser-Execute: Failed to set blend file path. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_link_blendshapes_animation(bpy.types.Operator):
+class SkeleSwapLinkBlendshapesAnimationOperator(bpy.types.Operator):
     bl_idname = "object.link_blendshapes_animation"
     bl_label = "Link Blendshapes Animation"
     bl_description = "Link the MB lab face rig animation of the blendshapes, needed to convert them to facekeys"
@@ -591,7 +572,7 @@ class OBJECT_OT_link_blendshapes_animation(bpy.types.Operator):
             self.report({'ERROR'}, f"In MainPanel-LinkBlendShapesAnimations-Execute: Failed to link animation. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_create_ar_kit_shape_keys(bpy.types.Operator):
+class SkeleSwapCreateArKitShapeKeysOperator(bpy.types.Operator):
     bl_idname = "object.create_ar_kit_shape_keys"
     bl_label = "Create ARKIT 52 Shape Keys"
     bl_description = "Creates the shapekeys needed for ARKIT based on the blendshapes animation"
@@ -640,7 +621,7 @@ class OBJECT_OT_create_ar_kit_shape_keys(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class OBJECT_OT_remove_face_rig(bpy.types.Operator):
+class SkeleSwapRemoveFaceRigOperator(bpy.types.Operator):
     bl_idname = "object.remove_face_rig"
     bl_label = "Remove Face Rig"
     bl_description = "Removes the face rig"
@@ -678,7 +659,7 @@ class OBJECT_OT_remove_face_rig(bpy.types.Operator):
             debug_print(f"MainPanel-RemoveFaceRig-Execute: Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_reparent_breast_bones(bpy.types.Operator):
+class SkeleSwapReparentBreastBonesOperator(bpy.types.Operator):
     bl_idname = "object.reparent_breast_bones"
     bl_label = "Re-Parent Breast Bones"
     bl_description = "Places The MB Lab breast bones onto the epic skeleton"
@@ -721,7 +702,7 @@ class OBJECT_OT_reparent_breast_bones(bpy.types.Operator):
             return {"CANCELLED"}
         return {'FINISHED'}
 # ________________________________________________________
-class OBJECT_OT_replace_skeleton(bpy.types.Operator):
+class SkeleSwapReplaceSkeletonOperator(bpy.types.Operator):
     bl_idname = "object.replace_skeleton"
     bl_label = "Replace Skeleton"
     bl_description = "Replaces existing skeleton to the eipc skeleton"
@@ -854,7 +835,7 @@ class OBJECT_OT_replace_skeleton(bpy.types.Operator):
            return {"CANCELLED"} 
         return {'FINISHED'}
 
-class OBJECT_OT_fix_hand_ik_bones(bpy.types.Operator):
+class SkeleSwapFixHandIkBonesOperator(bpy.types.Operator):
     bl_idname = "object.fix_hand_ik_bones"
     bl_label = "Add&Apply Constraint to IK bones"
     bl_description = "Adds and applies copy location&rotation constraints to the hand&gun IK bones"
@@ -887,7 +868,7 @@ class OBJECT_OT_fix_hand_ik_bones(bpy.types.Operator):
                 return {"CANCELLED"}
         return {'FINISHED'}
 
-""" class OBJECT_OT_create_lods(bpy.types.Operator):
+""" class SkeleSwapCreateLodsOperator(bpy.types.Operator):
     bl_idname = "object.create_lods"
     bl_label = "Create LODs"
     bl_description = "Creates between 1 and 5 LODs, based on the number input"
@@ -920,7 +901,7 @@ class OBJECT_OT_fix_hand_ik_bones(bpy.types.Operator):
         self.report({'INFO'}, f"{user_input} LOD(s) created successfully.")
         return {'FINISHED'} """
     
-class OBJECT_OT_export_character_as_FBX(bpy.types.Operator):
+class SkeleSwapExportCharacterAsFbxOperator(bpy.types.Operator):
     bl_idname = "object.export_character_as_fbx"
     bl_label = "Export Character as FBX"
     bl_options = {'REGISTER', 'UNDO'}
@@ -975,25 +956,25 @@ def register():
     bpy.types.Scene.source_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_source_armature)
     bpy.types.Scene.target_armature = bpy.props.PointerProperty(type=bpy.types.Object, update=update_target_armature)
 
-    bpy.utils.register_class(OBJECT_PT_skeleswap_main_panel)
-    bpy.utils.register_class(OBJECT_OT_enable_debug_print)
-    bpy.utils.register_class(OBJECT_OT_setup_scene_for_epic_skeleton)
-    bpy.utils.register_class(OBJECT_OT_adjust_scale)
-    bpy.utils.register_class(OBJECT_OT_rename_vertex_groups)
-    bpy.utils.register_class(OBJECT_OT_import_t_quinn)
-    bpy.utils.register_class(OBJECT_OT_move_pelvis)
-    bpy.utils.register_class(OBJECT_OT_match_bone_positions)
-    bpy.utils.register_class(OBJECT_OT_reparent_breast_bones)
-    bpy.utils.register_class(OBJECT_OT_open_blend_file_browser)
-    bpy.utils.register_class(OBJECT_OT_link_blendshapes_animation)
-    bpy.utils.register_class(OBJECT_OT_create_ar_kit_shape_keys)
-    bpy.utils.register_class(OBJECT_OT_remove_face_rig)
-    bpy.utils.register_class(OBJECT_OT_replace_skeleton)
-    bpy.utils.register_class(OBJECT_OT_fix_hand_ik_bones)
-    #bpy.utils.register_class(OBJECT_OT_create_lods)
-    bpy.utils.register_class(OBJECT_OT_select_template_config)
-    bpy.utils.register_class(OBJECT_OT_export_character_as_FBX)
-    bpy.utils.register_class(OBJECT_PT_facial_operators_panel)
+    bpy.utils.register_class(SkeleSwapMainPanel)
+    bpy.utils.register_class(SkeleSwapEnableDebugPrintOperator)
+    bpy.utils.register_class(SkeleSwapSetupSceneForEpicSkeletonOperator)
+    bpy.utils.register_class(SkeleSwapAdjustScaleOperator)
+    bpy.utils.register_class(SkeleSwapRenameVertexGroupsOperator)
+    bpy.utils.register_class(SkeleSwapImportTQuinnOperator)
+    bpy.utils.register_class(SkeleSwapMovePelvisOperator)
+    bpy.utils.register_class(SkeleSwapMatchBonePositionsOperator)
+    bpy.utils.register_class(SkeleSwapReparentBreastBonesOperator)
+    bpy.utils.register_class(SkeleSwapOpenBlendFileBrowserOperator)
+    bpy.utils.register_class(SkeleSwapLinkBlendshapesAnimationOperator)
+    bpy.utils.register_class(SkeleSwapCreateArKitShapeKeysOperator)
+    bpy.utils.register_class(SkeleSwapRemoveFaceRigOperator)
+    bpy.utils.register_class(SkeleSwapReplaceSkeletonOperator)
+    bpy.utils.register_class(SkeleSwapFixHandIkBonesOperator)
+    #bpy.utils.register_class(SkeleSwapCreateLodsOperator)
+    bpy.utils.register_class(SkeleSwapSelectTemplateConfigOperator)
+    bpy.utils.register_class(SkeleSwapExportCharacterAsFbxOperator)
+    bpy.utils.register_class(SkeleSwapFacialOperatorsPanel)
 
     bpy.types.Scene.selected_template_config = bpy.props.EnumProperty(
         name="Template",
@@ -1009,26 +990,26 @@ def register():
         return None 
     bpy.app.timers.register( force_select_template_config, first_interval=0.1 ) # force the inital selected template to run the execute function to load necessary data
 def unregister():
-    bpy.utils.unregister_class(OBJECT_PT_skeleswap_main_panel)
-    bpy.utils.unregister_class(OBJECT_OT_enable_debug_print)
-    bpy.utils.unregister_class(OBJECT_OT_setup_scene_for_epic_skeleton)
-    bpy.utils.unregister_class(OBJECT_OT_adjust_scale)
-    bpy.utils.unregister_class(OBJECT_OT_rename_vertex_groups)
-    bpy.utils.unregister_class(OBJECT_OT_import_t_quinn)
-    bpy.utils.unregister_class(OBJECT_OT_move_pelvis)
-    bpy.utils.unregister_class(OBJECT_OT_match_bone_positions)
-    bpy.utils.unregister_class(OBJECT_OT_reparent_breast_bones)
-    bpy.utils.unregister_class(OBJECT_OT_open_blend_file_browser)
-    bpy.utils.unregister_class(OBJECT_OT_link_blendshapes_animation)
-    bpy.utils.unregister_class(OBJECT_OT_create_ar_kit_shape_keys)
-    bpy.utils.unregister_class(OBJECT_OT_remove_face_rig)
-    bpy.utils.unregister_class(OBJECT_OT_replace_skeleton)
-    bpy.utils.unregister_class(OBJECT_OT_fix_hand_ik_bones)
-    #bpy.utils.unregister_class(OBJECT_OT_create_lods)
-    bpy.utils.unregister_class(OBJECT_OT_select_template_config)
+    bpy.utils.unregister_class(SkeleSwapMainPanel)
+    bpy.utils.unregister_class(SkeleSwapEnableDebugPrintOperator)
+    bpy.utils.unregister_class(SkeleSwapSetupSceneForEpicSkeletonOperator)
+    bpy.utils.unregister_class(SkeleSwapAdjustScaleOperator)
+    bpy.utils.unregister_class(SkeleSwapRenameVertexGroupsOperator)
+    bpy.utils.unregister_class(SkeleSwapImportTQuinnOperator)
+    bpy.utils.unregister_class(SkeleSwapMovePelvisOperator)
+    bpy.utils.unregister_class(SkeleSwapMatchBonePositionsOperator)
+    bpy.utils.unregister_class(SkeleSwapReparentBreastBonesOperator)
+    bpy.utils.unregister_class(SkeleSwapOpenBlendFileBrowserOperator)
+    bpy.utils.unregister_class(SkeleSwapLinkBlendshapesAnimationOperator)
+    bpy.utils.unregister_class(SkeleSwapCreateArKitShapeKeysOperator)
+    bpy.utils.unregister_class(SkeleSwapRemoveFaceRigOperator)
+    bpy.utils.unregister_class(SkeleSwapReplaceSkeletonOperator)
+    bpy.utils.unregister_class(SkeleSwapFixHandIkBonesOperator)
+    #bpy.utils.unregister_class(SkeleSwapCreateLodsOperator)
+    bpy.utils.unregister_class(SkeleSwapSelectTemplateConfigOperator)
     bpy.utils.unregister_class(SkeleSwapProperties)
-    bpy.utils.unregister_class(OBJECT_OT_export_character_as_FBX)
-    bpy.utils.unregister_class(OBJECT_PT_facial_operators_panel)
+    bpy.utils.unregister_class(SkeleSwapExportCharacterAsFbxOperator)
+    bpy.utils.unregister_class(SkeleSwapFacialOperatorsPanel)
     del bpy.types.Scene.skeleswap_props
     del bpy.types.Scene.enable_debug_print
     del bpy.types.Scene.selected_template_config
