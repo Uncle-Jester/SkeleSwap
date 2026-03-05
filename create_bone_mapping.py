@@ -5,6 +5,7 @@ import os
 from .utils.bone_mapping_utils import map_bone_lists
 from .utils import save_to_persistent_data_store_json_property
 from .utils.dev_utils import validate
+_PANEL_SUPPORTS_BL_ORDER = hasattr(bpy.types.Panel, "bl_order")
 
 def update_source_armature(self, context):
     armature = bpy.context.scene.source_armature
@@ -44,7 +45,10 @@ class CreateBoneMappingPanel(bpy.types.Panel):
     bl_idname = "OBJECT_PT_bone_mapping_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Create Bone Mapping"
+    bl_category = "SkeleSwap"
+    bl_options = {'DEFAULT_CLOSED'}
+    if _PANEL_SUPPORTS_BL_ORDER:
+        bl_order = 1
 
     def draw(self, context):
         layout = self.layout

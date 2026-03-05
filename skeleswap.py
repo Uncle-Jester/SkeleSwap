@@ -16,6 +16,7 @@ addon_dir = os.path.dirname(os.path.realpath(__file__))
 utils_dir = os.path.join(addon_dir, "utils")
 imports_dir = os.path.join(utils_dir, "blends_and_fbx")
 data_dir = os.path.join(utils_dir, "data")
+_PANEL_SUPPORTS_BL_ORDER = hasattr(bpy.types.Panel, "bl_order")
 
 bpy.types.Scene.enable_debug_print = bpy.props.BoolProperty(
     name="Enable Debug Print",
@@ -51,6 +52,8 @@ class SkeleSwapMainPanel(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'SkeleSwap'
+    if _PANEL_SUPPORTS_BL_ORDER:
+        bl_order = 0
 
     def draw(self, context):
         scene = context.scene
