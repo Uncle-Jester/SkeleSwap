@@ -3,7 +3,7 @@ import os
 import json
 
 from .utils import match_pose_bone_head_pos, match_edit_bone_pos, get_foot_z_location, add_copy_location_constraint, add_copy_rotation_constraint, apply_bone_constraints, copy_edit_bone_between_skeletons, rename_bone # bone transform utils imports
-from .utils import link_animation, set_frame_to, convert_animation_to_shapekeys # facial animation utils imports
+from .utils import link_animation, set_frame_to, convert_animation_to_shapekeys, convert_transform_animation_to_shapekeys # facial animation utils imports
 from .utils import get_json_property, debug_print, get_persistent_data_store_json_property, get_persistent_data_store_json_keys
 from .utils.dev_utils import validate
 from .utils import duplicate_mesh, delete_mesh, copy_shapekeys, delete_all_shapekeys, create_basis_shape_key, rename_mesh, add_decimate_modifier, transfer_weights, transfer_weights_for_specific_bones, get_all_meshes_of_armature, duplicate_a_list_of_meshes, delete_a_list_of_meshes # mesh utils imports
@@ -16,6 +16,7 @@ addon_dir = os.path.dirname(os.path.realpath(__file__))
 utils_dir = os.path.join(addon_dir, "utils")
 imports_dir = os.path.join(utils_dir, "blends_and_fbx")
 data_dir = os.path.join(utils_dir, "data")
+_PANEL_SUPPORTS_BL_ORDER = hasattr(bpy.types.Panel, "bl_order")
 
 bpy.types.Scene.enable_debug_print = bpy.props.BoolProperty(
     name="Enable Debug Print",
@@ -51,6 +52,8 @@ class SkeleSwapMainPanel(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'SkeleSwap'
+    if _PANEL_SUPPORTS_BL_ORDER:
+        bl_order = 0
 
     def draw(self, context):
         scene = context.scene
@@ -579,6 +582,8 @@ class SkeleSwapCreateArKitShapeKeysOperator(bpy.types.Operator):
 
     def execute(self, context):
         source_armature = context.scene.source_armature
+        previous_active_object = context.view_layer.objects.active
+        duplicated_mesh_list = []
         try:
             validate(
                 [source_armature],
@@ -598,24 +603,57 @@ class SkeleSwapCreateArKitShapeKeysOperator(bpy.types.Operator):
             duplicated_mesh_list = duplicate_a_list_of_meshes(source_mesh_list)
             
             for index, duplicated_mesh in enumerate(duplicated_mesh_list):
+                source_mesh = source_mesh_list[index]
                 delete_all_shapekeys(duplicated_mesh)
-                apply_armature(duplicated_mesh, source_armature)
-                create_basis_shape_key(duplicated_mesh)
 
-                bpy.ops.object.select_all(action='DESELECT')
-                source_mesh_list[index].select_set(True)
-                duplicated_mesh.select_set(True)
-                bpy.context.view_layer.objects.active = duplicated_mesh
-                convert_animation_to_shapekeys(duplicated_mesh, shapekey_names)
-                copy_shapekeys(duplicated_mesh, source_mesh_list[index])
+                has_armature_modifier = any(
+                    modifier.type == 'ARMATURE' and modifier.object == source_armature
+                    for modifier in duplicated_mesh.modifiers
+                )
+                is_bone_parented = (
+                    source_mesh.parent == source_armature
+                    and source_mesh.parent_type == 'BONE'
+                )
+                if is_bone_parented:
+                    create_basis_shape_key(duplicated_mesh)
+                    convert_transform_animation_to_shapekeys(
+                        source_mesh,
+                        duplicated_mesh,
+                        shapekey_names,
+                    )
+                elif has_armature_modifier:
+                    apply_armature(duplicated_mesh, source_armature)
+                    create_basis_shape_key(duplicated_mesh)
+                    bpy.ops.object.select_all(action='DESELECT')
+                    source_mesh.select_set(True)
+                    duplicated_mesh.select_set(True)
+                    bpy.context.view_layer.objects.active = duplicated_mesh
+                    convert_animation_to_shapekeys(duplicated_mesh, shapekey_names)
+                else:
+                    create_basis_shape_key(duplicated_mesh)
+                    convert_transform_animation_to_shapekeys(
+                        source_mesh,
+                        duplicated_mesh,
+                        shapekey_names,
+                    )
+
+                copy_shapekeys(duplicated_mesh, source_mesh)
                 set_frame_to(1)
-                source_mesh_list[index].select_set(False)
+                source_mesh.select_set(False)
                 duplicated_mesh.select_set(False)
             
             delete_a_list_of_meshes(duplicated_mesh_list)
-            bpy.ops.object.mode_set(mode='OBJECT')
+            duplicated_mesh_list = []
+            if previous_active_object and previous_active_object.name in context.view_layer.objects:
+                context.view_layer.objects.active = previous_active_object
         
         except Exception as e:
+            debug_print(f"MainPanel-CreateARKITShapeKeys-Execute: Error: {e}")
+            if duplicated_mesh_list:
+                try:
+                    delete_a_list_of_meshes(duplicated_mesh_list)
+                except Exception as cleanup_error:
+                    debug_print(f"MainPanel-CreateARKITShapeKeys-Execute: Cleanup error: {cleanup_error}")
             self.report({'ERROR'}, f"Failed to create shapekeys. Error:{e}")
             return {'CANCELLED'}
 

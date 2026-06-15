@@ -1,6 +1,7 @@
 import bpy # type: ignore
 from .utils import debug_print, save_to_persistent_data_store_json_property, get_persistent_data_store_json_keys
 from .utils.dev_utils import validate
+_PANEL_SUPPORTS_BL_ORDER = hasattr(bpy.types.Panel, "bl_order")
 
 def get_bone_mapping_options():
     return get_persistent_data_store_json_keys("bone_mappings")
@@ -19,11 +20,14 @@ def create_template_json(props):
     return props.get_data()
 
 class CreateSkeleSwapTemplatePanel(bpy.types.Panel):
-    bl_label = "Create SkeleSwap Template"
+    bl_label = "SkeleSwap Template Creator"
     bl_idname = "OBJECT_PT_create_template_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Create SkeleSwap Template"
+    bl_category = "SkeleSwap"
+    bl_options = {'DEFAULT_CLOSED'}
+    if _PANEL_SUPPORTS_BL_ORDER:
+        bl_order = 3
 
     def draw(self, context):
         layout = self.layout
@@ -32,7 +36,7 @@ class CreateSkeleSwapTemplatePanel(bpy.types.Panel):
         
         row = layout.row()
         row.label(text="Template Name")
-        row.prop(create_template_properties, "template_name")
+        row.prop(create_template_properties, "template_name", text="")
 
 
         row = layout.row(align=True)

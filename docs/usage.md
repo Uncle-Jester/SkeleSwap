@@ -103,7 +103,7 @@ If template is not MB-specific:
 ### Technical notes
 
 - The addon links an action from a `.blend` library, assigns it to the face rig armature, then makes it local.
-- Shapekey creation duplicates source meshes, bakes one frame per ARKit name, copies keys back to original meshes, then deletes duplicates.
+- Shapekey creation duplicates source meshes, bakes one frame per ARKit name, copies keys back to original meshes, then deletes duplicates. Bone-parented rigid meshes are baked from their animated object transforms.
 - If no separate face rig is found, select the face rig armature in viewport and run link/remove again.
 
 ## Generating a Control Rig

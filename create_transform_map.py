@@ -6,6 +6,7 @@ from .utils import rotate_bone, match_pose_bone_head_pos, match_edit_bone_pos, c
 from .utils import is_flipped_unreal_bone
 from .utils import debug_print, save_to_persistent_data_store_json_property, get_persistent_data_store_json_property, get_persistent_data_store_json_keys
 from .utils.dev_utils import validate
+_PANEL_SUPPORTS_BL_ORDER = hasattr(bpy.types.Panel, "bl_order")
 
 class CreateTransformProperties(bpy.types.PropertyGroup):
     create_transform_foot_z_location: bpy.props.StringProperty(name="Foot Z Location", default="")  # type: ignore
@@ -34,11 +35,14 @@ class CreateTransformProperties(bpy.types.PropertyGroup):
         return data
     
 class BoneTransformPanel(bpy.types.Panel):
-    bl_label = "Armature and Bone Selector"
+    bl_label = "Transform Map Creator"
     bl_idname = "OBJECT_PT_armature_bone_selector"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Bone Transform Mapping"
+    bl_category = "SkeleSwap"
+    bl_options = {'DEFAULT_CLOSED'}
+    if _PANEL_SUPPORTS_BL_ORDER:
+        bl_order = 2
 
     def draw(self, context):
         layout = self.layout

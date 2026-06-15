@@ -121,9 +121,11 @@ def copy_shapekeys(source_mesh, target_mesh):
         if shape_key.name == 'Basis' or shape_key.name == 'basis':
             continue
         
-        target_mesh.shape_key_add(name=shape_key.name, from_mix=False)
-        
-        target_key = target_mesh.data.shape_keys.key_blocks[shape_key.name]
+        target_key = target_mesh.data.shape_keys.key_blocks.get(shape_key.name)
+        if not target_key:
+            target_key = target_mesh.shape_key_add(name=shape_key.name, from_mix=False)
+
+        target_key.mute = False
         target_key.data.foreach_set(
             "co", [co for vertex in shape_key.data for co in vertex.co]
         )
