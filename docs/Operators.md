@@ -48,7 +48,7 @@ This file documents the currently registered operators and the fields that drive
 |---|---|---|---|
 | Browse .blend file | `object.open_blend_file_browser` | Set blend source path. | Opens file browser, validates `.blend` extension, stores path on scene property. |
 | Link facial animation | `object.link_blendshapes_animation` | Load face action onto face rig armature. | Resolves face rig armature (by name contains `face_rig`, selected armature fallback, or source armature for non-separate setups), links action from library, assigns action to rig, makes linked action local. MB template uses bundled blend/action defaults. |
-| Create Shapekeys from Animation | `object.create_ar_kit_shape_keys` | Convert frame-by-frame facial action into shape keys. | Reads ARKit key names from `blendshapes.json`, duplicates source meshes, applies armature, converts animation frames to shape keys, copies generated keys back to originals, deletes duplicates. |
+| Create Shapekeys from Animation | `object.create_ar_kit_shape_keys` | Convert frame-by-frame facial action into shape keys. | Reads ARKit key names from `blendshapes.json`, duplicates source meshes, bakes armature deformation or bone-parented object transforms, copies generated keys back to originals, and deletes duplicates. |
 | Remove Face Rig | `object.remove_face_rig` | Cleanup helper after shapekey conversion. | Finds face rig armature(s) by naming (`face_rig` / `phoneme_rig`) or selected fallback; MB template path removes rig collection, otherwise deletes armature object. |
 
 ## 3) Control Rig Panel (child of SkeleSwap)

@@ -11,7 +11,7 @@ from .dev_utils import (
     initialize_persistent_data_store,
     reset_persistent_data_store_cache,
 )
-from .facial_animation_utils import link_animation, set_frame_to, convert_animation_to_shapekeys
+from .facial_animation_utils import link_animation, set_frame_to, convert_animation_to_shapekeys, convert_transform_animation_to_shapekeys
 from .mesh_utilts import duplicate_mesh, delete_mesh, copy_shapekeys, delete_all_shapekeys, create_basis_shape_key, add_decimate_modifier, rename_mesh, transfer_weights, transfer_weights_for_specific_bones, get_all_meshes_of_armature, delete_a_list_of_meshes, duplicate_a_list_of_meshes
 from .armature_utils import delete_armature, parent_armature, scale_selected_armature_with_child_meshes, apply_armature, apply_pose_as_rest_pose, clear_all_armatures, find_armature_by_name
 from .blend_operation_utils import delete_collection

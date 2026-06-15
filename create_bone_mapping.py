@@ -56,7 +56,7 @@ class CreateBoneMappingPanel(bpy.types.Panel):
 
         row = layout.row()
         row.label(text="Bone Map Name")
-        row.prop(scene, "input_text")
+        row.prop(scene, "input_text", text="")
 
         row = layout.row()
         row.prop(scene, "source_armature", text="Source Armature")

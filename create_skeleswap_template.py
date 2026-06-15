@@ -36,7 +36,7 @@ class CreateSkeleSwapTemplatePanel(bpy.types.Panel):
         
         row = layout.row()
         row.label(text="Template Name")
-        row.prop(create_template_properties, "template_name")
+        row.prop(create_template_properties, "template_name", text="")
 
 
         row = layout.row(align=True)
