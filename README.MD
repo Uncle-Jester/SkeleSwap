@@ -6,6 +6,13 @@
 - **Efficiency**: Once you create the configuration for a pair of skeletons. You can resuse the template, and change skeletons with just a few clicks.
 - **Extensibility**: Users can add new skeletons and create automated workflows for their specific needs.
 
+## How to Support
+To support the sleepless nights I spend debugging my projects, you might consider to
+</br>
+<a href="https://buymeacoffee.com/brownbus_the_jester" target="_blank">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="150">
+</a>   
+
 ## Key Features
 
 ### **In-Built Skeleton Swap Support**
