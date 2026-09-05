@@ -1,35 +1,13 @@
 import bpy # type: ignore
-import os
-import json
-
-from .utils import debug_print, save_to_persistent_data_store_json_property, get_current_json_data_file_path
-
-addon_dir = os.path.dirname(os.path.realpath(__file__))
-utils_dir = os.path.join(addon_dir, "utils")
-data_dir = os.path.join(utils_dir, "data")
+from .utils import debug_print, save_to_persistent_data_store_json_property, get_persistent_data_store_json_keys
+from .utils.dev_utils import validate
+_PANEL_SUPPORTS_BL_ORDER = hasattr(bpy.types.Panel, "bl_order")
 
 def get_bone_mapping_options():
-    json_file_path = get_current_json_data_file_path("bone_mappings")
-
-    if os.path.exists(json_file_path):
-        with open(json_file_path, 'r') as json_file:
-            try:
-                data = json.load(json_file)
-                return list(data.keys())
-            except json.JSONDecodeError:
-                return []
-    return []
+    return get_persistent_data_store_json_keys("bone_mappings")
 
 def get_transform_map_options():
-    json_file_path = get_current_json_data_file_path("bone_transforms")
-    if os.path.exists(json_file_path):
-        with open(json_file_path, 'r') as json_file:
-            try:
-                data = json.load(json_file)
-                return list(data.keys())
-            except json.JSONDecodeError:
-                return []
-    return []
+    return get_persistent_data_store_json_keys("bone_transforms")
 
 
 def bone_mapping_t_update_callback(self, context):
@@ -41,12 +19,15 @@ def transform_map_t_update_callback(self, context):
 def create_template_json(props):
     return props.get_data()
 
-class OBJECT_PT_create_template_panel(bpy.types.Panel):
-    bl_label = "Create SkeleSwap Template"
+class CreateSkeleSwapTemplatePanel(bpy.types.Panel):
+    bl_label = "SkeleSwap Template Creator"
     bl_idname = "OBJECT_PT_create_template_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Create SkeleSwap Template"
+    bl_category = "SkeleSwap"
+    bl_options = {'DEFAULT_CLOSED'}
+    if _PANEL_SUPPORTS_BL_ORDER:
+        bl_order = 3
 
     def draw(self, context):
         layout = self.layout
@@ -55,7 +36,7 @@ class OBJECT_PT_create_template_panel(bpy.types.Panel):
         
         row = layout.row()
         row.label(text="Template Name")
-        row.prop(create_template_properties, "template_name")
+        row.prop(create_template_properties, "template_name", text="")
 
 
         row = layout.row(align=True)
@@ -74,7 +55,7 @@ class OBJECT_PT_create_template_panel(bpy.types.Panel):
         row.label(text="Save Template")
         row.operator("object.save_template", text="Save Template")
 
-class OBJECT_OT_select_T_bone_mapping(bpy.types.Operator):
+class CreateSkeleSwapTemplateSelectTBoneMappingOperator(bpy.types.Operator):
     bl_idname = "object.select_t_bone_mapping"
     bl_label = "Select Bone Mapping"
 
@@ -84,13 +65,17 @@ class OBJECT_OT_select_T_bone_mapping(bpy.types.Operator):
     ) # type: ignore
 
     def execute(self, context):
-        create_template_properties = context.scene.create_template_properties
-        selected_mapping_name = create_template_properties.selected_bone_mapping
-        debug_print(f"CreateTemplate: Selected bone mapping: {selected_mapping_name}")
-        self.report({'INFO'}, f"CreateTemplate: Selected bone mapping: {selected_mapping_name}")
-        return {'FINISHED'}
+        try:
+            create_template_properties = context.scene.create_template_properties
+            selected_mapping_name = create_template_properties.selected_bone_mapping
+            debug_print(f"CreateTemplate: Selected bone mapping: {selected_mapping_name}")
+            self.report({'INFO'}, f"CreateTemplate: Selected bone mapping: {selected_mapping_name}")
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateTemplate-SelectTBoneMapping-Execute: Failed to select bone mapping. Error: {e}")
+            return {'CANCELLED'}
 
-class OBJECT_OT_select_T_transform_map(bpy.types.Operator):
+class CreateSkeleSwapTemplateSelectTTransformMapOperator(bpy.types.Operator):
     bl_idname = "object.select_t_transform_map"
     bl_label = "Select Transform Map"
 
@@ -100,29 +85,41 @@ class OBJECT_OT_select_T_transform_map(bpy.types.Operator):
     ) # type: ignore
 
     def execute(self, context):
-        create_template_properties = context.scene.create_template_properties
-        selected_transform_map_name = create_template_properties.selected_transform_map
-        debug_print(f"CreateTemplate: Selected Transform Map: {selected_transform_map_name}")
-        self.report({'INFO'}, f"CreateTemplate: Selected Transform Map: {selected_transform_map_name}")
-        return {'FINISHED'}
+        try:
+            create_template_properties = context.scene.create_template_properties
+            selected_transform_map_name = create_template_properties.selected_transform_map
+            debug_print(f"CreateTemplate: Selected Transform Map: {selected_transform_map_name}")
+            self.report({'INFO'}, f"CreateTemplate: Selected Transform Map: {selected_transform_map_name}")
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateTemplate-SelectTTransformMap-Execute: Failed to select transform map. Error: {e}")
+            return {'CANCELLED'}
 
 
-class OBJECT_OT_save_template(bpy.types.Operator):
+class CreateSkeleSwapTemplateSaveTemplateOperator(bpy.types.Operator):
     bl_idname = "object.save_template"
     bl_label = "Save Template"
     def execute(self, context):
-        scene = context.scene
-        create_template_properties = scene.create_template_properties
-        property_name = create_template_properties.template_name or "My Template"
-        template = create_template_json(create_template_properties)
-
         try:
+            scene = context.scene
+            create_template_properties = scene.create_template_properties
+            property_name = create_template_properties.template_name or "My Template"
+            template = create_template_json(create_template_properties)
+            validate(
+                [property_name, template],
+                ["str", "dict"],
+                stack_location="CreateTemplate-SaveTemplate",
+                input_identifier_strings=["property_name", "template"],
+            )
+
             debug_print(f"CreateTemplate-SaveTemplate: Attempting to save new temolate, {template}, in the template json, under property: {property_name}")
-            save_to_persistent_data_store_json_property("template_configs", property_name, template)       
+            result = save_to_persistent_data_store_json_property("template_configs", property_name, template)
+            if result == {'CANCELLED'}:
+                raise RuntimeError("Failed to persist template json data")
+            return {'FINISHED'}
         except Exception as e:
-            self.report({'ERROR'}, f"Failed to save bone mapping: {e}")
-        
-        return {'FINISHED'}
+            self.report({'ERROR'}, f"In CreateTemplate-SaveTemplate-Execute: Failed to save template. Error: {e}")
+            return {'CANCELLED'}
 
 
 
@@ -164,10 +161,10 @@ def register():
     bpy.utils.register_class(CreateTemplateProperties)
     bpy.types.Scene.create_template_properties = bpy.props.PointerProperty(type=CreateTemplateProperties)
 
-    bpy.utils.register_class(OBJECT_PT_create_template_panel)
-    bpy.utils.register_class(OBJECT_OT_select_T_bone_mapping)
-    bpy.utils.register_class(OBJECT_OT_select_T_transform_map)
-    bpy.utils.register_class(OBJECT_OT_save_template)
+    bpy.utils.register_class(CreateSkeleSwapTemplatePanel)
+    bpy.utils.register_class(CreateSkeleSwapTemplateSelectTBoneMappingOperator)
+    bpy.utils.register_class(CreateSkeleSwapTemplateSelectTTransformMapOperator)
+    bpy.utils.register_class(CreateSkeleSwapTemplateSaveTemplateOperator)
 
 
 
@@ -177,10 +174,10 @@ def unregister():
     bpy.utils.unregister_class(CreateTemplateProperties)
     del bpy.types.Scene.create_template_properties
 
-    bpy.utils.unregister_class(OBJECT_PT_create_template_panel)
-    bpy.utils.unregister_class(OBJECT_OT_select_T_bone_mapping)
-    bpy.utils.unregister_class(OBJECT_OT_select_T_transform_map)
-    bpy.utils.unregister_class(OBJECT_OT_save_template)
+    bpy.utils.unregister_class(CreateSkeleSwapTemplatePanel)
+    bpy.utils.unregister_class(CreateSkeleSwapTemplateSelectTBoneMappingOperator)
+    bpy.utils.unregister_class(CreateSkeleSwapTemplateSelectTTransformMapOperator)
+    bpy.utils.unregister_class(CreateSkeleSwapTemplateSaveTemplateOperator)
 
 
 if __name__ == "__main__":

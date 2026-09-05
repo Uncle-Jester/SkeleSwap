@@ -3,6 +3,8 @@ import json
 import os
 import shutil
 
+PERSISTENT_JSON_FILE_NAMES = ("bone_mappings", "bone_transforms", "template_configs")
+
 
 class PathStateManager:
     _instance = None
@@ -13,14 +15,23 @@ class PathStateManager:
             cls._instance.persistent_paths = {}
         return cls._instance
 
+    def _get_persistent_data_dir(self):
+        return bpy.utils.user_resource('SCRIPTS', path="addon_data/SkeleSwap")
+
+    def get_default_json_file_path(self, json_file_name):
+        addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        return os.path.join(addon_dir, "utils", "data", f"{json_file_name}.json")
+
+    def get_persistent_json_file_path(self, json_file_name):
+        persistent_data_dir = self._get_persistent_data_dir()
+        return os.path.join(persistent_data_dir, f"{json_file_name}.json")
+
     def get_json_file_path(self, json_file_name):
         if json_file_name in self.persistent_paths:
             return self.persistent_paths[json_file_name]
 
-        persistent_data_dir = bpy.utils.user_resource('SCRIPTS', path="addon_data/SkeleSwap")
-        persisted_json_file_path = os.path.join(persistent_data_dir, f"{json_file_name}.json")
-        addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        default_path = os.path.join(addon_dir, "utils", "data", f"{json_file_name}.json")
+        persisted_json_file_path = self.get_persistent_json_file_path(json_file_name)
+        default_path = self.get_default_json_file_path(json_file_name)
 
         if os.path.exists(persisted_json_file_path):
             self.persistent_paths[json_file_name] = persisted_json_file_path
@@ -29,24 +40,104 @@ class PathStateManager:
         return default_path
 
     def ensure_persistent_path(self, json_file_name):
-        if json_file_name in self.persistent_paths:
-            return self.persistent_paths[json_file_name]
+        json_file_path = self.get_persistent_json_file_path(json_file_name)
+        if json_file_name in self.persistent_paths and self.persistent_paths[json_file_name] == json_file_path and os.path.exists(json_file_path):
+            return json_file_path
 
-        persistent_data_dir = bpy.utils.user_resource('SCRIPTS', path="addon_data/SkeleSwap")
-        json_file_path = os.path.join(persistent_data_dir, f"{json_file_name}.json")
-
+        persistent_data_dir = self._get_persistent_data_dir()
         os.makedirs(persistent_data_dir, exist_ok=True)
 
         if not os.path.exists(json_file_path):
-            addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-            original_json = os.path.join(addon_dir, "utils", "data", f"{json_file_name}.json")
+            original_json = self.get_default_json_file_path(json_file_name)
             if os.path.exists(original_json):
                 shutil.copy(original_json, json_file_path)
+            else:
+                with open(json_file_path, "w") as json_file:
+                    json.dump({}, json_file, indent=4)
 
         self.persistent_paths[json_file_name] = json_file_path
         return json_file_path
 
+    def is_managed_json_file(self, file_path, json_file_name):
+        normalized_input_path = os.path.abspath(file_path)
+        normalized_default_path = os.path.abspath(self.get_default_json_file_path(json_file_name))
+        normalized_persistent_path = os.path.abspath(self.get_persistent_json_file_path(json_file_name))
+        return normalized_input_path in {normalized_default_path, normalized_persistent_path}
+
+
+class JsonStoreManager:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(JsonStoreManager, cls).__new__(cls)
+            cls._instance._stores = {}
+        return cls._instance
+
+    def initialize(self, json_file_names=None):
+        json_file_names = json_file_names or PERSISTENT_JSON_FILE_NAMES
+        for json_file_name in json_file_names:
+            self.reload_store(json_file_name, ensure_persistent=True)
+
+    def clear_cache(self):
+        self._stores = {}
+
+    def reload_store(self, json_file_name, ensure_persistent=False):
+        json_file_path = (
+            path_state_manager.ensure_persistent_path(json_file_name)
+            if ensure_persistent
+            else path_state_manager.get_json_file_path(json_file_name)
+        )
+        data = open_json(json_file_path)
+        if not isinstance(data, dict):
+            data = {}
+        self._stores[json_file_name] = data
+        return data
+
+    def get_store(self, json_file_name):
+        if json_file_name not in self._stores:
+            self.reload_store(json_file_name, ensure_persistent=True)
+        return self._stores.get(json_file_name, {})
+
+    def list_keys(self, json_file_name):
+        return list(self.get_store(json_file_name).keys())
+
+    def get_property(self, json_file_name, property_name):
+        return self.get_store(json_file_name).get(property_name)
+
+    def get_contents_copy(self, json_file_name):
+        return dict(self.get_store(json_file_name))
+
+    def _atomic_save_store(self, json_file_name):
+        json_file_path = path_state_manager.ensure_persistent_path(json_file_name)
+        json_data = self.get_store(json_file_name)
+        temp_file_path = f"{json_file_path}.tmp"
+
+        try:
+            with open(temp_file_path, "w") as json_file:
+                json.dump(json_data, json_file, indent=4)
+            os.replace(temp_file_path, json_file_path)
+        finally:
+            if os.path.exists(temp_file_path):
+                try:
+                    os.remove(temp_file_path)
+                except OSError:
+                    pass
+
+    def upsert_property(self, json_file_name, property_name, json_data):
+        store = self.get_store(json_file_name)
+        store[property_name] = json_data
+        self._atomic_save_store(json_file_name)
+
+    def remove_property(self, json_file_name, property_name):
+        store = self.get_store(json_file_name)
+        if property_name in store:
+            del store[property_name]
+            self._atomic_save_store(json_file_name)
+
+
 path_state_manager = PathStateManager()
+json_store_manager = JsonStoreManager()
 
 def get_debug_print_status():
     if hasattr(bpy.context.scene, "enable_debug_print"):
@@ -70,39 +161,84 @@ def open_json(file_path):
         print(f"Error decoding JSON: {e}")
         return {}
 
+def _get_managed_store_name_for_file_path(file_path):
+    base_name = os.path.basename(file_path)
+    if not base_name.endswith(".json"):
+        return None
+    json_file_name = os.path.splitext(base_name)[0]
+    if json_file_name not in PERSISTENT_JSON_FILE_NAMES:
+        return None
+    if path_state_manager.is_managed_json_file(file_path, json_file_name):
+        return json_file_name
+    return None
+
 
 def get_json_property(file_path, property):
     try:
+        managed_store_name = _get_managed_store_name_for_file_path(file_path)
+        if managed_store_name:
+            return json_store_manager.get_property(managed_store_name, property)
         json_data = open_json(file_path)
-        return json_data.get(property)
+        if isinstance(json_data, dict):
+            return json_data.get(property)
+        return None
     except Exception as e:
         print(f"An error occurred while reading the json file. Error: {e}")
         return {'CANCELLED'}
 
 
 def get_current_json_data_file_path(json_file_name):
-    path = path_state_manager.get_json_file_path(json_file_name)
+    if json_file_name in PERSISTENT_JSON_FILE_NAMES:
+        path = path_state_manager.ensure_persistent_path(json_file_name)
+    else:
+        path = path_state_manager.get_json_file_path(json_file_name)
     debug_print(f"DevUtils-GetCurrentJSONDataFilePath: Returning path: {path}")
     return path
 
 
 
 def save_to_persistent_data_store_json_property(json_file_name, property_name, jsonData):
-    json_file_path = path_state_manager.ensure_persistent_path(json_file_name)  # if the path exists it returns it from cahce, if not creates it chaches it, then returns it
-
     try:
-        with open(json_file_path, 'r+') as json_file:
-            data = json.load(json_file)
-            data[property_name] = jsonData
-            json_file.seek(0)
-            json.dump(data, json_file, indent=4)
-            json_file.truncate()
-    except (FileNotFoundError, json.JSONDecodeError):
-        with open(json_file_path, 'w') as json_file:
-            json.dump({property_name: jsonData}, json_file, indent=4)
+        json_store_manager.upsert_property(json_file_name, property_name, jsonData)
     except Exception as e:
         print(f"An error occurred while saving the JSON file. Error: {e}")
         return {'CANCELLED'}
+
+
+def get_persistent_data_store_json_property(json_file_name, property_name):
+    try:
+        return json_store_manager.get_property(json_file_name, property_name)
+    except Exception as e:
+        print(f"An error occurred while getting the json property from the persistent data store. Error: {e}")
+        return None
+
+
+def get_persistent_data_store_json_keys(json_file_name):
+    try:
+        return json_store_manager.list_keys(json_file_name)
+    except Exception as e:
+        print(f"An error occurred while getting keys from the persistent data store. Error: {e}")
+        return []
+
+
+def get_persistent_data_store_json_contents(json_file_name):
+    try:
+        return json_store_manager.get_contents_copy(json_file_name)
+    except Exception as e:
+        print(f"An error occurred while getting contents from the persistent data store. Error: {e}")
+        return {}
+
+
+def initialize_persistent_data_store(json_file_names=None):
+    try:
+        json_store_manager.initialize(json_file_names)
+    except Exception as e:
+        print(f"An error occurred while initializing the persistent data store. Error: {e}")
+        return {'CANCELLED'}
+
+
+def reset_persistent_data_store_cache():
+    json_store_manager.clear_cache()
 
 
 def assign_bone_color_to_armature(armature_object, rgb_color):

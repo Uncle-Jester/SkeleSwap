@@ -1,4 +1,5 @@
 import bpy # type: ignore
+from .dev_utils import validate
 
 def find_collection_by_object(obj):
     for collection in bpy.data.collections:
@@ -7,6 +8,11 @@ def find_collection_by_object(obj):
     return None
 
 def delete_collection(collection_or_child):
+    validate(
+        [collection_or_child],
+        stack_location="BlendOperationUtils-DeleteCollection",
+        input_identifier_strings=["collection_or_child"],
+    )
     if isinstance(collection_or_child, str):
         collection_name = collection_or_child
     elif isinstance(collection_or_child, bpy.types.Object):

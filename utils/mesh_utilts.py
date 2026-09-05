@@ -30,11 +30,12 @@ def duplicate_a_list_of_meshes(mesh_list):
         raise RuntimeError(f"In MeshUtils-DuplicateAListOfMeshes: No Mesh List provided to delete")
 
 def duplicate_mesh(mesh_to_duplicate):
-    if not mesh_to_duplicate or mesh_to_duplicate.type != 'MESH':
-        if mesh_to_duplicate:
-            raise ValueError(f"In MeshUtils-DuplicateMesh: Provided object is not a valid mesh. Expected {mesh_to_duplicate} to be of type 'MESH', instead got {mesh_to_duplicate.type}")
-        else:
-            raise ValueError(f"In MeshUtils-DuplicateMesh: Mesh to duplicate was not provided")
+    validate(
+        [mesh_to_duplicate],
+        ['MESH'],
+        stack_location="MeshUtils-DuplicateMesh",
+        input_identifier_strings=["mesh_to_duplicate"],
+    )
     try:        
         bpy.context.view_layer.objects.active = mesh_to_duplicate
         if bpy.context.object and bpy.context.object.mode != 'OBJECT':
@@ -51,11 +52,12 @@ def duplicate_mesh(mesh_to_duplicate):
         raise RuntimeError(f"In MeshUtils-DuplicateMesh: Could not duplicate mesh. Error: {e}")
 
 def delete_mesh(mesh_to_delete):
-    if not mesh_to_delete or mesh_to_delete.type != 'MESH':
-        if mesh_to_delete:
-            raise ValueError(f"In MeshUtils-DeleteMesh: Provided object is not a valid mesh. Expected {mesh_to_delete} to be of type 'MESH', instead got {mesh_to_delete.type}")
-        else:
-            raise ValueError(f"In MeshUtils-DeleteMesh: Mesh to delete was not provided")
+    validate(
+        [mesh_to_delete],
+        ['MESH'],
+        stack_location="MeshUtils-DeleteMesh",
+        input_identifier_strings=["mesh_to_delete"],
+    )
     
     bpy.context.view_layer.objects.active = mesh_to_delete
     if bpy.context.object and bpy.context.object.mode != 'OBJECT':
@@ -70,11 +72,12 @@ def delete_mesh(mesh_to_delete):
 
 
 def delete_all_shapekeys(mesh):
-    if not mesh or mesh.type != 'MESH':
-        if mesh:
-            raise ValueError(f"In MeshUtils-DeleteAllShapekeys: Provided object is not a valid mesh. Expected {mesh} to be of type 'MESH', instead got {mesh.type}")
-        else:
-            raise ValueError(f"In MeshUtils-DeleteAllShapekeys: Mesh was not provided")
+    validate(
+        [mesh],
+        ['MESH'],
+        stack_location="MeshUtils-DeleteAllShapekeys",
+        input_identifier_strings=["mesh"],
+    )
     
     try:
         if mesh.data.shape_keys:
@@ -99,10 +102,12 @@ def create_basis_shape_key(mesh):
 
 
 def copy_shapekeys(source_mesh, target_mesh):
-    if not source_mesh or source_mesh.type != 'MESH':
-        raise ValueError("Source object is not a valid mesh.")
-    if not target_mesh or target_mesh.type != 'MESH':
-        raise ValueError("Target object is not a valid mesh.")
+    validate(
+        [source_mesh, target_mesh],
+        ['MESH', 'MESH'],
+        stack_location="MeshUtils-CopyShapekeys",
+        input_identifier_strings=["source_mesh", "target_mesh"],
+    )
     
     if not source_mesh.data.shape_keys or not source_mesh.data.shape_keys.key_blocks:
         debug_print("Source mesh has no shapekeys to copy.")
@@ -116,9 +121,11 @@ def copy_shapekeys(source_mesh, target_mesh):
         if shape_key.name == 'Basis' or shape_key.name == 'basis':
             continue
         
-        target_mesh.shape_key_add(name=shape_key.name, from_mix=False)
-        
-        target_key = target_mesh.data.shape_keys.key_blocks[shape_key.name]
+        target_key = target_mesh.data.shape_keys.key_blocks.get(shape_key.name)
+        if not target_key:
+            target_key = target_mesh.shape_key_add(name=shape_key.name, from_mix=False)
+
+        target_key.mute = False
         target_key.data.foreach_set(
             "co", [co for vertex in shape_key.data for co in vertex.co]
         )
@@ -157,6 +164,12 @@ def transfer_weights(base_mesh, target_mesh): # This is used for the LOD creatio
 
 
 def transfer_weights_for_specific_bones(bone_names, target_mesh, base_mesh):
+    validate(
+        [bone_names, target_mesh, base_mesh],
+        ['list', 'MESH', 'MESH'],
+        stack_location="MeshUtils-TransferWeightsForSpecificBones",
+        input_identifier_strings=["bone_names", "target_mesh", "base_mesh"],
+    )
     if bpy.context.object.mode != 'OBJECT':
         bpy.ops.object.mode_set(mode='OBJECT')
     

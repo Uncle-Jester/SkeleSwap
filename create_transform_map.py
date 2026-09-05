@@ -1,11 +1,12 @@
 import bpy # type: ignore
 from mathutils import Matrix, Vector # type: ignore
 import json
-import os
 
 from .utils import rotate_bone, match_pose_bone_head_pos, match_edit_bone_pos, chain_pose_bone_position, scale_pose_bone, match_pose_bone_orientation, get_foot_z_location, move_pose_bone, orient_bone, move_edit_bone, assign_bone_color_to_armature, match_edit_bone_z_location, match_edit_bone_chain_scale, scale_edit_bone_chain, copy_bone_between_armatures, delete_edit_bone
 from .utils import is_flipped_unreal_bone
-from .utils import debug_print, get_current_json_data_file_path, save_to_persistent_data_store_json_property
+from .utils import debug_print, save_to_persistent_data_store_json_property, get_persistent_data_store_json_property, get_persistent_data_store_json_keys
+from .utils.dev_utils import validate
+_PANEL_SUPPORTS_BL_ORDER = hasattr(bpy.types.Panel, "bl_order")
 
 class CreateTransformProperties(bpy.types.PropertyGroup):
     create_transform_foot_z_location: bpy.props.StringProperty(name="Foot Z Location", default="")  # type: ignore
@@ -34,11 +35,14 @@ class CreateTransformProperties(bpy.types.PropertyGroup):
         return data
     
 class BoneTransformPanel(bpy.types.Panel):
-    bl_label = "Armature and Bone Selector"
+    bl_label = "Transform Map Creator"
     bl_idname = "OBJECT_PT_armature_bone_selector"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Bone Transform Mapping"
+    bl_category = "SkeleSwap"
+    bl_options = {'DEFAULT_CLOSED'}
+    if _PANEL_SUPPORTS_BL_ORDER:
+        bl_order = 2
 
     def draw(self, context):
         layout = self.layout
@@ -259,7 +263,7 @@ def add_transform(context, target_bone_name, source_bone_name, axis, transform_v
         raise ValueError(f"In CreateTransformMap-AddTransform: Invalid transform type: {transform_type}")
     return new_transform if new_transform else None
 
-class OBJECT_OT_save_foot_z_location(bpy.types.Operator):
+class CreateTransformMapSaveFootZLocationOperator(bpy.types.Operator):
     bl_idname = "object.save_foot_z_location"
     bl_label = "Save Current Foot Z Location"
 
@@ -269,14 +273,23 @@ class OBJECT_OT_save_foot_z_location(bpy.types.Operator):
         target_armature = scene.target_armature
         foot_bone_name = scene.selected_target_bone
 
-        if foot_bone_name and target_armature:
+        try:
+            validate(
+                [target_armature, foot_bone_name],
+                ["ARMATURE", "str"],
+                stack_location="CreateTransformMap-SaveFootZLocation",
+                input_identifier_strings=["target_armature", "foot_bone_name"],
+            )
             create_transform_props.set_data(get_foot_z_location(target_armature, foot_bone_name))
-        else:
+            return {'FINISHED'}
+        except ValueError:
             self.report({'WARNING'}, "No selected target armature, or foot bone found. Make sure to select them before trying to save the foot z location")
             return {'CANCELLED'}
-        return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateTransformMap-SaveFootZLocation-Execute: Failed to save foot z location. Error: {e}")
+            return {'CANCELLED'}
 
-class OBJECT_OT_add_transform(bpy.types.Operator):
+class CreateTransformMapAddTransformOperator(bpy.types.Operator):
     bl_idname = "object.add_transform"
     bl_label = "Add Transform"
 
@@ -299,12 +312,17 @@ class OBJECT_OT_add_transform(bpy.types.Operator):
         try:
             new_transform = add_transform(context, target_bone_name, source_bone_name, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain, new_bone_name=new_bone_name)
         except Exception as e:
-            self.report({'WARNING'}, f"Something went wrong when trying to add transform. Try re-selecting the target and source bones, and make sure you have the correct armatures selected. Error: {e}")
+            self.report({'ERROR'}, f"In CreateTransformMap-AddTransform-Execute: Failed to add transform. Error: {e}")
+            return {'CANCELLED'}
+        if not new_transform:
+            self.report({'ERROR'}, "In CreateTransformMap-AddTransform-Execute: Failed to add transform. No transform item was created.")
             return {'CANCELLED'}
         self.report({'INFO'}, f"{new_transform.name} added to the list")
         return {'FINISHED'}
 
-class OBJECT_UL_transform_list(bpy.types.UIList):
+class CreateTransformMapTransformListUIList(bpy.types.UIList):
+    bl_idname = "OBJECT_UL_transform_list"
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         transform = item
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
@@ -314,7 +332,7 @@ class OBJECT_UL_transform_list(bpy.types.UIList):
             layout.alignment = 'CENTER'
             layout.label(text=transform.name)
 
-class OBJECT_OT_remove_transform(bpy.types.Operator):
+class CreateTransformMapRemoveTransformOperator(bpy.types.Operator):
     bl_idname = "object.remove_transform"
     bl_label = "Remove Transform"
 
@@ -324,9 +342,9 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
         scene = context.scene
         revert_data = scene.transform_list[self.index].get_data("revert_data")
         if not revert_data:
-           scene.transform_list.remove(self.index)
-           debug_print(f"In CreateTransformMap -> RemoveTransform: No Revert Data, removing list item without transforms.")
-           return
+            scene.transform_list.remove(self.index)
+            debug_print(f"In CreateTransformMap -> RemoveTransform: No Revert Data, removing list item without transforms.")
+            return {'FINISHED'}
         try:
             if scene.transform_list[self.index].transform_type == "rotate_bone":
                 rotate_bone(
@@ -396,152 +414,176 @@ class OBJECT_OT_remove_transform(bpy.types.Operator):
                 debug_print(f"CreateBoneTransformMap-RemoveTransform: Reverted Copy Bone, by deleting the copied bone: {revert_data['new_bone_name']}")
             else:
                 print('TBD')
+            scene.transform_list.remove(self.index)
+            return {'FINISHED'}
         except Exception as e:
-            self.report({'WARNING'}, f"Something went wrong when trying to revert transform. Error: {e}")
-        
-        scene.transform_list.remove(self.index)
-        return {'FINISHED'}
+            self.report({'ERROR'}, f"In CreateTransformMap-RemoveTransform-Execute: Failed to revert transform. Error: {e}")
+            return {'CANCELLED'}
 
 
-class OBJECT_OT_select_source_bone(bpy.types.Operator):
+class CreateTransformMapSelectSourceBoneOperator(bpy.types.Operator):
     bl_idname = "object.select_source_bone_from_viewport"
     bl_label = "Select Source Bone From Viewport"
     
     def execute(self, context):
-        selected_object = context.view_layer.objects.active
-        if selected_object and selected_object.type == 'ARMATURE':
-            if context.active_object.mode == 'POSE':
-                selected_source_bone = context.selected_pose_bones
-                selected_target_bone = context.scene.selected_target_bone if context.scene.selected_target_bone else ""
-                if selected_source_bone:
-                    context.scene.selected_source_bone = selected_source_bone[0].name
-                    context.scene.source_armature_indicator = 'S' if selected_object.name == context.scene.source_armature.name else 'T'
-                    mapping_content = get_bone_mapping_contents(context.scene)
-                    debug_print(f"CreateTransformMap-SelectingSourceBone: mapping_content: {mapping_content}")
-                    if context.scene.transform_type == "copy_bone_between_armatures":
-                        context.scene.create_transform_props.new_bone_name = context.scene.selected_source_bone
-                        debug_print(f"CreateTransformMap-SelectingSourceBone: Set source bone name as default value for Copied Bone Name: {context.scene.create_transform_props.new_bone_name}")
-                    if mapping_content:
-                        paired_target_bone = None
-                        for target_bone, source_bone in mapping_content.items():
-                            if source_bone == context.scene.selected_source_bone:
-                                paired_target_bone = target_bone
-                                break
-                        context.scene.selected_target_bone = paired_target_bone if paired_target_bone else selected_target_bone
-                        if context.scene.selected_target_bone:
-                            context.scene.target_armature_indicator = 'T' if selected_object.name != context.scene.target_armature.name else 'S' # this is a terrible way to do it i hate it but i am tired...alas
+        try:
+            selected_object = context.view_layer.objects.active
+            if selected_object and selected_object.type == 'ARMATURE':
+                if context.active_object.mode == 'POSE':
+                    selected_source_bone = context.selected_pose_bones
+                    selected_target_bone = context.scene.selected_target_bone if context.scene.selected_target_bone else ""
+                    if selected_source_bone:
+                        context.scene.selected_source_bone = selected_source_bone[0].name
+                        context.scene.source_armature_indicator = 'S' if selected_object.name == context.scene.source_armature.name else 'T'
+                        mapping_content = get_bone_mapping_contents(context.scene)
+                        debug_print(f"CreateTransformMap-SelectingSourceBone: mapping_content: {mapping_content}")
+                        if context.scene.transform_type == "copy_bone_between_armatures":
+                            context.scene.create_transform_props.new_bone_name = context.scene.selected_source_bone
+                            debug_print(f"CreateTransformMap-SelectingSourceBone: Set source bone name as default value for Copied Bone Name: {context.scene.create_transform_props.new_bone_name}")
+                        if mapping_content:
+                            paired_target_bone = None
+                            for target_bone, source_bone in mapping_content.items():
+                                if source_bone == context.scene.selected_source_bone:
+                                    paired_target_bone = target_bone
+                                    break
+                            context.scene.selected_target_bone = paired_target_bone if paired_target_bone else selected_target_bone
+                            if context.scene.selected_target_bone:
+                                context.scene.target_armature_indicator = 'T' if selected_object.name != context.scene.target_armature.name else 'S' # this is a terrible way to do it i hate it but i am tired...alas
+                        return {'FINISHED'}
                     return {'FINISHED'}
-                return {'FINISHED'}
-        self.report({'WARNING'}, f"Something went wrong when trying to select source bone. Make sure you are in pose mode and selecting a bone")
-        return {'CANCELLED'}
+            self.report({'WARNING'}, f"Something went wrong when trying to select source bone. Make sure you are in pose mode and selecting a bone")
+            return {'CANCELLED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateTransformMap-SelectSourceBone-Execute: Failed to select source bone. Error: {e}")
+            return {'CANCELLED'}
 
-class OBJECT_OT_select_target_bone(bpy.types.Operator):
+class CreateTransformMapSelectTargetBoneOperator(bpy.types.Operator):
     bl_idname = "object.select_target_bone_from_viewport"
     bl_label = "Select Target Bone From Viewport"
     
     def execute(self, context):
-        selected_object = context.view_layer.objects.active
-        if selected_object and selected_object.type == 'ARMATURE':
-            if context.active_object.mode == 'POSE':
-                selected_target_bone = context.selected_pose_bones
-                selected_source_bone = context.scene.selected_source_bone
-                if selected_target_bone:
-                    context.scene.selected_target_bone = selected_target_bone[0].name
-                    context.scene.target_armature_indicator = 'T' if selected_object.name == context.scene.target_armature.name else 'S'
-                    mapping_content = get_bone_mapping_contents(context.scene)
-                    debug_print(f"CreateTransformMap-SelectingTargetBone: mapping_content: {mapping_content}")
-                    if not selected_source_bone and mapping_content:
-                        paired_source_bone = mapping_content.get(context.scene.selected_target_bone)
-                        context.scene.selected_source_bone = paired_source_bone if paired_source_bone else ""
-                        if context.scene.selected_source_bone:
-                            context.scene.source_armature_indicator = 'S' if selected_object.name != context.scene.source_armature.name else 'T'
+        try:
+            selected_object = context.view_layer.objects.active
+            if selected_object and selected_object.type == 'ARMATURE':
+                if context.active_object.mode == 'POSE':
+                    selected_target_bone = context.selected_pose_bones
+                    selected_source_bone = context.scene.selected_source_bone
+                    if selected_target_bone:
+                        context.scene.selected_target_bone = selected_target_bone[0].name
+                        context.scene.target_armature_indicator = 'T' if selected_object.name == context.scene.target_armature.name else 'S'
+                        mapping_content = get_bone_mapping_contents(context.scene)
+                        debug_print(f"CreateTransformMap-SelectingTargetBone: mapping_content: {mapping_content}")
+                        if not selected_source_bone and mapping_content:
+                            paired_source_bone = mapping_content.get(context.scene.selected_target_bone)
+                            context.scene.selected_source_bone = paired_source_bone if paired_source_bone else ""
+                            if context.scene.selected_source_bone:
+                                context.scene.source_armature_indicator = 'S' if selected_object.name != context.scene.source_armature.name else 'T'
+                        return {'FINISHED'}
                     return {'FINISHED'}
-                return {'FINISHED'}
-        self.report({'WARNING'}, f"Something went wrong when trying to select target bone. Make sure you are in pose mode and selecting a bone")
-        return {'CANCELLED'}
+            self.report({'WARNING'}, f"Something went wrong when trying to select target bone. Make sure you are in pose mode and selecting a bone")
+            return {'CANCELLED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateTransformMap-SelectTargetBone-Execute: Failed to select target bone. Error: {e}")
+            return {'CANCELLED'}
 
-class OBJECT_OT_select_source_bone_chain(bpy.types.Operator):
+class CreateTransformMapSelectSourceBoneChainOperator(bpy.types.Operator):
     bl_idname = "object.select_source_bone_chain"
     bl_label = "Select Source Bone Chain"
     bl_description = "Select a chain of bones in the viewport and set them as the Source Bone Chain"
 
     def execute(self, context):
-        selected_object = context.view_layer.objects.active
-        if selected_object and selected_object.type == 'ARMATURE':
-            if context.active_object.mode == 'POSE':
-                selected_bones = context.selected_pose_bones
+        try:
+            selected_object = context.view_layer.objects.active
+            if selected_object and selected_object.type == 'ARMATURE':
+                if context.active_object.mode == 'POSE':
+                    selected_bones = context.selected_pose_bones
 
-                if selected_bones:
-                    context.scene.source_bone_chain.clear()
-                    
-                    for bone in selected_bones:
-                        item = context.scene.source_bone_chain.add()
-                        item.name = bone.name
-                    context.scene.source_armature_indicator = 'S' if selected_object.name == context.scene.source_armature.name else 'T'
-                    self.report({'INFO'}, f"Selected source bone chain: {[bone.name for bone in context.scene.source_bone_chain]}")
-                    return {'FINISHED'}
+                    if selected_bones:
+                        context.scene.source_bone_chain.clear()
+                        
+                        for bone in selected_bones:
+                            item = context.scene.source_bone_chain.add()
+                            item.name = bone.name
+                        context.scene.source_armature_indicator = 'S' if selected_object.name == context.scene.source_armature.name else 'T'
+                        self.report({'INFO'}, f"Selected source bone chain: {[bone.name for bone in context.scene.source_bone_chain]}")
+                        return {'FINISHED'}
+                    else:
+                        self.report({'WARNING'}, "No bones selected.")
+                        return {'CANCELLED'}
                 else:
-                    self.report({'WARNING'}, "No bones selected.")
+                    self.report({'WARNING'}, "Must be in Pose mode to select bones.")
                     return {'CANCELLED'}
             else:
-                self.report({'WARNING'}, "Must be in Pose mode to select bones.")
+                self.report({'WARNING'}, "Active object must be an armature.")
                 return {'CANCELLED'}
-        else:
-            self.report({'WARNING'}, "Active object must be an armature.")
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateTransformMap-SelectSourceBoneChain-Execute: Failed to select source bone chain. Error: {e}")
             return {'CANCELLED'}
 
-class OBJECT_OT_select_target_bone_chain(bpy.types.Operator):
+class CreateTransformMapSelectTargetBoneChainOperator(bpy.types.Operator):
     bl_idname = "object.select_target_bone_chain"
     bl_label = "Select Target Bone Chain"
     bl_description = "Select a chain of bones in the viewport and set them as the Target Bone Chain"
 
     def execute(self, context):
-        selected_object = context.view_layer.objects.active
-        if selected_object and selected_object.type == 'ARMATURE':
-            if context.active_object.mode == 'POSE':
-                selected_bones = context.selected_pose_bones
+        try:
+            selected_object = context.view_layer.objects.active
+            if selected_object and selected_object.type == 'ARMATURE':
+                if context.active_object.mode == 'POSE':
+                    selected_bones = context.selected_pose_bones
 
-                if selected_bones:
-                    context.scene.target_bone_chain.clear()
-                    
-                    for bone in selected_bones:
-                        item = context.scene.target_bone_chain.add()
-                        item.name = bone.name
-                    context.scene.target_armature_indicator = 'T' if selected_object.name == context.scene.target_armature.name else 'S'
-                    self.report({'INFO'}, f"Selected target bone chain: {[bone.name for bone in context.scene.target_bone_chain]}")
-                    return {'FINISHED'}
+                    if selected_bones:
+                        context.scene.target_bone_chain.clear()
+                        
+                        for bone in selected_bones:
+                            item = context.scene.target_bone_chain.add()
+                            item.name = bone.name
+                        context.scene.target_armature_indicator = 'T' if selected_object.name == context.scene.target_armature.name else 'S'
+                        self.report({'INFO'}, f"Selected target bone chain: {[bone.name for bone in context.scene.target_bone_chain]}")
+                        return {'FINISHED'}
+                    else:
+                        self.report({'WARNING'}, "No bones selected.")
+                        return {'CANCELLED'}
                 else:
-                    self.report({'WARNING'}, "No bones selected.")
+                    self.report({'WARNING'}, "Must be in Pose mode to select bones.")
                     return {'CANCELLED'}
             else:
-                self.report({'WARNING'}, "Must be in Pose mode to select bones.")
+                self.report({'WARNING'}, "Active object must be an armature.")
                 return {'CANCELLED'}
-        else:
-            self.report({'WARNING'}, "Active object must be an armature.")
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateTransformMap-SelectTargetBoneChain-Execute: Failed to select target bone chain. Error: {e}")
             return {'CANCELLED'}
 
 def update_source_armature(self, context):
     armature = bpy.context.scene.source_armature
     debug_print('CreateTransformMap-UpdateSourceArmature: updated source armature')
-    if armature and armature.type != 'ARMATURE':
-        bpy.context.scene.source_armature = None
+    if armature:
+        try:
+            validate(
+                [armature],
+                ['ARMATURE'],
+                stack_location="CreateTransformMap-UpdateSourceArmature",
+                input_identifier_strings=["source_armature"],
+            )
+        except ValueError:
+            bpy.context.scene.source_armature = None
 
 def update_target_armature(self, context):
     debug_print("CreateTransformMap-UpdateSourceArmature:updated source armature")
     armature = bpy.context.scene.target_armature
-    if armature and armature.type != 'ARMATURE':
-        bpy.context.scene.target_armature = None
+    if armature:
+        try:
+            validate(
+                [armature],
+                ['ARMATURE'],
+                stack_location="CreateTransformMap-UpdateTargetArmature",
+                input_identifier_strings=["target_armature"],
+            )
+        except ValueError:
+            bpy.context.scene.target_armature = None
 
 def get_bone_mapping_options():
-    json_file_path = get_current_json_data_file_path("bone_mappings")
-    if os.path.exists(json_file_path):
-        with open(json_file_path, 'r') as json_file:
-            try:
-                data = json.load(json_file)
-                return list(data.keys())
-            except json.JSONDecodeError:
-                return []
-    return []
+    return get_persistent_data_store_json_keys("bone_mappings")
 
 def get_bone_mapping_contents(scene):
     if scene.bone_mapping_contents:
@@ -556,7 +598,7 @@ def bone_mapping_update_callback(self, context):
     debug_print('CreateTransformMape-BoneMappingUpdateCallback: Updating selected bone map')
     bpy.ops.object.select_bone_mapping()
 
-class OBJECT_OT_select_bone_mapping(bpy.types.Operator):
+class CreateTransformMapSelectBoneMappingOperator(bpy.types.Operator):
     bl_idname = "object.select_bone_mapping"
     bl_label = "Select Bone Mapping"
 
@@ -566,45 +608,48 @@ class OBJECT_OT_select_bone_mapping(bpy.types.Operator):
         ) # type: ignore
 
     def execute(self, context):
-        debug_print('CreateTransformMap-SelectBoneMapping-Execute: Executing select_bone_mapping')
-        selected_mapping_name = context.scene.selected_bone_mapping
-        debug_print(f"CreateTransformMap-SelectBoneMapping-Execute: Selected bone mapping name: {selected_mapping_name}")
+        try:
+            debug_print('CreateTransformMap-SelectBoneMapping-Execute: Executing select_bone_mapping')
+            selected_mapping_name = context.scene.selected_bone_mapping
+            debug_print(f"CreateTransformMap-SelectBoneMapping-Execute: Selected bone mapping name: {selected_mapping_name}")
+            mapping_contents = get_persistent_data_store_json_property("bone_mappings", selected_mapping_name)
+            if not mapping_contents:
+                self.report({'WARNING'}, "Selected bone mapping is invalid or empty")
+                return {'CANCELLED'}
+            debug_print(f"CreateTransformMap-SelectBoneMapping-Execute: selected_bone_mapping_contents: {mapping_contents}")
+            set_bone_mapping_contents(context.scene, mapping_contents)
 
-        json_file_path = get_current_json_data_file_path("bone_mappings")
-        if os.path.exists(json_file_path):
-            with open(json_file_path, 'r') as json_file:
-                try:
-                    data = json.load(json_file)
-                    if data and data.get(selected_mapping_name):
-                        mapping_contents = data[selected_mapping_name]
-                        debug_print(f"CreateTransformMap-SelectBoneMapping-Execute: selected_bone_mapping_contents: {mapping_contents}")
-                        set_bone_mapping_contents(context.scene, mapping_contents)
-                except json.JSONDecodeError:
-                    print("Failed to load bone mapping data")
-                    return {}
-        else:
-            return {'ERROR'}
-        self.report({'INFO'}, f"Selected bone mapping: {selected_mapping_name}")
-        return {'FINISHED'}
+            self.report({'INFO'}, f"Selected bone mapping: {selected_mapping_name}")
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateTransformMap-SelectBoneMapping-Execute: Failed to select bone mapping. Error: {e}")
+            return {'CANCELLED'}
 
 
-class OBJECT_OT_assign_color_to_armatures(bpy.types.Operator):
+class CreateTransformMapAssignColorToArmaturesOperator(bpy.types.Operator):
     bl_idname = "object.assign_color_to_armatures"
     bl_label = "Refresh Bone Mapping"
 
     def execute(self, context):
         armature1 = context.scene.source_armature
         armature2 = context.scene.target_armature
-        if armature1 and armature2:
-            try:
-                debug_print('CreateTransformMap-AssignColorToArmatures: Assigning colors')
-                assign_bone_color_to_armature(armature1, (1,95,100))
-                assign_bone_color_to_armature(armature2, (115,30,0))
-            except Exception as e:
-                self.report({'WARNING'}, f"Couldn't assign color to armatures. Error: {e}")
-        else:
+        try:
+            validate(
+                [armature1, armature2],
+                ["ARMATURE", "ARMATURE"],
+                stack_location="CreateTransformMap-AssignColorToArmatures",
+                input_identifier_strings=["source_armature", "target_armature"],
+            )
+            debug_print('CreateTransformMap-AssignColorToArmatures: Assigning colors')
+            assign_bone_color_to_armature(armature1, (1,95,100))
+            assign_bone_color_to_armature(armature2, (115,30,0))
+            return {'FINISHED'}
+        except ValueError:
             self.report({'WARNING'}, f"Make sure you have both target and source armature selected before assigning color to armatures.")
-        return {'FINISHED'}
+            return {'CANCELLED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateTransformMap-AssignColorToArmatures-Execute: Couldn't assign color to armatures. Error: {e}")
+            return {'CANCELLED'}
 
 
 def create_bone_transform_json(scene, mode = "export"):
@@ -621,7 +666,7 @@ def create_bone_transform_json(scene, mode = "export"):
         return bone_transform_json
 
 
-class OBJECT_OT_export_bone_transform(bpy.types.Operator):
+class CreateTransformMapExportBoneTransformOperator(bpy.types.Operator):
     bl_idname = "object.export_bone_transform"
     bl_label = "Export Bone Transforms"
 
@@ -641,7 +686,7 @@ class OBJECT_OT_export_bone_transform(bpy.types.Operator):
                 json.dump(bone_transform_list, json_file, indent=4)
             self.report({'INFO'}, f"Bone transform list exported to {file_path}")
         except Exception as e:
-            self.report({'ERROR'}, f"Failed to export bone transform list {e}")
+            self.report({'ERROR'}, f"In CreateTransformMap-ExportBoneTransform-Execute: Failed to export bone transform list. Error: {e}")
             return {"CANCELLED"}
         return {'FINISHED'}
 
@@ -652,20 +697,33 @@ class OBJECT_OT_export_bone_transform(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
-class OBJECT_OT_save_bone_transform(bpy.types.Operator):
+class CreateTransformMapSaveBoneTransformOperator(bpy.types.Operator):
     bl_idname = "object.save_bone_transform"
     bl_label = "Save Bone Mapping"
 
     def execute(self, context):
-        scene = context.scene
-        bone_transforms_json = create_bone_transform_json(scene, mode = "save")
-        property_name = context.scene.create_transform_props.transform_map_name_input or "default_property"
+        try:
+            scene = context.scene
+            bone_transforms_json = create_bone_transform_json(scene, mode = "save")
+            property_name = context.scene.create_transform_props.transform_map_name_input or "default_property"
 
-        save_to_persistent_data_store_json_property("bone_transforms", property_name, bone_transforms_json)
-        return {'FINISHED'}
+            validate(
+                [property_name, bone_transforms_json],
+                ["str", "list"],
+                stack_location="CreateTransformMap-SaveBoneTransform",
+                input_identifier_strings=["property_name", "bone_transforms_json"],
+            )
+
+            result = save_to_persistent_data_store_json_property("bone_transforms", property_name, bone_transforms_json)
+            if result == {'CANCELLED'}:
+                raise RuntimeError("Failed to persist bone transforms json data")
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"In CreateTransformMap-SaveBoneTransform-Execute: Failed to save bone transforms. Error: {e}")
+            return {'CANCELLED'}
 
 
-class OBJECT_OT_load_bone_transform(bpy.types.Operator):
+class CreateTransformMapLoadBoneTransformOperator(bpy.types.Operator):
     bl_idname = "object.load_bone_transform"
     bl_label = "Load Bone Transforms"
 
@@ -699,10 +757,10 @@ class OBJECT_OT_load_bone_transform(bpy.types.Operator):
                 new_bone_name = transform_data.get("new_bone_name")
                 add_transform(context, target_bone_name, source_bone_name, axis, transform_value, mirror, transform_type, target_armature_indicator, source_armature_indicator, target_chain, source_chain, new_bone_name=new_bone_name, apply_transform=apply_transform)
             self.report({'INFO'}, f"Bone transform loaded from {self.filepath}")
+            return {'FINISHED'}
         except Exception as e:
-            self.report({'ERROR'}, f"Failed to load bone transforms: {e}")
-
-        return {'FINISHED'}
+            self.report({'ERROR'}, f"In CreateTransformMap-LoadBoneTransform-Execute: Failed to load bone transforms. Error: {e}")
+            return {'CANCELLED'}
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
@@ -713,20 +771,20 @@ def register():
     bpy.types.Scene.create_transform_props = bpy.props.PointerProperty(type=CreateTransformProperties)
 
     bpy.utils.register_class(BoneTransformPanel)
-    bpy.utils.register_class(OBJECT_OT_assign_color_to_armatures)
-    bpy.utils.register_class(OBJECT_OT_select_source_bone)
-    bpy.utils.register_class(OBJECT_OT_select_target_bone)
-    bpy.utils.register_class(OBJECT_OT_select_source_bone_chain)
-    bpy.utils.register_class(OBJECT_OT_select_target_bone_chain)
+    bpy.utils.register_class(CreateTransformMapAssignColorToArmaturesOperator)
+    bpy.utils.register_class(CreateTransformMapSelectSourceBoneOperator)
+    bpy.utils.register_class(CreateTransformMapSelectTargetBoneOperator)
+    bpy.utils.register_class(CreateTransformMapSelectSourceBoneChainOperator)
+    bpy.utils.register_class(CreateTransformMapSelectTargetBoneChainOperator)
     bpy.utils.register_class(Transform_item)
-    bpy.utils.register_class(OBJECT_OT_add_transform)
-    bpy.utils.register_class(OBJECT_OT_remove_transform)
-    bpy.utils.register_class(OBJECT_UL_transform_list)
-    bpy.utils.register_class(OBJECT_OT_select_bone_mapping)
-    bpy.utils.register_class(OBJECT_OT_export_bone_transform)
-    bpy.utils.register_class(OBJECT_OT_save_bone_transform)
-    bpy.utils.register_class(OBJECT_OT_load_bone_transform)
-    bpy.utils.register_class(OBJECT_OT_save_foot_z_location)
+    bpy.utils.register_class(CreateTransformMapAddTransformOperator)
+    bpy.utils.register_class(CreateTransformMapRemoveTransformOperator)
+    bpy.utils.register_class(CreateTransformMapTransformListUIList)
+    bpy.utils.register_class(CreateTransformMapSelectBoneMappingOperator)
+    bpy.utils.register_class(CreateTransformMapExportBoneTransformOperator)
+    bpy.utils.register_class(CreateTransformMapSaveBoneTransformOperator)
+    bpy.utils.register_class(CreateTransformMapLoadBoneTransformOperator)
+    bpy.utils.register_class(CreateTransformMapSaveFootZLocationOperator)
 
 
     bpy.types.Scene.selected_source_bone = bpy.props.StringProperty(name="Selected Source Bone")
@@ -791,20 +849,20 @@ def register():
 def unregister():
     bpy.utils.unregister_class(CreateTransformProperties)
     bpy.utils.unregister_class(BoneTransformPanel)
-    bpy.utils.unregister_class(OBJECT_OT_assign_color_to_armatures)
-    bpy.utils.unregister_class(OBJECT_OT_select_source_bone)
-    bpy.utils.unregister_class(OBJECT_OT_select_target_bone)
-    bpy.utils.unregister_class(OBJECT_OT_select_source_bone_chain)
-    bpy.utils.unregister_class(OBJECT_OT_select_target_bone_chain)
+    bpy.utils.unregister_class(CreateTransformMapAssignColorToArmaturesOperator)
+    bpy.utils.unregister_class(CreateTransformMapSelectSourceBoneOperator)
+    bpy.utils.unregister_class(CreateTransformMapSelectTargetBoneOperator)
+    bpy.utils.unregister_class(CreateTransformMapSelectSourceBoneChainOperator)
+    bpy.utils.unregister_class(CreateTransformMapSelectTargetBoneChainOperator)
     bpy.utils.unregister_class(Transform_item)
-    bpy.utils.unregister_class(OBJECT_OT_add_transform)
-    bpy.utils.unregister_class(OBJECT_OT_remove_transform)
-    bpy.utils.unregister_class(OBJECT_UL_transform_list)
-    bpy.utils.unregister_class(OBJECT_OT_select_bone_mapping)
-    bpy.utils.unregister_class(OBJECT_OT_export_bone_transform)
-    bpy.utils.unregister_class(OBJECT_OT_save_bone_transform)
-    bpy.utils.unregister_class(OBJECT_OT_load_bone_transform)
-    bpy.utils.unregister_class(OBJECT_OT_save_foot_z_location)
+    bpy.utils.unregister_class(CreateTransformMapAddTransformOperator)
+    bpy.utils.unregister_class(CreateTransformMapRemoveTransformOperator)
+    bpy.utils.unregister_class(CreateTransformMapTransformListUIList)
+    bpy.utils.unregister_class(CreateTransformMapSelectBoneMappingOperator)
+    bpy.utils.unregister_class(CreateTransformMapExportBoneTransformOperator)
+    bpy.utils.unregister_class(CreateTransformMapSaveBoneTransformOperator)
+    bpy.utils.unregister_class(CreateTransformMapLoadBoneTransformOperator)
+    bpy.utils.unregister_class(CreateTransformMapSaveFootZLocationOperator)
     
     del bpy.types.Scene.create_transform_props
     del bpy.types.Scene.selected_source_bone

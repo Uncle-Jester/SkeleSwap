@@ -1,6 +1,6 @@
 import bpy # type: ignore
 from .bone_mapping_utils import find_side_indicator_in_bone_name, side_indicator_list
-from .dev_utils import debug_print
+from .dev_utils import debug_print, validate
 
 def match_case(base, sample):
     if sample.isupper():
@@ -17,6 +17,12 @@ def match_case(base, sample):
         return base # I know this is bad and ugly. but i was in a hurry.
 
 def find_mirror_bone_name(armature, bone_name):
+    validate(
+        [armature, bone_name],
+        ["ARMATURE", "str"],
+        stack_location="GeneralBoneUtils-FindMirrorBoneName",
+        input_identifier_strings=["armature", "bone_name"],
+    )
     bpy.context.view_layer.objects.active = armature
     if bpy.context.object.mode != 'EDIT':
         bpy.ops.object.mode_set(mode='EDIT')
@@ -74,6 +80,12 @@ def find_mirror_bone_name(armature, bone_name):
     return mirrored_bone_name
 
 def get_foot_z_location(target_armature, foot_bone_name):
+    validate(
+        [target_armature, foot_bone_name],
+        ["ARMATURE", "str"],
+        stack_location="GeneralBoneUtils-GetFootZLocation",
+        input_identifier_strings=["target_armature", "foot_bone_name"],
+    )
     foot_l = target_armature.pose.bones.get(foot_bone_name)
 
     if foot_l :
@@ -84,8 +96,12 @@ def get_foot_z_location(target_armature, foot_bone_name):
         return None
 
 def remove_connected_relation(armature, bone_name):
-    if armature.type != 'ARMATURE':
-        raise ValueError(f"In RemoveConnectedRelation: Error: {armature.name} is not an armature.")
+    validate(
+        [armature, bone_name],
+        ["ARMATURE", "str"],
+        stack_location="GeneralBoneUtils-RemoveConnectedRelation",
+        input_identifier_strings=["armature", "bone_name"],
+    )
 
     if bpy.context.object and bpy.context.object.mode != 'OBJECT':
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -108,6 +124,12 @@ def remove_connected_relation(armature, bone_name):
         bpy.ops.object.mode_set(mode='POSE')
 
 def add_copy_location_constraint(armature, bone_to_constraint, bone_to_constraint_to):
+    validate(
+        [armature, bone_to_constraint, bone_to_constraint_to],
+        ["ARMATURE", "str", "str"],
+        stack_location="GeneralBoneUtils-AddCopyLocationConstraint",
+        input_identifier_strings=["armature", "bone_to_constraint", "bone_to_constraint_to"],
+    )
     bpy.context.view_layer.objects.active = armature
     bpy.ops.object.mode_set(mode='POSE')
 
@@ -123,6 +145,12 @@ def add_copy_location_constraint(armature, bone_to_constraint, bone_to_constrain
 
 
 def add_copy_rotation_constraint(armature, bone_to_constraint, bone_to_constraint_to):
+    validate(
+        [armature, bone_to_constraint, bone_to_constraint_to],
+        ["ARMATURE", "str", "str"],
+        stack_location="GeneralBoneUtils-AddCopyRotationConstraint",
+        input_identifier_strings=["armature", "bone_to_constraint", "bone_to_constraint_to"],
+    )
     bpy.context.view_layer.objects.active = armature
     bpy.ops.object.mode_set(mode='POSE')
 
@@ -137,6 +165,12 @@ def add_copy_rotation_constraint(armature, bone_to_constraint, bone_to_constrain
     debug_print(f"Added Copy Rotation constraint to '{bone_to_constraint}' targeting '{bone_to_constraint_to}'.")
 
 def apply_bone_constraints(armature):
+    validate(
+        [armature],
+        ["ARMATURE"],
+        stack_location="GeneralBoneUtils-ApplyBoneConstraints",
+        input_identifier_strings=["armature"],
+    )
     bpy.context.view_layer.objects.active = armature
     bpy.ops.object.mode_set(mode='POSE')
     
@@ -151,9 +185,12 @@ def apply_bone_constraints(armature):
     )
 
 def rename_bone(armature, bone_name, new_name):
-
-    if armature.type != 'ARMATURE':
-        raise ValueError("The provided object is not an armature.")
+    validate(
+        [armature, bone_name, new_name],
+        ["ARMATURE", "str", "str"],
+        stack_location="GeneralBoneUtils-RenameBone",
+        input_identifier_strings=["armature", "bone_name", "new_name"],
+    )
     
     bpy.context.view_layer.objects.active = armature
     bpy.ops.object.mode_set(mode='EDIT')
